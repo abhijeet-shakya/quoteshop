@@ -4,9 +4,10 @@
 name: CI
 
 on:
+  # Manual or on release to main only; no CI on pull requests or develop pushes.
+  workflow_dispatch:
   push:
-    branches: [develop, main]
-  pull_request:
+    branches: [main]
 
 concurrency:
   group: ci-quoteshop-${{ github.event.number || github.ref }}
