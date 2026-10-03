@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storefront – quote detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+[data-theme="light"]{--bg:#FFFFFF;--surface:#FFFFFF;--panel:#F7F7F4;--field:#F4F4F1;--line:#ECECE8;--border:#E2E2DE;--text:#121413;--muted:#5E625F;--ink-bg:#121413;--sel-bg:#121413;--sel-fg:#FFFFFF;--glass:rgba(255,255,255,0.94);--warn-bg:#FBF1DC;--warn-fg:#7A5300;--bad-bg:#FBE6E3;--bad-fg:#8A2A20;--ph:#6B6F6C}
+[data-theme="dark"]{--bg:#0E100F;--surface:#171A18;--panel:#1A1D1B;--field:#1F2321;--line:#262A28;--border:#343936;--text:#EEF0EC;--muted:#A3AAA5;--ink-bg:#2C312E;--sel-bg:#EEF0EC;--sel-fg:#121413;--glass:rgba(14,16,15,0.9);--warn-bg:#3A2E14;--warn-fg:#F2CF7E;--bad-bg:#3D211D;--bad-fg:#F2A79C;--ph:#8A918C}
+[data-theme] a{color:var(--text)}
+[data-theme] input{color:var(--text);background-color:var(--surface)}
+[data-theme] input::placeholder{color:var(--ph)}
+</style>
+</helmet>
+<div data-theme="{{theme}}" style="width: 100%; min-height: 100vh; background: var(--bg); color-scheme: {{theme}}; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif; color: var(--text)">
+
+  <header style="position: sticky; top: 0; z-index: 5; background: var(--glass); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line)">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none">
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: var(--ink-bg); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px">JBB</span>
+        <span style="font-weight: 750; font-size: 17px; letter-spacing: -0.02em">Jai Balaji Billiards</span>
+      </a>
+      <a href="Account.dc.html" style="height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; text-decoration: none; font-weight: 650; font-size: 14px">My account</a>
+    </div>
+  </header>
+
+  <main style="max-width: 1320px; margin: 0 auto; padding: 28px 28px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+    <aside style="flex: 1 1 340px; min-width: 0; position: sticky; top: 92px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <div>
+          <h1 style="margin: 0; font-size: 30px; letter-spacing: -0.04em; font-weight: 800">RFQ-0019 · v2</h1>
+          <div style="font-size: 14px; color: var(--muted); margin-top: 2px">Price sent 3 Oct · valid till [DATE]</div>
+        </div>
+        <span style="height: 30px; padding: 0 12px; border-radius: 999px; background: {{statusBg}}; color: {{statusFg}}; display: flex; align-items: center; font-size: 13px; font-weight: 700">{{statusLabel}}</span>
+      </div>
+
+      <section style="border-radius: 22px; background: var(--panel); padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div>
+          <div style="font-size: 13px; color: var(--muted)">Your price · {{lineCount}} items · {{units}} pcs</div>
+          <div style="font-size: 34px; font-weight: 800; letter-spacing: -0.04em">{{offerTotal}}</div>
+          <div style="font-size: 14px; margin-top: 2px"><span style="color: var(--muted); text-decoration: line-through">{{listTotal}}</span> <strong style="color: {{accentText}}">· Save {{saved}}</strong></div>
+        </div>
+        <div style="display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--field)">
+          <span style="width: {{okPct}}; background: {{accent}}"></span>
+          <span style="width: {{partPct}}; background: #C98A12"></span>
+          <span style="width: {{noPct}}; background: #B4372A"></span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; font-weight: 650">
+          <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: {{accent}}; margin-right: 6px"></span>{{okCount}} available</span>
+          <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: #C98A12; margin-right: 6px"></span>{{partCount}} partial</span>
+          <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 4px; background: #B4372A; margin-right: 6px"></span>{{noCount}} not available</span>
+        </div>
+      </section>
+
+      <sc-if value="{{notAccepted}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <button type="button" onClick="{{accept}}" style="height: 56px; border-radius: 999px; border: 0; background: {{accent}}; color: #FFFFFF; font: inherit; font-weight: 800; font-size: 16px; cursor: pointer">Accept v2</button>
+          <div style="display: flex; gap: 8px">
+            <a href="Quote.dc.html" style="flex: 1; height: 48px; border-radius: 999px; border: 1px solid var(--border); text-decoration: none; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">Change</a>
+            <a href="#" style="flex: 1; height: 48px; border-radius: 999px; border: 1px solid var(--border); text-decoration: none; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">PDF</a>
+            <a href="#" style="flex: 1; height: 48px; border-radius: 999px; border: 1px solid var(--border); text-decoration: none; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">Excel</a>
+          </div>
+          <span style="font-size: 12px; color: var(--muted); text-align: center">Accepting orders only the available quantities.</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{accepted}}" hint-placeholder-val="{{ false }}">
+        <div style="height: 56px; border-radius: 999px; background: {{accentSoft}}; color: {{accentInk}}; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px">Accepted · order being created</div>
+      </sc-if>
+
+      <div style="border-radius: 18px; border: 1px solid var(--line); padding: 16px; font-size: 13px; line-height: 1.7; color: var(--muted)">
+        <div style="font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 4px">History</div>
+        v1 · 2 Oct · You requested 100 items, 1,240 pcs<br>
+        v2 · 3 Oct · Prices added, 5 partial, 3 not available
+      </div>
+    </aside>
+
+    <section style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="position: sticky; top: 72px; z-index: 3; background: var(--glass); backdrop-filter: blur(14px); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+        <div style="flex: 1 1 260px; display: flex; align-items: center; gap: 8px; background: var(--field); border-radius: 999px; padding: 0 16px; height: 46px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5E625F" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <label for="dsearch" style="position: absolute; left: -9999px">Find in this quote</label>
+          <input id="dsearch" type="search" placeholder="Find in this quote" value="{{q}}" onChange="{{onSearch}}" style="flex: 1; min-width: 0; border: 0; outline: none; font: inherit; font-size: 15px; background: transparent; height: 44px">
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+            <button type="button" onClick="{{f.pick}}" style="height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.color}}; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer">{{f.label}}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius: 18px; background: var(--panel); padding: 28px; text-align: center; color: var(--muted)">No items match.</div>
+      </sc-if>
+
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+        <section style="border-radius: 20px; border: 1px solid var(--line); overflow: hidden; background: var(--surface)">
+          <button type="button" onClick="{{g.toggle}}" style="width: 100%; height: 54px; padding: 0 18px; border: 0; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; display: flex; align-items: center; justify-content: space-between">
+            <span style="font-weight: 800; font-size: 15px">{{g.name}} <span style="font-weight: 600; color: var(--muted)">· {{g.count}} items</span></span>
+            <span style="display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700">{{g.subtotal}}<span style="font-size: 18px; color: var(--muted)">{{g.arrow}}</span></span>
+          </button>
+          <sc-if value="{{g.open}}" hint-placeholder-val="{{ false }}">
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px">
+                <thead>
+                  <tr style="text-align: left; color: var(--muted); font-size: 12px">
+                    <th scope="col" style="padding: 8px 18px; border-top: 1px solid var(--line); font-weight: 600">Item</th>
+                    <th scope="col" style="padding: 8px 10px; border-top: 1px solid var(--line); font-weight: 600">Qty</th>
+                    <th scope="col" style="padding: 8px 10px; border-top: 1px solid var(--line); font-weight: 600; text-align: right">Listed</th>
+                    <th scope="col" style="padding: 8px 10px; border-top: 1px solid var(--line); font-weight: 600; text-align: right">Your price</th>
+                    <th scope="col" style="padding: 8px 18px; border-top: 1px solid var(--line); font-weight: 600; text-align: right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{g.lines}}" as="l" hint-placeholder-count="4">
+                    <tr>
+                      <td style="padding: 10px 18px; border-top: 1px solid var(--line)">
+                        <div style="font-weight: 700">{{l.name}}</div>
+                        <sc-if value="{{l.hasNote}}" hint-placeholder-val="{{ false }}">
+                          <span style="display: inline-block; margin-top: 4px; padding: 3px 8px; border-radius: 8px; background: {{l.noteBg}}; color: {{l.noteFg}}; font-size: 12px; font-weight: 650">{{l.note}}</span>
+                        </sc-if>
+                      </td>
+                      <td style="padding: 10px; border-top: 1px solid var(--line); font-weight: 700; white-space: nowrap">{{l.qtyText}}</td>
+                      <td style="padding: 10px; border-top: 1px solid var(--line); text-align: right; color: var(--muted); text-decoration: line-through">{{l.listed}}</td>
+                      <td style="padding: 10px; border-top: 1px solid var(--line); text-align: right; font-weight: 700">{{l.price}}</td>
+                      <td style="padding: 10px 18px; border-top: 1px solid var(--line); text-align: right; font-weight: 800">{{l.total}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <sc-if value="{{g.more}}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{g.showAll}}" style="width: 100%; height: 48px; border: 0; border-top: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Show all {{g.count}}</button>
+              </sc-if>
+            </div>
+          </sc-if>
+        </section>
+      </sc-for>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#146B47","options":["#146B47","#2F5FC4","#B4372A","#121413"]},"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'all', q: '', open: { Tables: true, Cues: true, Accessories: true }, all: {}, accepted: false };
+  }
+  soft(hex, dark) {
+    const light = { '#146B47': ['#E4F1EA', '#0E5236'], '#2F5FC4': ['#E6EDFB', '#1E438F'], '#B4372A': ['#F8E7E4', '#8A2A20'], '#121413': ['#F0F0EC', '#121413'] };
+    const darkMap = { '#146B47': ['#173A2C', '#8FDDB8'], '#2F5FC4': ['#1C2B4A', '#A9C2F5'], '#B4372A': ['#3D211D', '#F2A79C'], '#121413': ['#2C312E', '#EEF0EC'] };
+    const m = dark ? darkMap : light;
+    return m[hex] || (dark ? ['#2C312E', '#EEF0EC'] : ['#F0F0EC', '#121413']);
+  }
+  inr(n) {
+    return '₹' + Math.round(n).toLocaleString('en-IN');
+  }
+  buildLines() {
+    const groups = [
+      { name: 'Tables', count: 8, code: 'TBL', label: 'Snooker / pool table', qty: 2, price: 155000 },
+      { name: 'Cues', count: 22, code: 'CUE', label: 'Cue model', qty: 10, price: 2200 },
+      { name: 'Accessories', count: 40, code: 'ACC', label: 'Accessory set', qty: 15, price: 4499 },
+      { name: 'Cloth', count: 18, code: 'CLT', label: 'Table cloth', qty: 12, price: 6500 },
+      { name: 'Table Games', count: 12, code: 'TGM', label: 'Game table', qty: 1, price: 38000 }
+    ];
+    const special = {
+      'TBL-03': { status: 'partial', give: 1, note: '1 of 2 now · 1 more in [X] days' },
+      'CUE-07': { status: 'partial', give: 6, note: '6 of 10 available' },
+      'ACC-12': { status: 'partial', give: 8, note: '8 of 15 available' },
+      'ACC-31': { status: 'partial', give: 10, note: '10 of 15 available' },
+      'CLT-05': { status: 'partial', give: 6, note: '6 of 12 now · rest in [X] days' },
+      'CUE-15': { status: 'none', give: 0, note: 'Not available · alternative CUE-16 offered' },
+      'ACC-27': { status: 'none', give: 0, note: 'Not available' },
+      'TGM-09': { status: 'none', give: 0, note: 'Not available · discontinued' }
+    };
+    const out = [];
+    groups.forEach((g) => {
+      for (let i = 1; i <= g.count; i++) {
+        const code = g.code + '-' + (i < 10 ? '0' + i : i);
+        const sp = special[code];
+        const offer = Math.round(g.price * 0.92);
+        out.push({
+          group: g.name,
+          code: code,
+          name: g.label + ' ' + code,
+          req: g.qty,
+          give: sp ? sp.give : g.qty,
+          listed: g.price,
+          offer: offer,
+          status: sp ? sp.status : 'ok',
+          note: sp ? sp.note : ''
+        });
+      }
+    });
+    return { groups: groups, lines: out };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#146B47';
+    const dark = this.props.dark ?? false;
+    const soft = this.soft(accent, dark);
+    const data = this.buildLines();
+    const all = data.lines;
+    let listTotal = 0, offerTotal = 0, units = 0, ok = 0, part = 0, no = 0;
+    all.forEach((l) => {
+      listTotal += l.listed * l.give;
+      offerTotal += l.offer * l.give;
+      units += l.req;
+      if (l.status === 'ok') { ok++; } else if (l.status === 'partial') { part++; } else { no++; }
+    });
+    const f = this.state.filter;
+    const q = (this.state.q || '').toLowerCase();
+    const visible = all.filter((l) => (f === 'all' || (f === 'changes' && l.status !== 'ok') || (f === 'none' && l.status === 'none')) && (!q || l.name.toLowerCase().indexOf(q) >= 0));
+    const groups = data.groups.map((g) => {
+      const gl = visible.filter((l) => l.group === g.name);
+      const open = !!this.state.open[g.name] || f !== 'all' || !!q;
+      const showAll = !!this.state.all[g.name];
+      const shown = showAll ? gl : gl.slice(0, 10);
+      let sub = 0;
+      gl.forEach((l) => { sub += l.offer * l.give; });
+      return {
+        name: g.name,
+        count: gl.length,
+        subtotal: this.inr(sub),
+        open: open && gl.length > 0,
+        arrow: open ? '−' : '+',
+        more: !showAll && gl.length > 10,
+        hidden: gl.length === 0,
+        lines: shown.map((l) => {
+          const changed = l.give !== l.req;
+          const partial = l.status === 'partial';
+          return {
+            name: l.name,
+            qtyText: changed ? (l.req + ' → ' + l.give) : String(l.req),
+            price: this.inr(l.offer),
+            listed: this.inr(l.listed),
+            total: l.give ? this.inr(l.offer * l.give) : '—',
+            hasNote: l.status !== 'ok',
+            note: l.note,
+            noteBg: partial ? 'var(--warn-bg)' : 'var(--bad-bg)',
+            noteFg: partial ? 'var(--warn-fg)' : 'var(--bad-fg)'
+          };
+        }),
+        toggle: () => {
+          const next = Object.assign({}, this.state.open);
+          next[g.name] = !open;
+          this.setState({ open: next });
+        },
+        showAll: () => {
+          const next = Object.assign({}, this.state.all);
+          next[g.name] = true;
+          this.setState({ all: next });
+        }
+      };
+    }).filter((g) => !g.hidden);
+    const filters = [
+      { id: 'all', label: 'All ' + all.length },
+      { id: 'changes', label: 'Changes ' + (part + no) },
+      { id: 'none', label: 'Not available ' + no }
+    ].map((x) => {
+      const on = x.id === f;
+      return { label: x.label, border: on ? 'var(--sel-bg)' : 'var(--border)', bg: on ? 'var(--sel-bg)' : 'var(--surface)', color: on ? 'var(--sel-fg)' : 'var(--text)', pick: () => this.setState({ filter: x.id }) };
+    });
+    const pct = (n) => (Math.round((n / all.length) * 1000) / 10) + '%';
+    const accepted = this.state.accepted;
+    return {
+      theme: dark ? 'dark' : 'light',
+      accent: accent,
+      accentSoft: soft[0],
+      accentInk: soft[1],
+      accentText: dark ? soft[1] : accent,
+      statusLabel: accepted ? 'Accepted' : 'Price sent',
+      statusBg: soft[0],
+      statusFg: soft[1],
+      lineCount: all.length,
+      units: units.toLocaleString('en-IN'),
+      offerTotal: this.inr(offerTotal),
+      listTotal: this.inr(listTotal),
+      saved: this.inr(listTotal - offerTotal),
+      okCount: ok,
+      partCount: part,
+      noCount: no,
+      okPct: pct(ok),
+      partPct: pct(part),
+      noPct: pct(no),
+      q: this.state.q,
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      filters: filters,
+      groups: groups,
+      noMatch: groups.length === 0,
+      accepted: accepted,
+      notAccepted: !accepted,
+      accept: () => this.setState({ accepted: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

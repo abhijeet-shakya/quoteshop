@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storefront – mobile product</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+[data-theme="light"]{--bg:#FFFFFF;--surface:#FFFFFF;--panel:var(--panel);--field:var(--field);--tile:var(--tile);--tile-2:#ECEAE4;--tile-3:#E8E4DC;--tile-4:#E3E8E2;--line:var(--line);--border:var(--border);--text:#121413;--muted:#5E625F;--ink-bg:#121413;--sel-bg:#121413;--sel-fg:#FFFFFF;--glass:var(--glass);--dot:#B9BCB8;--ph:#6B6F6C}
+[data-theme="dark"]{--bg:#0E100F;--surface:#171A18;--panel:#1A1D1B;--field:#1F2321;--tile:#1C201E;--tile-2:#222624;--tile-3:#262A28;--tile-4:#1E2422;--line:#262A28;--border:#343936;--text:#EEF0EC;--muted:#A3AAA5;--ink-bg:#2C312E;--sel-bg:#EEF0EC;--sel-fg:#121413;--glass:rgba(14,16,15,0.88);--dot:#5A605C;--ph:#8A918C}
+[data-theme] a{color:var(--text)}
+[data-theme] input,[data-theme] textarea{color:var(--text);background-color:var(--surface)}
+[data-theme] input::placeholder,[data-theme] textarea::placeholder{color:var(--ph)}
+</style>
+</helmet>
+<div data-theme="{{theme}}" style="width: 390px; height: 844px; background: var(--bg); color-scheme: {{theme}}; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif; color: var(--text); display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <header style="flex: none; height: 60px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--glass); border-bottom: 1px solid var(--line)">
+    <a href="Mobile.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+    <span style="flex: 1; min-width: 0; font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center">Pool Tables</span>
+    <a href="MobileQuote.dc.html" aria-label="Quote list" style="position: relative; width: 44px; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l1 3H8z"></path><rect x="5" y="7" width="14" height="14" rx="2"></rect><path d="M9 12h6M9 16h4"></path></svg>
+      <span style="position: absolute; right: 2px; top: 2px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: {{accent}}; color: #FFFFFF; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center">{{count}}</span>
+    </a>
+  </header>
+
+  <div style="flex: 1; overflow-y: auto; padding-bottom: 110px">
+    <div style="position: relative; margin: 12px 16px 0; aspect-ratio: 1 / 1; border-radius: 24px; background: {{stageBg}}; display: flex; align-items: center; justify-content: center; padding: 28px; box-sizing: border-box">
+      <svg viewBox="0 0 320 180" width="100%" aria-label="Pool table in the selected cloth colour">
+        <rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
+        <rect x="22" y="22" width="276" height="136" rx="6" fill="{{cloth}}"></rect>
+        <circle cx="24" cy="24" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="20" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="24" r="9" fill="#0A0A0A"></circle>
+        <circle cx="24" cy="156" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="160" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="156" r="9" fill="#0A0A0A"></circle>
+        <circle cx="214" cy="90" r="7" fill="#D64532"></circle><circle cx="226" cy="83" r="7" fill="#E3B23C"></circle><circle cx="96" cy="90" r="7" fill="#F7F5EE"></circle>
+      </svg>
+      <span style="position: absolute; left: 14px; top: 14px; height: 28px; padding: 0 10px; border-radius: 999px; background: var(--glass); display: flex; align-items: center; font-size: 12px; font-weight: 650">{{photoLabel}}</span>
+      <div style="position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; gap: 2px">
+        <sc-for list="{{dots}}" as="d" hint-placeholder-count="4">
+          <button type="button" aria-label="{{d.label}}" onClick="{{d.pick}}" style="width: 32px; height: 32px; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0">
+            <span style="width: {{d.w}}; height: 8px; border-radius: 999px; background: {{d.color}}"></span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em">Made in Delhi</span>
+        <h1 style="margin: 0; font-size: 28px; line-height: 1.08; letter-spacing: -0.04em; font-weight: 800">Gold JBB Championship Pool Table</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted)">Full-size 4 × 8 ft table for homes, clubs and offices. Order from 1 piece; bigger orders get better rates.</p>
+      </div>
+
+      <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px">
+        <span style="font-size: 26px; font-weight: 800; letter-spacing: -0.035em">{{priceText}}</span>
+        <span style="font-size: 13px; color: var(--muted)">{{priceSub}}</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 14px; font-weight: 700">Cloth <span style="font-weight: 500; color: var(--muted)">· {{clothName}}</span></div>
+        <div style="display: flex; gap: 10px">
+          <sc-for list="{{swatches}}" as="s" hint-placeholder-count="3">
+            <button type="button" aria-label="{{s.name}}" onClick="{{s.pick}}" style="width: 46px; height: 46px; border-radius: 999px; border: 3px solid var(--surface); outline: 2px solid {{s.ring}}; background: {{s.hex}}; cursor: pointer"></button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 14px; font-weight: 700">Quantity</div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <div style="height: 50px; border-radius: 999px; background: var(--field); display: flex; align-items: center">
+            <button type="button" aria-label="Decrease quantity" onClick="{{dec}}" style="width: 50px; height: 50px; border: 0; background: transparent; font: inherit; font-size: 22px; cursor: pointer; color: var(--text)">−</button>
+            <span style="min-width: 36px; text-align: center; font-weight: 800; font-size: 17px">{{qty}}</span>
+            <button type="button" aria-label="Increase quantity" onClick="{{inc}}" style="width: 50px; height: 50px; border: 0; background: transparent; font: inherit; font-size: 22px; cursor: pointer; color: var(--text)">+</button>
+          </div>
+          <span style="height: 32px; padding: 0 12px; border-radius: 999px; background: {{accentSoft}}; color: {{accentInk}}; display: flex; align-items: center; font-size: 12px; font-weight: 700">{{tier}}</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em">Complete the setup</div>
+        <div style="display: flex; gap: 10px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 4px">
+          <sc-for list="{{addons}}" as="a" hint-placeholder-count="3">
+            <button type="button" onClick="{{a.toggle}}" style="flex: none; width: 200px; min-height: 84px; border-radius: 20px; border: 1.5px solid {{a.border}}; background: {{a.bg}}; font: inherit; color: var(--text); cursor: pointer; display: flex; align-items: flex-start; gap: 10px; padding: 14px; text-align: left">
+              <span style="flex: none; width: 26px; height: 26px; border-radius: 999px; background: {{a.dot}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px">{{a.sign}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px; line-height: 1.25">{{a.name}}</span><span style="font-size: 12px; color: var(--muted)">{{a.note}}</span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--line)">
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px"><span style="color: var(--muted)">Playing area</span><span style="font-weight: 650">4 × 8 ft</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px"><span style="color: var(--muted)">Bed</span><span style="font-weight: 650">[SLATE / WOOD]</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px"><span style="color: var(--muted)">Included</span><span style="font-weight: 650">[ACCESSORIES]</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 14px"><span style="color: var(--muted)">Ready to dispatch</span><span style="font-weight: 650">[DAYS]</span></div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{added}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 16px; right: 16px; bottom: 96px; height: 52px; border-radius: 16px; background: {{accentSoft}}; color: {{accentInk}}; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; box-shadow: 0 8px 24px rgba(18,20,19,0.12)">
+      <span style="font-size: 14px; font-weight: 700">Added {{qty}} to your quote</span>
+      <a href="MobileQuote.dc.html" style="height: 40px; padding: 0 14px; border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 750; display: flex; align-items: center">View quote</a>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; background: var(--glass); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 12px 16px 20px; display: flex; gap: 10px">
+    <a href="#" aria-label="Ask a question on WhatsApp" style="flex: none; width: 56px; height: 56px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"></path></svg>
+    </a>
+    <button type="button" onClick="{{add}}" style="flex: 1; height: 56px; border-radius: 999px; border: 0; background: var(--ink-bg); color: #FFFFFF; font: inherit; font-weight: 750; font-size: 16px; cursor: pointer">{{addLabel}}</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"showPrices":{"editor":"boolean","default":true},"accent":{"editor":"color","default":"#146B47","options":["#146B47","#2F5FC4","#B4372A","#121413"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { qty: 1, cloth: 'green', photo: 0, added: false, addons: { a1: true } };
+  }
+  soft(hex, dark) {
+    const light = { '#146B47': ['#E4F1EA', '#0E5236'], '#2F5FC4': ['#E6EDFB', '#1E438F'], '#B4372A': ['#F8E7E4', '#8A2A20'], '#121413': ['#F0F0EC', '#121413'] };
+    const darkMap = { '#146B47': ['#173A2C', '#8FDDB8'], '#2F5FC4': ['#1C2B4A', '#A9C2F5'], '#B4372A': ['#3D211D', '#F2A79C'], '#121413': ['#2C312E', '#EEF0EC'] };
+    const m = dark ? darkMap : light;
+    return m[hex] || (dark ? ['#2C312E', '#EEF0EC'] : ['#F0F0EC', '#121413']);
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#146B47';
+    const dark = this.props.dark ?? false;
+    const soft = this.soft(accent, dark);
+    const showPrices = this.props.showPrices ?? true;
+    const qty = this.state.qty;
+    const colours = [
+      { id: 'green', name: 'Tournament green', hex: '#146B47' },
+      { id: 'blue', name: 'Electric blue', hex: '#2F5FC4' },
+      { id: 'red', name: 'Wine red', hex: '#8A1F2B' }
+    ];
+    const current = colours.filter((c) => c.id === this.state.cloth)[0];
+    const swatches = colours.map((c) => Object.assign({}, c, {
+      ring: c.id === this.state.cloth ? 'var(--sel-bg)' : 'var(--border)',
+      pick: () => this.setState({ cloth: c.id })
+    }));
+    const photos = [
+      { label: '1 / 4 · Full table', bg: 'var(--tile)' },
+      { label: '2 / 4 · Corner & pocket', bg: 'var(--tile-2)' },
+      { label: '3 / 4 · Legs & frame', bg: 'var(--tile-3)' },
+      { label: '4 / 4 · Cloth close-up', bg: 'var(--tile-4)' }
+    ];
+    const dots = photos.map((p, i) => ({
+      label: 'Show photo ' + (i + 1),
+      w: i === this.state.photo ? '22px' : '8px',
+      color: i === this.state.photo ? 'var(--text)' : 'var(--dot)',
+      pick: () => this.setState({ photo: i })
+    }));
+    const addonList = [
+      { id: 'a1', name: 'All-in-one Accessories Set', note: 'From ₹7,499' },
+      { id: 'a2', name: 'Pocket Nets', note: 'Set of 6' },
+      { id: 'a3', name: 'Spare Cloth', note: 'For re-covering' }
+    ];
+    const sel = this.state.addons;
+    const addons = addonList.map((a) => {
+      const on = !!sel[a.id];
+      return Object.assign({}, a, {
+        border: on ? accent : 'var(--border)',
+        bg: on ? soft[0] : 'var(--surface)',
+        dot: on ? accent : 'var(--ink-bg)',
+        sign: on ? '✓' : '+',
+        toggle: () => {
+          const next = Object.assign({}, sel);
+          next[a.id] = !on;
+          this.setState({ addons: next });
+        }
+      });
+    });
+    const tier = qty >= 5 ? 'Bulk rate' : (qty >= 2 ? 'Multi-piece rate' : 'Single piece');
+    return {
+      theme: dark ? 'dark' : 'light',
+      isDark: dark,
+      isLight: !dark,
+      themeLabel: dark ? 'Switch to light mode' : 'Switch to dark mode',
+      toggleTheme: () => this.setState({ dark: !dark }),
+      priceText: showPrices ? 'From ₹[PRICE]' : 'Price on request',
+      priceSub: showPrices ? 'per piece · less for bulk' : 'Best price on WhatsApp',
+      accent: accent,
+      accentSoft: soft[0],
+      accentInk: soft[1],
+      qty: qty,
+      tier: tier,
+      cloth: current.hex,
+      clothName: current.name,
+      swatches: swatches,
+      dots: dots,
+      stageBg: photos[this.state.photo].bg,
+      photoLabel: photos[this.state.photo].label,
+      addons: addons,
+      added: this.state.added,
+      addLabel: this.state.added ? 'Update quote' : 'Add to quote',
+      count: this.state.added ? 3 : 2,
+      add: () => this.setState({ added: true }),
+      inc: () => this.setState({ qty: qty + 1 }),
+      dec: () => this.setState({ qty: Math.max(1, qty - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>
