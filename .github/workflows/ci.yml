@@ -1,0 +1,175 @@
+# CI for quoteshop. Mirrors the Frappe v16 app boilerplate workflow
+# (apps/frappe/frappe/utils/boilerplate.py: github_workflow_template) and
+# apps/frappe/.github/actions/setup/action.yml (system deps, site config).
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+concurrency:
+  group: ci-quoteshop-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Custom dependency apps are fetched at the PR base branch (or the pushed branch).
+  CUSTOM_DEPS_BRANCH: ${{ github.base_ref || github.ref_name }}
+
+jobs:
+  tests:
+    name: Server tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      redis-cache:
+        image: redis:alpine
+        ports:
+          - 13000:6379
+      redis-queue:
+        image: redis:alpine
+        ports:
+          - 11000:6379
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root  # throwaway CI-only password
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=3
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          check-latest: true
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: 'echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT'
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt -qq update
+          sudo apt -qq install libcups2-dev mariadb-client libmariadb-dev
+          wget -q -O /tmp/wkhtmltox.deb https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+          sudo apt -qq install /tmp/wkhtmltox.deb
+
+      - name: Configure MariaDB charset
+        run: |
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
+      - name: Init bench
+        run: |
+          pip install frappe-bench
+          bench init --skip-redis-config-generation --skip-assets --frappe-branch version-16 --python "$(which python)" ~/frappe-bench
+
+      - name: Get apps
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench get-app --skip-assets https://github.com/frappe/payments --branch version-16
+          bench get-app --skip-assets https://github.com/frappe/erpnext --branch version-16
+          bench get-app --skip-assets https://github.com/frappe/crm --branch main
+          bench get-app --skip-assets https://github.com/shridarpatil/frappe_whatsapp --branch master
+          bench get-app --skip-assets https://github.com/abhijeet-shakya/erp_custom --branch $CUSTOM_DEPS_BRANCH
+          bench get-app --skip-assets quoteshop $GITHUB_WORKSPACE
+          bench setup requirements --dev
+
+      - name: Create site and install apps
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench new-site --db-root-username root --db-root-password root --admin-password admin --db-host 127.0.0.1 test_site
+          bench --site test_site set-config allow_tests 1 --parse
+          bench --site test_site set-config host_name "http://test_site:8000"
+          bench --site test_site install-app payments
+          bench --site test_site install-app erpnext
+          bench --site test_site install-app crm
+          bench --site test_site install-app frappe_whatsapp
+          bench --site test_site install-app erp_custom
+          bench --site test_site install-app quoteshop
+          CI=Yes bench build
+        env:
+          CI: 'Yes'
+
+      - name: Run tests
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site run-tests --app quoteshop --coverage
+        env:
+          TYPE: server
+
+      # Coverage gate (TESTING.md §2.13: >= 85% lines). Enable in phase 1 once tests exist.
+      - name: Coverage gate
+        if: false  # enable in phase 1
+        working-directory: /home/runner/frappe-bench/sites
+        run: ../env/bin/python -m coverage report --fail-under=85
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-quoteshop
+          path: /home/runner/frappe-bench/sites/coverage.xml
+          if-no-files-found: ignore
+
+  lint:
+    name: Linters (pre-commit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      # Node 22 (npm 10) on purpose: npm 11 on Node 24 fails pre-commit's node hooks
+      # (prettier/eslint mirrors) with EALLOWGIT. Tests job stays on Node 24.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files --show-diff-on-failure
+
+  # PLACEHOLDER (phase 2+): Cypress UI/e2e tests, mirroring
+  # apps/frappe/.github/workflows/_base-ui-tests.yml. Enable by removing `if: false`
+  # once cypress/ specs exist in this app; needs the same services + bench setup as `tests`,
+  # plus `bench start &` and a Chrome browser.
+  e2e:
+    name: UI tests (Cypress)
+    if: false
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # TODO(phase 2): reuse the `tests` job setup (services, bench init, get-app, new-site, build).
+      - uses: browser-actions/setup-chrome@latest
+      - name: Run UI tests
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench start &> bench_start.log &
+          bench --site test_site run-ui-tests quoteshop --headless --browser "$(which chrome)"
