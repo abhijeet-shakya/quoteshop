@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, fmt_money, formatdate, getdate
 
-from quoteshop.quoteshop_enquiry.quote_view import get_quote_view
+from quoteshop.quoteshop_enquiry.quote_view import quote_view
 from quoteshop.quoteshop_website.context import setup
 
 no_cache = 1
@@ -39,7 +39,7 @@ def get_context(context: dict) -> dict:
 	setup(context, "quote_view", title=name)
 	context.update(name=name, token=token)
 
-	view = frappe._dict(get_quote_view(name, token))
+	view = frappe._dict(quote_view(name, token))
 	if view.outdated:
 		context.outdated = view
 		return context

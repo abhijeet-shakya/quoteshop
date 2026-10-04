@@ -30,6 +30,7 @@ class CatalogTestCase(IntegrationTestCase):
 
 	def setUp(self):
 		super().setUp()
+		frappe.local.request = None  # a request left by an earlier test would switch rate limits on
 		frappe.db.savepoint(SAVEPOINT)
 		clear_redis()
 		self.addCleanup(self._reset)

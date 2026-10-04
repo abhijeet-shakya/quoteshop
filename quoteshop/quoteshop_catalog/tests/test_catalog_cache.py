@@ -28,6 +28,10 @@ def cached_keys():
 	return frappe.cache.get_keys(PREFIX)
 
 
+def clear_list_keys():
+	frappe.cache.delete_keys(PREFIX + "list:")
+
+
 def read(key):
 	return frappe.cache.get_value(key, expires=True, use_local_cache=False)
 
@@ -68,12 +72,55 @@ class TestCatalogCache(CatalogTestCase):
 		self.assertEqual((warm_list, warm_product, warm_categories), cold)
 
 	def test_different_params_use_different_list_keys(self):
-		list_products()
-		list_products(q="cache")
-		list_products(page=2)
+		"""Non-empty, non-search listings: one key per (category, page) (CONTRACTS §10)."""
+		make_published_item("_QS-C2", rate=50, item_name="Cache Item Two")
+		self.set_settings(products_per_page=1)
+		clear_list_keys()
+		first, second = list_products(), list_products(page=2)
+		in_group = list_products(category=route_of("Item Group", self.group))
 		self.assertEqual(len(frappe.cache.get_keys(PREFIX + "list:")), 3)
+		self.assertNotEqual(codes(first), codes(second))
+		self.assertEqual((list_products(), list_products(page=2)), (first, second))  # served per key
+		self.assertTrue(codes(in_group))
+
+	def test_search_with_q_creates_no_key(self):
+		"""CONTRACTS §10: free-text searches are never cached (unbounded keys)."""
 		self.assertEqual(codes(list_products(q="cache")), ["_QS-C1"])
-		self.assertEqual(codes(list_products(q="nothing")), [])  # not served from the q="cache" key
+		self.assertEqual(codes(list_products(q="nothing")), [])
+		self.assertEqual(frappe.cache.get_keys(PREFIX + "list:"), [])
+
+	def test_empty_page_creates_no_key(self):
+		"""CONTRACTS §10: pages past the end and empty categories are not cached (?page=N can't fill Redis)."""
+		self.assertEqual(codes(list_products(page=99)), [])
+		make_group_tree({"_QS Empty Cache Group": {}})
+		self.assertEqual(codes(list_products(category=route_of("Item Group", "_QS Empty Cache Group"))), [])
+		self.assertEqual(frappe.cache.get_keys(PREFIX + "list:"), [])
+
+	def test_page_renders_create_no_rate_limit_counters(self):
+		"""CONTRACTS §10: www pages call the undecorated products()/product()/categories(), so a page view
+		never counts against the 600/h catalog API limit."""
+		from frappe.utils import get_html_for_route
+
+		frappe.cache.delete_keys("rl:")
+		frappe.local.request_ip = "10.0.0.7"  # a decorated call would now create an rl: counter
+		self.addCleanup(setattr, frappe.local, "request", None)
+		routes = ("/", f"/c/{route_of('Item Group', self.group)}", f"/p/{self.route}", "/search")
+		for route in routes:
+			frappe.local.form_dict = frappe._dict(q="cache") if route == "/search" else frappe._dict()
+			self.assertIn("Cache Item", get_html_for_route(route), route)
+		self.assertEqual(frappe.cache.get_keys("rl:"), [])
+
+	def test_catalog_get_apis_rate_limited(self):
+		"""CONTRACTS §10: 600 calls/hour per IP on the guest catalog GET APIs."""
+		from quoteshop.quoteshop_enquiry.tests.factories import call_api
+
+		frappe.cache.delete_keys("rl:")
+		cmd = "quoteshop.quoteshop_catalog.catalog.get_categories"
+		for _ in range(600):
+			call_api(cmd, http_method="GET", ip="10.0.0.8")
+		with self.assertRaises(frappe.RateLimitExceededError):
+			call_api(cmd, http_method="GET", ip="10.0.0.8")
+		frappe.cache.delete_keys("rl:")
 
 	def test_keys_expire_after_a_day(self):
 		self.warm()

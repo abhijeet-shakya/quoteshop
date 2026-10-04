@@ -43,6 +43,10 @@ def portal_login(mobile: str, otp_token: str) -> dict:
 	user = contact.user or f"{mobile.lstrip('+')}{BUYER_DOMAIN}"
 	user_type = frappe.db.get_value("User", user, "user_type")
 	if user_type is None:
+		# frappe's User.on_update creates a Contact for any user without a Contact Email row
+		# of that address, which would leave two Contacts on one user; give ours the email first
+		contact.add_email(user)
+		contact.save(ignore_permissions=True)
 		frappe.get_doc(
 			{
 				"doctype": "User",
@@ -57,6 +61,7 @@ def portal_login(mobile: str, otp_token: str) -> dict:
 		# never hand a desk (or disabled) account to an OTP login
 		frappe.throw(_("This number can't be used to sign in here."), frappe.AuthenticationError)
 	if contact.user != user:
+		contact.reload()  # frappe's create_contact may have just saved it
 		contact.user = user
 		contact.save(ignore_permissions=True)
 

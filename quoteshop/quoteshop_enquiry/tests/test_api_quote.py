@@ -139,12 +139,21 @@ class TestParseQuotePaste(QuoteAPITestCase):
 				self.assertEqual(len(self.paste(f"{A},1", user=user)["matched"]), 1)
 
 	def test_case_insensitive_and_quoted(self):
-		result = self.paste(f'"{A.lower()}",4\n\'_qs cue stick pro\'\t1')
+		result = self.paste(f"\"{A.lower()}\",4\n'_qs cue stick pro'\t1")
 		self.assertEqual(result["matched"], [{"item_code": A, "item_name": "_QS Cue Stick Pro", "qty": 5.0}])
 
 	def test_reports_unmatched_rows(self):
 		"""QTE-05: unknown/unpublished items and rows without a positive quantity are reported, not dropped."""
-		lines = [f"{HIDDEN},2", f"{DISABLED},2", f"{TEMPLATE},2", "_QS nothing,2", f"{A}", f"{A},0", f"{A},-3", f"{A},abc"]
+		lines = [
+			f"{HIDDEN},2",
+			f"{DISABLED},2",
+			f"{TEMPLATE},2",
+			"_QS nothing,2",
+			f"{A}",
+			f"{A},0",
+			f"{A},-3",
+			f"{A},abc",
+		]
 		result = self.paste("\n".join(lines))
 		self.assertEqual(result["matched"], [])
 		self.assertCountEqual([row["line"] for row in result["unmatched"]], lines)  # order not specified

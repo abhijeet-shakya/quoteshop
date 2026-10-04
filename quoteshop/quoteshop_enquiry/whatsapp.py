@@ -148,8 +148,6 @@ def on_whatsapp_message(doc: Document, method: str | None = None) -> None:
 
 def handle_reply(message: str) -> None:
 	"""Job: Accept / Request changes quick reply from the registered number (CONTRACTS §4.3, §9.1)."""
-	from quoteshop.quoteshop_enquiry import crm, orders, versions
-
 	msg = frappe.db.get_value(
 		"WhatsApp Message",
 		message,
@@ -176,7 +174,13 @@ def handle_reply(message: str) -> None:
 			reference_name=doc.name,
 		)
 		return
+	_apply_reply(doc, sent, msg)
+	# after the action: doc.save() deletes child rows it doesn't hold, so an earlier db_insert is wiped
 	log_message(doc.name, sent.version, sent.event, "Incoming", msg)
+
+
+def _apply_reply(doc: Document, sent, msg) -> None:
+	from quoteshop.quoteshop_enquiry import crm, orders, versions
 
 	action = _action(msg.message)
 	if sent.event != "price_sent" or not action:

@@ -111,7 +111,7 @@
 								<tr>
 									<th scope="col">{{ _("Order")|e }}</th>
 									<th scope="col">{{ _("Items")|e }}</th>
-									<th scope="col" class="qs-a-r">{{ _("Listed")|e }}</th>
+									{%- if show_listed %}<th scope="col" class="qs-a-r">{{ _("Listed")|e }}</th>{% endif %}
 									<th scope="col" class="qs-a-r">{{ _("Your price")|e }}</th>
 									{%- if show_savings %}<th scope="col" class="qs-a-r">{{ _("You saved")|e }}</th>{% endif %}
 									<th scope="col">{{ _("Status")|e }}</th>
@@ -123,14 +123,14 @@
 								<tr>
 									<td><div class="qs-a-id">{{ o.name|e }}</div><div class="qs-a-sub">{{ o.date|e }}</div></td>
 									<td class="qs-a-muted">{{ o.line_count|e }} {{ _("items")|e }} · {{ o.units|e }} {{ _("pcs")|e }}</td>
-									<td class="qs-a-r qs-a-muted"><s>{{ o.listed|e }}</s></td>
+									{%- if show_listed %}<td class="qs-a-r qs-a-muted"><s>{{ o.listed|e }}</s></td>{% endif %}
 									<td class="qs-a-r qs-a-strong">{{ o.sold|e }}</td>
 									{%- if show_savings %}<td class="qs-a-r qs-a-strong qs-a-save">{% if o.saved %}{{ o.saved|e }} <span>({{ o.pct|e }})</span>{% else %}—{% endif %}</td>{% endif %}
 									<td><span class="qs-a-chip qs-v-tone-{{ o.tone|e }}">{{ o.status|e }}</span></td>
 									<td class="qs-a-r"><button type="button" class="qs-a-toggle" aria-expanded="{{ ('true' if loop.first else 'false')|e }}" aria-controls="qs-a-o{{ loop.index|e }}" data-qs-order-toggle data-hide="{{ _('Hide')|e }}" data-show="{{ _('Details')|e }}">{{ (_("Hide") if loop.first else _("Details"))|e }}</button></td>
 								</tr>
 								<tr id="qs-a-o{{ loop.index|e }}" class="qs-a-detail"{% if not loop.first %} hidden{% endif %}>
-									<td colspan="{{ (7 if show_savings else 6)|e }}">
+									<td colspan="{{ (5 + (1 if show_listed else 0) + (1 if show_savings else 0))|e }}">
 										{%- for l in o.lines %}
 										<div class="qs-a-line"><span class="qs-a-strong">{{ l.name|e }}</span><span class="qs-a-muted">{{ l.qty|e }} × {% if l.listed %}<s>{{ l.listed|e }}</s> → {% endif %}<strong>{{ l.sold|e }}</strong> {{ _("each")|e }}</span></div>
 										{%- endfor %}
@@ -154,14 +154,14 @@
 							<span class="qs-a-sub">{{ o.date|e }} · {{ o.line_count|e }} {{ _("items")|e }} · {{ o.units|e }} {{ _("pcs")|e }}</span>
 							<span class="qs-a-row qs-a-end">
 								<span><span class="qs-a-sub">{{ _("Your price")|e }}</span><span class="qs-a-big">{{ o.sold|e }}</span></span>
-								<span class="qs-a-right"><s class="qs-a-sub">{{ o.listed|e }}</s>{% if o.saved %}<span class="qs-a-save">{{ _("You saved")|e }} {{ o.saved|e }} ({{ o.pct|e }})</span>{% endif %}</span>
+								<span class="qs-a-right">{% if show_listed %}<s class="qs-a-sub">{{ o.listed|e }}</s>{% endif %}{% if o.saved %}<span class="qs-a-save">{{ _("You saved")|e }} {{ o.saved|e }} ({{ o.pct|e }})</span>{% endif %}</span>
 							</span>
 						</button>
 						<div class="qs-a-obody" id="qs-a-mo{{ loop.index|e }}"{% if not loop.first %} hidden{% endif %}>
 							{%- for l in o.lines %}
 							<div class="qs-a-mline">
 								<div class="qs-a-strong">{{ l.name|e }}</div>
-								<div class="qs-a-row qs-a-muted"><span>{{ l.qty|e }} × <s>{{ l.listed|e }}</s></span><span class="qs-a-each">{{ l.sold|e }} {{ _("each")|e }}</span></div>
+								<div class="qs-a-row qs-a-muted"><span>{% if l.listed %}{{ l.qty|e }} × <s>{{ l.listed|e }}</s>{% else %}{{ l.qty|e }} {{ _("pcs")|e }}{% endif %}</span><span class="qs-a-each">{{ l.sold|e }} {{ _("each")|e }}</span></div>
 							</div>
 							{%- endfor %}
 							<div class="qs-a-btns">

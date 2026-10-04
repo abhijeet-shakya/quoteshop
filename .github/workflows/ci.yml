@@ -126,7 +126,7 @@ jobs:
 
       # Coverage gate (TESTING.md §2.13: >= 85% lines). Enable in phase 1 once tests exist.
       - name: Coverage gate
-        if: false  # enable in phase 1
+        if: true
         working-directory: /home/runner/frappe-bench/sites
         run: ../env/bin/python -m coverage report --fail-under=85
 

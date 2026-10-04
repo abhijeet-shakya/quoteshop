@@ -81,7 +81,9 @@ class TestPortalLogin(PortalTestCase):
 
 	def test_no_password_stored(self):
 		_result, user = login("+919800000214")
-		self.assertFalse(frappe.db.exists("__Auth", {"doctype": "User", "name": user, "fieldname": "password"}))
+		self.assertFalse(
+			frappe.db.exists("__Auth", {"doctype": "User", "name": user, "fieldname": "password"})
+		)
 
 	def test_second_login_reuses_user_and_contact(self):
 		login("+919800000215")
@@ -100,7 +102,6 @@ class TestPortalLogin(PortalTestCase):
 		frappe.db.set_value("Contact", make_buyer_contact("+919800000217"), "user", DESK_USER)
 		with self.assertRaises(frappe.AuthenticationError):
 			login("+919800000217")
-
 
 	def test_non_quoteshop_website_user_refused(self):
 		"""CONTRACTS §10: a Contact linked to a user QuoteShop didn't create keeps its own sign-in."""
@@ -198,6 +199,7 @@ class TestPortalData(PortalTestCase):
 
 		with self.change_settings("QS Store Settings", show_savings_to_buyer=0):
 			page = render("/account", user=self.user_1)
+		self.assertIn(self.so_1, page.text)  # the order is listed at all
 		struck = [s.get_text(strip=True) for s in page.soup.find_all("s")]
 		self.assertEqual([s for s in struck if s and s != "—"], [])
 
@@ -206,7 +208,9 @@ class TestReorder(PortalTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
-		cls.enq, cls.so = cls.order_for(BUYER_1, [line("_QS-R-A", 6, 10), line("_QS-R-B", 2, 20), line("_QS-R-GONE", 1, 30)])
+		cls.enq, cls.so = cls.order_for(
+			BUYER_1, [line("_QS-R-A", 6, 10), line("_QS-R-B", 2, 20), line("_QS-R-GONE", 1, 30)]
+		)
 		cls.user = login(BUYER_1)[1]
 		frappe.db.set_value("Item", "_QS-R-GONE", "qs_published", 0)
 

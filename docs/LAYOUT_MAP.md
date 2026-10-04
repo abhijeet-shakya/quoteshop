@@ -87,7 +87,7 @@ Brand colour: on save, warn (not block) if contrast < AA against light or dark s
 ### B4. QS Enquiry (module QuoteShop Enquiry; naming `RFQ-.#####`; not submittable; track changes) – tabs Quote · Buyer · Versions · System
 | Tab | Section | Columns / fields |
 |---|---|---|
-| Quote | Summary | [c1] `status` Sel Draft/Requested/Price Sent/Changes Requested/Accepted/Lost/Expired default Draft idx · `current_version` Int ro · `valid_till` Dt — [c2] `total_listed` Cur ro · `total_offered` Cur ro · `total_saved` Cur ro · `saved_pct` Pct ro — [c3] `line_count` Int ro · `unit_count` Flt ro · `available_count` Int ro · `partial_count` Int ro · `not_available_count` Int ro |
+| Quote | Summary | [c1] `status` Sel Draft/Requested/Price Sent/Changes Requested/Accepted/Lost/Expired default Draft ro idx · `current_version` Int ro · `valid_till` Dt ro — [c2] `total_listed` Cur ro · `total_offered` Cur ro · `total_saved` Cur ro · `saved_pct` Pct ro — [c3] `line_count` Int ro · `unit_count` Flt ro · `available_count` Int ro · `partial_count` Int ro · `not_available_count` Int ro |
 | Quote | Items | `items` Tbl **QS Enquiry Item** (grid: item_name, requested_qty, offered_qty, offered_rate, availability) |
 | Quote | Notes (coll) | `notes` Small Text · `answers` Tbl **QS Enquiry Answer** (question, value) · `lost_reason` Small Text ↓status=Lost |
 | Buyer | Contact | [c1] `buyer_name` Data reqd · `mobile` Data reqd idx (E.164) · `email` Data — [c2] `business_name` Data · `buyer_type` Data · `pincode` Data |

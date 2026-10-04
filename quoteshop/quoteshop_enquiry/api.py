@@ -102,7 +102,7 @@ def verify_otp(mobile: str, otp: str) -> dict:
 @rate_limit(limit=10, seconds=3600)
 def submit_enquiry(data: dict | str) -> dict:
 	"""Create a QS Enquiry (+ Contact, CRM Deal) from the website quote form in one transaction."""
-	data = frappe.parse_json(data) if isinstance(data, str) else data
+	data = parse_json_arg(data)
 	if not isinstance(data, dict):
 		frappe.throw(_("Invalid enquiry data."))
 	settings = frappe.get_cached_doc("QS Enquiry Settings")
@@ -131,6 +131,8 @@ def submit_enquiry(data: dict | str) -> dict:
 			"assigned_to": _default_assignee(buyer["buyer_type"], customer, settings),
 		}
 	)
+	# items/contact/customer are validated above; link validation would add one query per line
+	doc.flags.ignore_links = True
 	doc.insert(ignore_permissions=True)
 	crm.create_deal(doc)
 	whatsapp.queue_message(doc.name, "enquiry_received_buyer", 0)
@@ -345,8 +347,18 @@ def _default_assignee(buyer_type: str | None, customer: str | None, settings) ->
 	return frappe.db.get_value("Customer", customer, "account_manager") if customer else None
 
 
+def parse_json_arg(value):
+	"""Decode a JSON string argument; malformed input is a ValidationError, not an HTTP 500."""
+	if not isinstance(value, str):
+		return value
+	try:
+		return frappe.parse_json(value)
+	except ValueError:  # orjson.JSONDecodeError subclasses ValueError
+		frappe.throw(_("Invalid JSON."))
+
+
 def _string_list(value, label: str) -> list[str]:
-	value = frappe.parse_json(value) if isinstance(value, str) else value
+	value = parse_json_arg(value)
 	if not isinstance(value, list) or not all(isinstance(code, str) for code in value):
 		frappe.throw(_("{0} must be a list of item codes.").format(label))
 	if len(value) > MAX_LINES:

@@ -110,7 +110,9 @@ class TestBulkDiscount(PricingTestCase):
 	def test_discount_selected_lines(self):
 		doc = self.quote()
 		rows = [by_code(doc)["_QS-V-CASE"].name, by_code(doc)["_QS-V-CHALK"].name]
-		self.assertEqual(versions.apply_discount(doc.name, 10, "selected", rows=json.dumps(rows)), {"updated": 2})
+		self.assertEqual(
+			versions.apply_discount(doc.name, 10, "selected", rows=json.dumps(rows)), {"updated": 2}
+		)
 		self.assertEqual(
 			self.rates(doc.name),
 			{"_QS-V-CUE": 1000.0, "_QS-V-CASE": 405.45, "_QS-V-CHALK": 30.0, "_QS-V-POR": 0.0},
@@ -118,7 +120,9 @@ class TestBulkDiscount(PricingTestCase):
 
 	def test_discount_by_category_includes_descendants(self):
 		doc = self.quote()
-		self.assertEqual(versions.apply_discount(doc.name, 5, "category", item_group="_QS-V Cues"), {"updated": 2})
+		self.assertEqual(
+			versions.apply_discount(doc.name, 5, "category", item_group="_QS-V Cues"), {"updated": 2}
+		)
 		self.assertEqual(
 			self.rates(doc.name),
 			{"_QS-V-CUE": 950.0, "_QS-V-CASE": 427.98, "_QS-V-CHALK": 33.33, "_QS-V-POR": 0.0},
@@ -147,7 +151,9 @@ class TestAvailability(PricingTestCase):
 	def test_partial_updates_totals_and_counts(self):
 		doc = self.quote()
 		row = by_code(doc)["_QS-V-A1"]
-		versions.set_availability(doc.name, [row.name], "Partial", note="6 now", lead_time_days=5, offered_qty=6)
+		versions.set_availability(
+			doc.name, [row.name], "Partial", note="6 now", lead_time_days=5, offered_qty=6
+		)
 		doc.reload()
 		row = by_code(doc)["_QS-V-A1"]
 		self.assertEqual((row.offered_qty, row.lead_time_days, row.availability_note), (6.0, 5, "6 now"))
@@ -165,7 +171,9 @@ class TestAvailability(PricingTestCase):
 
 	def test_alternative_counts_in_totals_not_in_availability_counts(self):
 		doc = self.quote()
-		versions.set_availability(doc.name, [by_code(doc)["_QS-V-A2"].name], "Alternative", note="Blue instead")
+		versions.set_availability(
+			doc.name, [by_code(doc)["_QS-V-A2"].name], "Alternative", note="Blue instead"
+		)
 		doc.reload()
 		self.assertEqual(doc.total_offered, 1000 + 200 + 600.0)
 		self.assertEqual((doc.available_count, doc.partial_count, doc.not_available_count), (2, 0, 0))
@@ -237,7 +245,12 @@ class TestSendPrice(PricingTestCase):
 class TestCreateVersion(PricingTestCase):
 	def two_versions(self):
 		doc = make_quote(
-			[line("_QS-V-V1", 2, 100), line("_QS-V-V2", 3, 50), line("_QS-V-V3", 1, 10), line("_QS-V-V4", 1, 20)]
+			[
+				line("_QS-V-V1", 2, 100),
+				line("_QS-V-V2", 3, 50),
+				line("_QS-V-V3", 1, 10),
+				line("_QS-V-V4", 1, 20),
+			]
 		)
 		with self.freeze_time(DAY):
 			v1 = send_quote(doc.name)
@@ -266,7 +279,12 @@ class TestCreateVersion(PricingTestCase):
 		doc, _v1, _v2 = self.two_versions()
 		self.assertEqual(
 			{r.item_code: r.change_flag for r in doc.items},
-			{"_QS-V-V1": "Price changed", "_QS-V-V2": "Qty changed", "_QS-V-V3": "Alternative", "_QS-V-V4": ""},
+			{
+				"_QS-V-V1": "Price changed",
+				"_QS-V-V2": "Qty changed",
+				"_QS-V-V3": "Alternative",
+				"_QS-V-V4": "",
+			},
 		)
 		v1 = min(doc.versions, key=lambda v: v.version)
 		self.assertTrue(all(not ln["change_flag"] for ln in json.loads(v1.snapshot)["lines"]))
@@ -312,7 +330,9 @@ class TestMarkLost(PricingTestCase):
 		versions.mark_lost(doc.name, "  Bought elsewhere  ")
 		doc.reload()
 		self.assertEqual((doc.status, doc.lost_reason), ("Lost", "Bought elsewhere"))
-		deal = frappe.db.get_value("CRM Deal", doc.crm_deal, ["status", "lost_reason", "lost_notes"], as_dict=True)
+		deal = frappe.db.get_value(
+			"CRM Deal", doc.crm_deal, ["status", "lost_reason", "lost_notes"], as_dict=True
+		)
 		self.assertEqual(frappe.db.get_value("CRM Deal Status", deal.status, "type"), "Lost")
 		self.assertEqual((deal.lost_reason, deal.lost_notes), ("Other", "Bought elsewhere"))
 
@@ -360,7 +380,9 @@ class TestDeskPermissions(PricingTestCase):
 					call()
 				enqueue.assert_not_called()
 		doc.reload()
-		self.assertEqual((doc.status, doc.current_version, doc.items[0].offered_rate), ("Requested", 0, 100.0))
+		self.assertEqual(
+			(doc.status, doc.current_version, doc.items[0].offered_rate), ("Requested", 0, 100.0)
+		)
 
 
 class TestStatusLock(PricingTestCase):
@@ -421,12 +443,16 @@ class TestResendPrice(PricingTestCase):
 			self.assertEqual((after.current_version, len(after.versions)), (1, 1))
 			self.assertEqual(getdate(after.valid_till), getdate("2026-06-25"))
 			with self.set_user("Guest"):
-				self.assertEqual(quote_view.get_quote_view(doc.name, sent.token)["version"], 1)  # old link works
+				self.assertEqual(
+					quote_view.get_quote_view(doc.name, sent.token)["version"], 1
+				)  # old link works
 
 		enqueue.assert_called_once()
 		call = enqueue.call_args
 		self.assertEqual(call.kwargs["job_id"], f"qs-wa-{doc.name}-1-price_sent-resend")
-		self.assertEqual((call.kwargs["event"], call.kwargs["version"], call.kwargs["resend"]), ("price_sent", 1, True))
+		self.assertEqual(
+			(call.kwargs["event"], call.kwargs["version"], call.kwargs["resend"]), ("price_sent", 1, True)
+		)
 		self.assertEqual(call.kwargs["url"], versions.login_url(doc.name))
 
 	def test_resend_needs_open_price_sent(self):

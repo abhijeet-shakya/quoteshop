@@ -509,3 +509,78 @@ class TestRouting(Storefront):
 		"""§5.3: bundles only via qs_base.html; never web_include_js/css (they leak into other pages)."""
 		self.assertEqual(frappe.get_hooks("web_include_js", app_name="quoteshop"), [])
 		self.assertEqual(frappe.get_hooks("web_include_css", app_name="quoteshop"), [])
+
+
+class TestSecurityRegressions(Storefront):
+	"""CONTRACTS §10: `/account?next=` allow-list and escaped template output."""
+
+	EVIL_NAME = 'Evil "Cue" <script>alert(1)</script>'
+
+	def setUp(self):
+		super().setUp()
+		self.addCleanup(setattr, frappe.local, "request_ip", None)
+		self.addCleanup(frappe.cache.delete_keys, "rl:")
+
+	def account_next(self, value):
+		page = render("/account", {"next": value})
+		self.assertEqual(page.status, 200)
+		return page, page.soup.find(attrs={"data-qs-account": True})["data-next"]
+
+	def test_account_next_rejects_injection_and_open_redirect(self):
+		for probe in (
+			'/"><script>alert(1)</script>',
+			"/\\evil.com",
+			"//evil.com",
+			"https://evil.com/q/x",
+			"/q/../admin",
+		):
+			with self.subTest(probe=probe):
+				page, target = self.account_next(probe)
+				self.assertEqual(target, "/account")
+				self.assertNotIn("<script>alert(1)", page.html)
+
+	def test_account_next_keeps_allowed_paths(self):
+		for allowed in ("/q/RFQ-00001?t=abc", "/q/RFQ-00001", "/quote", "/account"):
+			with self.subTest(allowed=allowed):
+				self.assertEqual(self.account_next(allowed)[1], allowed)
+
+	def assert_escaped(self, page, where):
+		self.assertEqual(page.status, 200, where)
+		self.assertNotIn("<script>alert(1)</script>", page.html, where)
+		self.assertFalse([s for s in page.soup.find_all("script") if "alert(1)" in s.get_text()], where)
+		self.assertIn(self.EVIL_NAME, page.text, where)  # shown as text, escaped in the markup
+
+	def test_item_name_escaped_on_home_product_and_quote(self):
+		from quoteshop.quoteshop_enquiry.tests.factories import make_published_item
+
+		make_published_item("_QS-XSS", rate=999, group="_QS Cues", item_name="Evil Cue")
+		# db.set_value: Frappe's save-time sanitizer would strip the <script> before it reached a template
+		frappe.db.set_value("Item", "_QS-XSS", {"item_name": self.EVIL_NAME, "qs_display_order": -1})
+		frappe.cache.delete_keys("qs:catalog:")
+		frappe.cache.delete_keys("website_page::")
+		self.assert_escaped(render("/"), "/")
+		self.assert_escaped(render(f"/p/{frappe.db.get_value('Item', '_QS-XSS', 'qs_route')}"), "/p")
+
+		quote, token = self.quote_for("_QS-XSS", item_name=self.EVIL_NAME)
+		frappe.local.request_ip = "10.0.0.9"  # /q currently calls a rate-limited API (see test below)
+		self.assert_escaped(render(f"/q/{quote}", {"t": token}), "/q")
+
+	def quote_for(self, item_code, item_name=None):
+		"""Price-sent quote (v1) → (name, token). `item_name` is written past the sanitizer before the
+		version snapshot that /q renders."""
+		from quoteshop.quoteshop_enquiry.tests.factories import make_enquiry_settings, make_quote, send_quote
+
+		make_enquiry_settings()
+		quote = make_quote([{"item_code": item_code, "requested_qty": 1, "listed_rate": 999}])
+		if item_name:
+			frappe.db.set_value("QS Enquiry Item", {"parent": quote.name}, "item_name", item_name)
+		return quote.name, send_quote(quote.name).token
+
+	def test_q_page_render_creates_no_rate_limit_counter(self):
+		"""Like the catalog pages (CONTRACTS §10), /q must call the undecorated view function: a page view
+		must not count against the get_quote_view API limit (and must not need form_dict.cmd / request_ip)."""
+		quote, token = self.quote_for("_QS-CUE-1")
+		frappe.cache.delete_keys("rl:")
+		frappe.local.request_ip = "10.0.0.10"
+		self.assertEqual(render(f"/q/{quote}", {"t": token}).status, 200)
+		self.assertEqual(frappe.cache.get_keys("rl:"), [])

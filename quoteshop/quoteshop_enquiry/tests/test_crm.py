@@ -289,7 +289,9 @@ class TestCRMSetup(EnquiryTestCase):
 		seed_desk.seed_crm_form_script()
 		seed_desk.seed_crm_form_script()
 		scripts = frappe.get_all(
-			"CRM Form Script", filters={"name": seed_desk.FORM_SCRIPT}, fields=["dt", "view", "enabled", "script"]
+			"CRM Form Script",
+			filters={"name": seed_desk.FORM_SCRIPT},
+			fields=["dt", "view", "enabled", "script"],
 		)
 		self.assertEqual(len(scripts), 1)
 		self.assertEqual((scripts[0].dt, scripts[0].view, scripts[0].enabled), ("CRM Deal", "Form", 1))

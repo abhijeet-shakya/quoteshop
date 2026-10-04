@@ -56,6 +56,7 @@ def get_context(context: dict) -> dict:
 		orders=orders,
 		requests=requests,
 		open_count=sum(1 for r in requests if r.open),
+		show_listed=bool(show_savings),  # struck-through listed prices follow the savings setting (as on /q)
 		show_savings=show_savings and total_saved > 0,
 		total_saved=money(total_saved, orders[0].currency if orders else "INR"),
 	)
@@ -78,7 +79,7 @@ def order_view(o, show_savings):
 		currency=cur,
 		line_count=len(lines),
 		units=f"{sum(flt(l.qty) for l in lines):g}",
-		listed=money(listed, cur) if known else "—",
+		listed=money(listed, cur) if known and show_savings else "—",
 		sold=money(sold, cur),
 		known=known,
 		saved_value=saved,
@@ -88,7 +89,7 @@ def order_view(o, show_savings):
 			frappe._dict(
 				name=l.item_name or l.item_code,
 				qty=f"{flt(l.qty):g}",
-				listed=money(l.listed_rate, cur) if flt(l.listed_rate) else "",
+				listed=money(l.listed_rate, cur) if show_savings and flt(l.listed_rate) else "",
 				sold=money(l.rate, cur),
 			)
 			for l in lines

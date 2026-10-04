@@ -352,9 +352,9 @@ ENQUIRY = [  # B4
 				"Summary",
 				[
 					[
-						"status Select:Draft/Requested/Price Sent/Changes Requested/Accepted/Lost/Expired =Draft idx",
+						"status Select:Draft/Requested/Price Sent/Changes Requested/Accepted/Lost/Expired =Draft ro idx",
 						"current_version Int ro",
-						"valid_till Date",
+						"valid_till Date ro",
 					],
 					[
 						"total_listed Currency ro",

@@ -5,7 +5,6 @@ via expires_at (freeze_time), single use, 5 wrong attempts, send limits 5/hour p
 developer_mode logger fallback, otp_token valid 30 minutes.
 """
 
-import logging
 import re
 from unittest.mock import patch
 
@@ -262,22 +261,26 @@ class TestOTPNotConfigured(EnquiryTestCase):
 		enqueue.assert_not_called()
 
 	def test_developer_mode_logs_code_never_returns_it(self):
-		"""developer_mode without WhatsApp: the code goes to the `quoteshop` logger (any level), never to the client."""
+		"""developer_mode without WhatsApp: the code goes to the `quoteshop` logger at WARNING (the dev log
+		level drops INFO, CONTRACTS §10), never to the client."""
 		logger = frappe.logger("quoteshop")
+		calls = []
+		methods = ("debug", "info", "warning", "error")
+
+		def recorder(level):
+			return lambda msg, *args, **kwargs: calls.append((level, str(msg) % args if args else str(msg)))
+
 		with (
 			patch.dict(frappe.conf, {"developer_mode": 1}),
 			patch("frappe.enqueue") as enqueue,
-			patch.object(logger, "_log") as log,
 			patch("frappe.logger", return_value=logger),
+			patch.multiple(logger, **{m: recorder(m) for m in methods}),
 		):
 			response = call_api(SEND, mobile=MOBILE)
 		enqueue.assert_not_called()
 		self.assertEqual(response, {"sent": True, "expires_in": 600})
-		messages = [str(c.args[1]) % tuple(c.args[2]) if c.args[2] else str(c.args[1]) for c in log.call_args_list]
-		logged = [m for m in messages if MOBILE in m and re.search(r"\b\d{6}\b", m)]
-		self.assertEqual(len(logged), 1, messages)
-		levels = [c.args[0] for c in log.call_args_list if MOBILE in str(c.args[1]) + str(c.args[2])]
-		self.assertEqual(levels, [logging.WARNING])  # CONTRACTS §10: dev log level drops INFO
-		code = re.search(r"\b(\d{6})\b", logged[0].replace(MOBILE, ""))[1]
+		logged = [(level, m) for level, m in calls if MOBILE in m]
+		self.assertEqual([level for level, _m in logged], ["warning"], calls)
+		code = re.search(r"\b(\d{6})\b", logged[0][1].replace(MOBILE, ""))[1]
 		self.assertNotIn(code, str(response))
 		self.assertTrue(call_api(VERIFY, mobile=MOBILE, otp=code)["verified"])

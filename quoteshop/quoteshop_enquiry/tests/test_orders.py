@@ -8,6 +8,7 @@ from frappe.utils import add_days, getdate
 
 from quoteshop.quoteshop_enquiry import orders, versions
 from quoteshop.quoteshop_enquiry.tests.factories import (
+	accept_and_order,
 	make_customer_group,
 	make_enquiry_settings,
 	make_item_price,
@@ -15,7 +16,6 @@ from quoteshop.quoteshop_enquiry.tests.factories import (
 	make_quote,
 	make_user,
 	send_quote,
-	accept_and_order,
 )
 
 ASSIGNEE = "qs-b-order-sales@example.com"
@@ -44,7 +44,9 @@ class OrderTestCase(IntegrationTestCase):
 
 	def ordered(self, mobile, lines=None, discount=None, **fields):
 		"""Quote → priced (optional per-line edits) → sent → accepted → order job. Returns (enquiry, SO name)."""
-		doc = make_quote(lines or [line("_QS-O-A", 4, 250), line("_QS-O-B", 2, 99.5)], mobile=mobile, **fields)
+		doc = make_quote(
+			lines or [line("_QS-O-A", 4, 250), line("_QS-O-B", 2, 99.5)], mobile=mobile, **fields
+		)
 		if discount:
 			versions.apply_discount(doc.name, discount, "all")
 		order = accept_and_order(doc.name, send_quote(doc.name).token)
@@ -63,7 +65,9 @@ class TestSalesOrderCreation(OrderTestCase):
 			line("_QS-O-L5", 1, 1000),
 		]
 		with cls.freeze_time(DAY):
-			cls.doc = make_quote(cls.lines, mobile="+919800000101", assigned_to=ASSIGNEE, buyer_type="Retailer", deal=True)
+			cls.doc = make_quote(
+				cls.lines, mobile="+919800000101", assigned_to=ASSIGNEE, buyer_type="Retailer", deal=True
+			)
 			versions.apply_discount(cls.doc.name, 10, "all")
 			make_item_price("_QS-O-L1", 150)  # price list moved after the request
 			cls.order_name = accept_and_order(cls.doc.name, send_quote(cls.doc.name).token)
@@ -87,7 +91,9 @@ class TestSalesOrderCreation(OrderTestCase):
 
 	def test_only_offered_lines(self):
 		self.assertEqual(sorted(self.so_lines), ["_QS-O-L1", "_QS-O-L2", "_QS-O-L5"])
-		self.assertEqual({c: r.qty for c, r in self.so_lines.items()}, {"_QS-O-L1": 10, "_QS-O-L2": 3, "_QS-O-L5": 1})
+		self.assertEqual(
+			{c: r.qty for c, r in self.so_lines.items()}, {"_QS-O-L1": 10, "_QS-O-L2": 3, "_QS-O-L5": 1}
+		)
 
 	def test_delivery_dates(self):
 		self.assertEqual(getdate(self.so_lines["_QS-O-L1"].delivery_date), getdate("2026-06-17"))
@@ -96,7 +102,10 @@ class TestSalesOrderCreation(OrderTestCase):
 
 	def test_qs_fields(self):
 		self.assertEqual((self.so.qs_enquiry, self.so.qs_version), (self.doc.name, 1))
-		self.assertEqual({c: r.qs_requested_qty for c, r in self.so_lines.items()}, {"_QS-O-L1": 10, "_QS-O-L2": 4, "_QS-O-L5": 1})
+		self.assertEqual(
+			{c: r.qs_requested_qty for c, r in self.so_lines.items()},
+			{"_QS-O-L1": 10, "_QS-O-L2": 4, "_QS-O-L5": 1},
+		)
 		self.assertEqual(self.doc.sales_order, self.so.name)
 
 	def test_draft_when_auto_submit_off(self):
@@ -110,7 +119,9 @@ class TestSalesOrderCreation(OrderTestCase):
 	def test_deal_won(self):
 		status = frappe.db.get_value("CRM Deal", self.doc.crm_deal, "status")
 		self.assertEqual(frappe.db.get_value("CRM Deal Status", status, "type"), "Won")
-		self.assertEqual(frappe.db.get_value("CRM Deal", self.doc.crm_deal, "deal_value"), self.doc.total_offered)
+		self.assertEqual(
+			frappe.db.get_value("CRM Deal", self.doc.crm_deal, "deal_value"), self.doc.total_offered
+		)
 
 	def test_customer_created(self):
 		customer = frappe.get_doc("Customer", self.so.customer)
@@ -120,23 +131,31 @@ class TestSalesOrderCreation(OrderTestCase):
 		self.assertEqual(customer.account_manager, ASSIGNEE)
 		self.assertEqual(customer.customer_primary_contact, self.doc.contact)
 		links = frappe.get_all(
-			"Dynamic Link", filters={"parenttype": "Contact", "parent": self.doc.contact, "link_doctype": "Customer"}, pluck="link_name"
+			"Dynamic Link",
+			filters={"parenttype": "Contact", "parent": self.doc.contact, "link_doctype": "Customer"},
+			pluck="link_name",
 		)
 		self.assertEqual(links, [customer.name])
 
 	def test_no_duplicate_contact(self):
 		self.assertEqual(frappe.db.count("Contact", {"mobile_no": "+919800000101"}), 1)
 		self.assertEqual(
-			frappe.db.count("Dynamic Link", {"parenttype": "Contact", "link_doctype": "Customer", "link_name": self.so.customer}), 1
+			frappe.db.count(
+				"Dynamic Link",
+				{"parenttype": "Contact", "link_doctype": "Customer", "link_name": self.so.customer},
+			),
+			1,
 		)
 
 	def test_customer_group_default_without_buyer_type(self):
-		doc, order = self.ordered("+919800000103", buyer_type="Club")
+		_doc, order = self.ordered("+919800000103", buyer_type="Club")
 		customer = frappe.db.get_value("Sales Order", order, "customer")
-		self.assertEqual(frappe.db.get_value("Customer", customer, "customer_group"), self.store.default_customer_group)
+		self.assertEqual(
+			frappe.db.get_value("Customer", customer, "customer_group"), self.store.default_customer_group
+		)
 
 	def test_customer_reused(self):
-		first, order1 = self.ordered("+919800000104", assigned_to=ASSIGNEE)
+		first, _order1 = self.ordered("+919800000104", assigned_to=ASSIGNEE)
 		frappe.db.set_value("Customer", first.customer, "account_manager", OTHER_MANAGER)
 		customers = frappe.db.count("Customer")
 		second, order2 = self.ordered("+919800000104", assigned_to=ASSIGNEE)
@@ -184,7 +203,10 @@ class TestSalesOrderCreation(OrderTestCase):
 
 class TestExpiryJob(OrderTestCase):
 	def run_job(self):
-		with patch.object(frappe.db.__class__, "commit"), patch("frappe.enqueue"):  # the job commits per enquiry
+		with (
+			patch.object(frappe.db.__class__, "commit"),
+			patch("frappe.enqueue"),
+		):  # the job commits per enquiry
 			orders.expire_quotes()
 
 	def test_expires_past_validity_only(self):
@@ -200,12 +222,21 @@ class TestExpiryJob(OrderTestCase):
 		with self.freeze_time("2026-06-26 08:00:00"):
 			self.run_job()
 		status = lambda d: frappe.db.get_value("QS Enquiry", d.name, "status")  # noqa: E731
-		self.assertEqual((status(past), status(fresh), status(requested)), ("Expired", "Price Sent", "Requested"))
-		self.assertEqual(frappe.db.get_value("CRM Deal", frappe.db.get_value("QS Enquiry", past.name, "crm_deal"), "status"), "Expired")
+		self.assertEqual(
+			(status(past), status(fresh), status(requested)), ("Expired", "Price Sent", "Requested")
+		)
+		self.assertEqual(
+			frappe.db.get_value(
+				"CRM Deal", frappe.db.get_value("QS Enquiry", past.name, "crm_deal"), "status"
+			),
+			"Expired",
+		)
 
 		with self.freeze_time("2026-06-25 08:00:00"):  # valid_till day itself is still valid
 			other = make_quote([line("_QS-O-X4", 1, 10)])
-			frappe.db.set_value("QS Enquiry", other.name, {"status": "Price Sent", "valid_till": "2026-06-25"})
+			frappe.db.set_value(
+				"QS Enquiry", other.name, {"status": "Price Sent", "valid_till": "2026-06-25"}
+			)
 			self.run_job()
 			self.assertEqual(status(other), "Price Sent")
 
@@ -217,7 +248,9 @@ class TestExpiryJob(OrderTestCase):
 			self.run_job()
 			modified = frappe.db.get_value("QS Enquiry", doc.name, "modified")
 			self.run_job()
-		self.assertEqual(frappe.db.get_value("QS Enquiry", doc.name, ["status", "modified"]), ("Expired", modified))
+		self.assertEqual(
+			frappe.db.get_value("QS Enquiry", doc.name, ["status", "modified"]), ("Expired", modified)
+		)
 
 	def test_expired_quote_cannot_be_accepted_but_can_be_repriced(self):
 		with self.freeze_time(DAY):
@@ -230,8 +263,13 @@ class TestExpiryJob(OrderTestCase):
 
 				self.assertTrue(quote_view.accept_quote(doc.name, token)["outdated"])
 			resent = send_quote(doc.name)
-		self.assertEqual((resent.version, frappe.db.get_value("QS Enquiry", doc.name, "status")), (2, "Price Sent"))
-		self.assertEqual(getdate(frappe.db.get_value("QS Enquiry", doc.name, "valid_till")), getdate(add_days("2026-07-01", 15)))
+		self.assertEqual(
+			(resent.version, frappe.db.get_value("QS Enquiry", doc.name, "status")), (2, "Price Sent")
+		)
+		self.assertEqual(
+			getdate(frappe.db.get_value("QS Enquiry", doc.name, "valid_till")),
+			getdate(add_days("2026-07-01", 15)),
+		)
 
 
 class TestOrderFixes(OrderTestCase):
@@ -244,7 +282,9 @@ class TestOrderFixes(OrderTestCase):
 		doc = make_quote([line("_QS-O-ORIG", 3, 200), line("_QS-O-KEEP", 1, 50)], mobile="+919800000110")
 		row = next(r for r in doc.items if r.item_code == "_QS-O-ORIG")
 		versions.set_availability(doc.name, [row.name], "Alternative", note="Box of 3")
-		frappe.db.set_value("QS Enquiry Item", row.name, {"alternative_item": "_QS-O-ALT", "offered_rate": 180})
+		frappe.db.set_value(
+			"QS Enquiry Item", row.name, {"alternative_item": "_QS-O-ALT", "offered_rate": 180}
+		)
 		order = accept_and_order(doc.name, send_quote(doc.name).token)
 		lines = {r.item_code: r for r in frappe.get_doc("Sales Order", order).items}
 		self.assertEqual(sorted(lines), ["_QS-O-ALT", "_QS-O-KEEP"])
@@ -271,19 +311,30 @@ class TestOrderFixes(OrderTestCase):
 	def test_create_order_never_raises(self):
 		name = self.accepted("+919800000112")
 		errors = frappe.db.count("Error Log", {"method": "QuoteShop: Sales Order not created"})
-		with patch.object(orders, "_sales_order", side_effect=frappe.ValidationError("boom <b>")), patch("frappe.enqueue"):
+		with (
+			patch.object(orders, "_sales_order", side_effect=frappe.ValidationError("boom <b>")),
+			patch("frappe.enqueue"),
+		):
 			self.assertIsNone(orders.create_order(name, 1))
 		self.assertFalse(frappe.db.exists("Sales Order", {"qs_enquiry": name}))
 		self.assertFalse(frappe.db.get_value("QS Enquiry", name, "sales_order"))
-		self.assertEqual(frappe.db.count("Error Log", {"method": "QuoteShop: Sales Order not created"}), errors + 1)
-		comments = frappe.get_all(
-			"Comment", filters={"reference_doctype": "QS Enquiry", "reference_name": name, "comment_type": "Comment"}, pluck="content"
+		self.assertEqual(
+			frappe.db.count("Error Log", {"method": "QuoteShop: Sales Order not created"}), errors + 1
 		)
-		self.assertTrue(any("Sales Order could not be created" in c and "&lt;b&gt;" in c for c in comments), comments)
+		comments = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "QS Enquiry", "reference_name": name, "comment_type": "Comment"},
+			pluck="content",
+		)
+		self.assertTrue(
+			any("Sales Order could not be created" in c and "&lt;b&gt;" in c for c in comments), comments
+		)
 		# savepoint rollback: the Customer created before the failure is gone too
 		contact = frappe.db.get_value("QS Enquiry", name, "contact")
 		self.assertFalse(
-			frappe.db.exists("Dynamic Link", {"parenttype": "Contact", "parent": contact, "link_doctype": "Customer"})
+			frappe.db.exists(
+				"Dynamic Link", {"parenttype": "Contact", "parent": contact, "link_doctype": "Customer"}
+			)
 		)
 		self.assertEqual(frappe.db.get_value("QS Enquiry", name, "status"), "Accepted")
 
@@ -291,7 +342,10 @@ class TestOrderFixes(OrderTestCase):
 		manager = "qs-b-order-sm@example.com"
 		make_user(manager, ["Sales User", "Sales Manager"])
 		name = self.accepted("+919800000113")
-		with patch.object(orders, "_sales_order", side_effect=frappe.ValidationError("boom")), patch("frappe.enqueue"):
+		with (
+			patch.object(orders, "_sales_order", side_effect=frappe.ValidationError("boom")),
+			patch("frappe.enqueue"),
+		):
 			orders.create_order(name, 1)
 
 		with self.set_user(ASSIGNEE), self.assertRaises(frappe.PermissionError):
@@ -299,7 +353,10 @@ class TestOrderFixes(OrderTestCase):
 		with self.set_user(manager), patch("frappe.enqueue") as enqueue:
 			self.assertEqual(orders.retry_order(name), {"queued": True})
 		call = enqueue.call_args
-		self.assertEqual((call.args[0], call.kwargs["job_id"]), ("quoteshop.quoteshop_enquiry.orders.create_order", f"qs-order-{name}"))
+		self.assertEqual(
+			(call.args[0], call.kwargs["job_id"]),
+			("quoteshop.quoteshop_enquiry.orders.create_order", f"qs-order-{name}"),
+		)
 		self.assertEqual((call.kwargs["enquiry"], call.kwargs["version"]), (name, 1))
 
 		with patch("frappe.enqueue"):

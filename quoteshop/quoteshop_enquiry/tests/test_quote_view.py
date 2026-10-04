@@ -63,7 +63,9 @@ class TestGetQuoteView(QuoteViewTestCase):
 		doc, token = self.sent_quote()
 		view = self.as_guest(quote_view.get_quote_view, doc.name, token)
 		self.assertEqual((view["version"], view["status"], view["can_accept"]), (1, "Price Sent", True))
-		self.assertEqual({ln["item_code"]: ln["offered_qty"] for ln in view["lines"]}, {"_QS-Q-A": 3.0, "_QS-Q-B": 2.0})
+		self.assertEqual(
+			{ln["item_code"]: ln["offered_qty"] for ln in view["lines"]}, {"_QS-Q-A": 3.0, "_QS-Q-B": 2.0}
+		)
 		self.assertEqual(view["totals"]["total_offered"], 400.0)
 		self.assertNotIn("token_hash", str(view))
 
@@ -88,7 +90,7 @@ class TestGetQuoteView(QuoteViewTestCase):
 
 	def test_wrong_token_denied(self):
 		doc, _token = self.sent_quote()
-		other, other_token = self.sent_quote()
+		_other, other_token = self.sent_quote()
 		for name, token in (
 			(doc.name, "not-a-token"),
 			(doc.name, None),
@@ -155,7 +157,9 @@ class TestRequestChanges(QuoteViewTestCase):
 	def test_old_token_cannot_request_changes(self):
 		doc, token = self.sent_quote()
 		send_quote(doc.name)
-		result = self.as_guest(quote_view.request_changes, doc.name, token, [{"item_code": "_QS-Q-A", "qty": 1}])
+		result = self.as_guest(
+			quote_view.request_changes, doc.name, token, [{"item_code": "_QS-Q-A", "qty": 1}]
+		)
 		self.assertTrue(result["outdated"])
 		self.assertEqual(frappe.db.get_value("QS Enquiry", doc.name, "status"), "Price Sent")
 
@@ -190,7 +194,9 @@ class TestAcceptWebsite(QuoteViewTestCase):
 
 	def test_buyer_version_not_acceptable(self):
 		doc, token = self.sent_quote()
-		url = self.as_guest(quote_view.request_changes, doc.name, token, [{"item_code": "_QS-Q-A", "qty": 1}])["url"]
+		url = self.as_guest(
+			quote_view.request_changes, doc.name, token, [{"item_code": "_QS-Q-A", "qty": 1}]
+		)["url"]
 		with self.assertRaises(frappe.ValidationError):
 			self.as_guest(quote_view.accept_quote, doc.name, token_of(url))
 		self.assertEqual(frappe.db.get_value("QS Enquiry", doc.name, "status"), "Changes Requested")
@@ -216,7 +222,9 @@ class TestAcceptWhatsApp(QuoteViewTestCase):
 	"""Quick reply "Accept quote" correlated through reply_to_message_id → QS message log (CONTRACTS §4.3)."""
 
 	def outgoing(self, doc, version, wamid):
-		whatsapp.log_message(doc.name, version, "price_sent", "Outgoing", frappe._dict(message_id=wamid, name=None))
+		whatsapp.log_message(
+			doc.name, version, "price_sent", "Outgoing", frappe._dict(message_id=wamid, name=None)
+		)
 
 	def reply(self, to_wamid, sender, label="Accept quote"):
 		msg = frappe.get_doc(
@@ -282,7 +290,9 @@ class TestAcceptWhatsApp(QuoteViewTestCase):
 		with patch(WA_POST, return_value={"messages": [{"id": "wamid.TEST-OUTDATED"}]}):
 			whatsapp.send_message(**{k: job.kwargs[k] for k in ("enquiry", "event", "version", "url")})
 		wa_name = frappe.db.get_value(
-			"QS Enquiry Message", {"parent": doc.name, "event": "version_outdated", "direction": "Outgoing"}, "whatsapp_message"
+			"QS Enquiry Message",
+			{"parent": doc.name, "event": "version_outdated", "direction": "Outgoing"},
+			"whatsapp_message",
 		)
 		params = json.loads(frappe.db.get_value("WhatsApp Message", wa_name, "body_param"))
 		self.assertEqual(params["url"], versions.login_url(doc.name))
@@ -311,7 +321,11 @@ class TestDownloadQuote(QuoteViewTestCase):
 		try:
 			response = self.download(doc.name, token, "pdf")
 		except Exception as e:
-			if "wkhtmltopdf" in str(e).lower() or "ContentNotFoundError" in repr(e) or "HostNotFound" in str(e):
+			if (
+				"wkhtmltopdf" in str(e).lower()
+				or "ContentNotFoundError" in repr(e)
+				or "HostNotFound" in str(e)
+			):
 				self.skipTest(f"wkhtmltopdf cannot reach site assets without the web server: {e}")
 			raise
 		self.assertEqual(response.filename, f"{doc.name}-v1.pdf")
@@ -319,6 +333,14 @@ class TestDownloadQuote(QuoteViewTestCase):
 
 	def test_pdf_serves_stored_file(self):
 		"""CONTRACTS §10: the PDF already rendered for the WhatsApp message is served as is."""
+		from pypdf import PdfWriter
+
+		buffer = io.BytesIO()
+		writer = PdfWriter()
+		writer.add_blank_page(width=72, height=72)
+		writer.add_metadata({"/Title": "stored quote"})
+		writer.write(buffer)
+		stored = buffer.getvalue()
 		doc, token = self.sent_quote()
 		frappe.get_doc(
 			{
@@ -327,12 +349,12 @@ class TestDownloadQuote(QuoteViewTestCase):
 				"attached_to_doctype": "QS Enquiry",
 				"attached_to_name": doc.name,
 				"is_private": 0,
-				"content": b"%PDF-1.4 stored quote",
+				"content": stored,
 			}
 		).insert(ignore_permissions=True)
 		with patch.object(quote_view, "render_pdf", side_effect=AssertionError("re-rendered")):
 			response = self.download(doc.name, token, "pdf")
-		self.assertEqual(response.filecontent, b"%PDF-1.4 stored quote")
+		self.assertEqual(response.filecontent, stored)
 
 	def test_outdated_or_wrong_token_denied(self):
 		doc, token = self.sent_quote()

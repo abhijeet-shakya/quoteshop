@@ -53,7 +53,12 @@ class WhatsAppTestCase(EnquiryTestCase):
 	def setUp(self):
 		super().setUp()
 		link_wa_templates(
-			"otp", "enquiry_received_buyer", "enquiry_alert_sales", "price_sent", "changes_requested", "accepted"
+			"otp",
+			"enquiry_received_buyer",
+			"enquiry_alert_sales",
+			"price_sent",
+			"changes_requested",
+			"accepted",
 		)
 		self.ids = count(1)
 		patcher = patch(WA_POST, side_effect=self.fake_meta)
@@ -98,7 +103,9 @@ class TestOutgoing(WhatsAppTestCase):
 			(row.version, row.event, row.direction, row.message_id),
 			(0, "enquiry_received_buyer", "Outgoing", "wamid.TEST1"),
 		)
-		self.assertEqual(frappe.db.get_value("WhatsApp Message", row.whatsapp_message, "message_id"), "wamid.TEST1")
+		self.assertEqual(
+			frappe.db.get_value("WhatsApp Message", row.whatsapp_message, "message_id"), "wamid.TEST1"
+		)
 
 	def test_enquiry_alert_sales_once_to_assignee(self):
 		"""CRM-09: to the assignee's mobile; params ref, buyer_name, mobile, items, pcs."""
@@ -126,7 +133,9 @@ class TestOutgoing(WhatsAppTestCase):
 
 	def test_template_field_names_set_param_order(self):
 		make_wa_template("_qs_test_custom_order", field_names="ref, pcs ,buyer_name")
-		frappe.db.set_single_value("QS Enquiry Settings", "enquiry_received_buyer_template", "_qs_test_custom_order-en")
+		frappe.db.set_single_value(
+			"QS Enquiry Settings", "enquiry_received_buyer_template", "_qs_test_custom_order-en"
+		)
 		frappe.clear_document_cache("QS Enquiry Settings")
 		doc = make_quote(LINES, mobile=MOBILE)
 		whatsapp.send_message(doc.name, "enquiry_received_buyer", 0)
@@ -158,7 +167,10 @@ class TestOutgoing(WhatsAppTestCase):
 			self.assertEqual(call.kwargs["job_id"], f"qs-wa-{doc.name}-0-enquiry_received_buyer")
 			self.assertIs(call.kwargs["enqueue_after_commit"], True)
 			self.assertIs(call.kwargs["deduplicate"], True)
-			self.assertEqual((call.kwargs["enquiry"], call.kwargs["event"], call.kwargs["version"]), (doc.name, "enquiry_received_buyer", 0))
+			self.assertEqual(
+				(call.kwargs["enquiry"], call.kwargs["event"], call.kwargs["version"]),
+				(doc.name, "enquiry_received_buyer", 0),
+			)
 
 	def test_duplicate_event_single_message(self):
 		"""CRM-10: per-version dedupe; a new version of the same event is a new message."""
@@ -200,8 +212,16 @@ class TestIncomingQuickReply(WhatsAppTestCase):
 		(row,) = self.log(self.doc.name, event="price_sent")
 		self.price_sent_id = row.message_id
 
-	def deliver(self, label="Accept quote", sender=MOBILE.lstrip("+"), reply_to=None, message_id="wamid.IN1", kind="button"):
+	def deliver(
+		self,
+		label="Accept quote",
+		sender=None,
+		reply_to=None,
+		message_id="wamid.IN1",
+		kind="button",
+	):
 		"""Run the webhook; returns the frappe.enqueue mock (hook jobs are not run)."""
+		sender = sender or MOBILE.lstrip("+")
 		frappe.local.form_dict = frappe._dict(
 			wa_incoming_payload(sender, reply_to or self.price_sent_id, message_id, label, kind)
 		)
@@ -230,20 +250,26 @@ class TestIncomingQuickReply(WhatsAppTestCase):
 		(job,) = self.reply_jobs(enqueue)
 		self.assertEqual(job.kwargs["job_id"], "qs-wa-in-wamid.IN1")
 		self.assertIs(job.kwargs["enqueue_after_commit"], True)
-		self.assertEqual(frappe.db.get_value("WhatsApp Message", job.kwargs["message"], "reply_to_message_id"), self.price_sent_id)
+		self.assertEqual(
+			frappe.db.get_value("WhatsApp Message", job.kwargs["message"], "reply_to_message_id"),
+			self.price_sent_id,
+		)
 
 	def test_button_label_maps_to_accept(self):
 		jobs = self.run_reply(self.deliver("Accept quote"))
 		self.assertEqual(self.status(), "Accepted")
 		version = frappe.get_all(
-			"QS Enquiry Version", filters={"parent": self.doc.name, "version": 1}, fields=["accepted_via", "accepted_on"]
+			"QS Enquiry Version",
+			filters={"parent": self.doc.name, "version": 1},
+			fields=["accepted_via", "accepted_on"],
 		)[0]
 		self.assertEqual(version.accepted_via, "WhatsApp")
 		self.assertTrue(version.accepted_on)
 		orders = job_calls(jobs, ORDER_JOB)
 		self.assertEqual([c.kwargs["job_id"] for c in orders], [f"qs-order-{self.doc.name}"])
 		self.assertEqual(
-			[(r.direction, r.message_id) for r in self.log(self.doc.name, direction="Incoming")], [("Incoming", "wamid.IN1")]
+			[(r.direction, r.message_id) for r in self.log(self.doc.name, direction="Incoming")],
+			[("Incoming", "wamid.IN1")],
 		)
 
 	def test_button_label_maps_to_request_changes(self):
@@ -252,7 +278,9 @@ class TestIncomingQuickReply(WhatsAppTestCase):
 		self.assertEqual(frappe.db.get_value("CRM Deal", self.doc.crm_deal, "status"), "Changes Requested")
 		events = [c.kwargs.get("event") for c in job_calls(jobs, SEND_JOB)]
 		self.assertEqual(events, ["changes_requested"])
-		self.assertEqual(len(self.log(self.doc.name, direction="Incoming")), 1)  # reply kept in the message log
+		self.assertEqual(
+			len(self.log(self.doc.name, direction="Incoming")), 1
+		)  # reply kept in the message log
 
 	def test_unknown_label_logged_no_action(self):
 		self.run_reply(self.deliver("Call me"))

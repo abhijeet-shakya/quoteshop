@@ -31,6 +31,11 @@ CHANGEABLE_STATUSES = ("Price Sent", "Changes Requested")
 @rate_limit(limit=300, seconds=3600)
 def get_quote_view(name: str, token: str | None = None) -> dict:
 	"""Latest version for /q; an old or expired link returns {"outdated": True}."""
+	return quote_view(name, token)
+
+
+def quote_view(name: str, token: str | None = None) -> dict:
+	"""get_quote_view without the rate limit (the /q page render must not count against it)."""
 	doc, row, current = resolve(name, token)
 	if not current:
 		return _outdated(doc)
@@ -41,14 +46,14 @@ def get_quote_view(name: str, token: str | None = None) -> dict:
 @rate_limit(limit=20, seconds=3600)
 def request_changes(name: str, token: str | None, items: list | str) -> dict:
 	"""Buyer changes quantities / removes / adds published items (never prices) → new Buyer version."""
-	from quoteshop.quoteshop_enquiry.api import build_lines
+	from quoteshop.quoteshop_enquiry.api import build_lines, parse_json_arg
 
 	doc, row, current = resolve(name, token, for_update=True)
 	if not current:
 		return _outdated(doc)
 	if doc.status not in CHANGEABLE_STATUSES:
 		frappe.throw(_("This quote can no longer be changed."))
-	items = frappe.parse_json(items) if isinstance(items, str) else items
+	items = parse_json_arg(items)
 
 	versions.set_items_from_version(doc, row)
 	quoted = {

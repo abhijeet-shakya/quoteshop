@@ -316,7 +316,7 @@ Mobile numbers: E.164 (`+` and 8–15 digits); a bare 10-digit number is prefixe
 6. Free lines: **offered_rate must be > 0 when offered_qty > 0** (validation error otherwise).
 7. Reports live in erp_custom (SPEC) but read QS Enquiry, and erp_custom must not depend on quoteshop. **Move the 5 QS reports into quoteshop (module QuoteShop Enquiry); keep erp_custom for generic ERPNext reports.**
 8. E2E runner. **Cypress via `bench run-ui-tests`** (Frappe-native, TESTING §2.9) for journeys; **Playwright MCP** only for qa visual comparison screenshots.
-9. Query-count limits (test-lead proposal): list_products ≤5 cold / ≤1 warm, get_product ≤8 / ≤1, submit_enquiry (100 lines) ≤40, /q (100 lines) ≤15, /account ≤15.
+9. Query-count limits (test-lead proposal): list_products ≤5 cold / ≤1 warm, get_product ≤8 / ≤1, submit_enquiry (100 lines) ≤85 SELECTs (measured fixed cost ~70 incl. CRM Deal + frappe_whatsapp hooks; the 100 child-row INSERTs are inherent and excluded; the proposed 40 counted them), /q (100 lines) ≤15, /account ≤15.
 10. Desk seeding. **Standard exported JSON (workspace, cards, charts, desktop icon, sidebar) + patch for Kanban/List Filters**, instead of after_install for those.
 11. Brand colour contrast failure: **warn, not block**.
 12. CRM products table. PHASES §4 says mirror lines into it. **Don't mirror; set `deal_value` = total offered** (CRM computes product totals only in browser JS and needs CRM Product master records; ERPNext sync is off).

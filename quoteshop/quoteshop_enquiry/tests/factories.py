@@ -422,7 +422,7 @@ def make_otp_token(mobile=DEFAULT_MOBILE):
 
 # --- phases 3-4: enquiry APIs, OTP, CRM, WhatsApp (test-lead A, appended) ----------------------------
 
-from frappe.tests import IntegrationTestCase  # noqa: E402
+from frappe.tests import IntegrationTestCase
 
 WA_ACCOUNT = "_QS Test WhatsApp"
 WA_PHONE_ID = "_qs_test_phone_id"
@@ -492,7 +492,9 @@ def link_wa_templates(*events, **field_names):
 	make_wa_account()
 	doc = frappe.get_doc("QS Enquiry Settings")
 	for event in events:
-		doc.set(f"{event}_template", make_wa_template(f"_qs_test_{event}", field_names=field_names.get(event)))
+		doc.set(
+			f"{event}_template", make_wa_template(f"_qs_test_{event}", field_names=field_names.get(event))
+		)
 	doc.save(ignore_permissions=True)
 	return doc
 
@@ -629,3 +631,94 @@ class EnquiryTestCase(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		frappe.db.rollback(save_point=SAVEPOINT_A)
 		clear_qs_redis()
+
+
+# --- phase 8: report dataset (test-lead B, appended) -------------------------------------------------
+
+REPORT_DAY = "2026-03-16"
+REPORT_SALES_1 = "qs-b-report-sales-1@example.com"
+REPORT_SALES_2 = "qs-b-report-sales-2@example.com"
+
+
+def make_report_dataset():
+	"""Known dataset for the 5 reports, all created on REPORT_DAY (filter from/to = that day).
+
+	E1 S1 Retailer Accepted (SO submitted): A 4 x 250 → 225, B 2 x 100 → 90   listed 1200 offered 1080
+	E2 S2 Club     Accepted (SO submitted): A 1 x 250 → 200, C 3 Not Available listed  250 offered  200
+	E3 S1 Retailer Lost "Too expensive":   A 1 x 250,       C 5 Not Available           offered  250
+	E4 S2 Club     Lost "Too expensive":   D 2 x 30                                      offered   60
+	E5 S1 Retailer Requested:              C 2 Not Available, D 1 x 30
+	"""
+	from unittest.mock import patch
+
+	from frappe.tests.classes.context_managers import freeze_time
+
+	from quoteshop.quoteshop_enquiry import versions
+
+	make_user(REPORT_SALES_1, ["Sales User"])
+	make_user(REPORT_SALES_2, ["Sales User"])
+	make_fiscal_year(REPORT_DAY)
+	store = make_order_settings(auto_submit_sales_order=1)
+	make_enquiry_settings(buyer_types=[{"label": "Retailer"}, {"label": "Club"}])
+
+	def quote(mobile, owner, buyer_type, lines, discount=None, not_available=()):
+		doc = make_quote(
+			[{"item_code": c, "requested_qty": q, "listed_rate": r} for c, q, r in lines],
+			mobile=mobile,
+			assigned_to=owner,
+			buyer_type=buyer_type,
+		)
+		for code in not_available:
+			row = next(r for r in doc.items if r.item_code == code)
+			versions.set_availability(doc.name, [row.name], "Not Available")
+		if discount:
+			versions.apply_discount(doc.name, discount, "all")
+		return doc.name
+
+	data = frappe._dict(
+		day=REPORT_DAY, company=store.default_company, sales_1=REPORT_SALES_1, sales_2=REPORT_SALES_2
+	)
+	# tick=True: a fully frozen clock makes Sales Order submit fail check_if_latest (same `modified`)
+	with freeze_time(f"{REPORT_DAY} 11:00:00", tick=True), patch("frappe.enqueue"):
+		data.e1 = quote(
+			"+919800000301", REPORT_SALES_1, "Retailer", [("_QS-REP-A", 4, 250), ("_QS-REP-B", 2, 100)], 10
+		)
+		data.so1 = accept_and_order(data.e1, send_quote(data.e1).token)
+		data.e2 = quote(
+			"+919800000302",
+			REPORT_SALES_2,
+			"Club",
+			[("_QS-REP-A", 1, 250), ("_QS-REP-C", 3, 40)],
+			20,
+			["_QS-REP-C"],
+		)
+		data.so2 = accept_and_order(data.e2, send_quote(data.e2).token)
+		if not (data.so1 and data.so2):
+			frappe.throw(
+				"report dataset: Sales Order not created (see Error Log 'QuoteShop: Sales Order not created')"
+			)
+		data.e3 = quote(
+			"+919800000303",
+			REPORT_SALES_1,
+			"Retailer",
+			[("_QS-REP-A", 1, 250), ("_QS-REP-C", 5, 40)],
+			None,
+			["_QS-REP-C"],
+		)
+		send_quote(data.e3)
+		versions.mark_lost(data.e3, "Too expensive")
+		data.e4 = quote("+919800000304", REPORT_SALES_2, "Club", [("_QS-REP-D", 2, 30)])
+		versions.mark_lost(data.e4, "Too expensive")
+		data.e5 = quote(
+			"+919800000305",
+			REPORT_SALES_1,
+			"Retailer",
+			[("_QS-REP-C", 2, 40), ("_QS-REP-D", 1, 30)],
+			None,
+			["_QS-REP-C"],
+		)
+	return data
+
+
+def report_filters(data, **extra):
+	return frappe._dict({"from_date": data.day, "to_date": data.day, "company": data.company, **extra})

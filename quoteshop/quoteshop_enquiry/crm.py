@@ -6,6 +6,8 @@ from frappe import _
 
 def create_deal(enquiry_doc) -> str:
 	"""Insert the CRM Deal for a new enquiry; store `crm_deal` and the resolved assignee on the enquiry."""
+	if existing := enquiry_doc.crm_deal or frappe.db.get_value("CRM Deal", {"qs_enquiry": enquiry_doc.name}):
+		return existing  # idempotent: a re-run never creates a second Deal
 	deal = frappe.new_doc("CRM Deal")
 	deal.update(
 		{
