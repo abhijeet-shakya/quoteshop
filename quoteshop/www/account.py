@@ -1,10 +1,17 @@
+import re
+from urllib.parse import urlencode
+
 import frappe
 from frappe import _
 from frappe.utils import cint, flt, fmt_money, formatdate, get_fullname, getdate
 
+from quoteshop.quoteshop_enquiry.portal import get_account_data
 from quoteshop.quoteshop_website.context import setup
 
 no_cache = 1
+# Only these internal pages may follow sign-in; fullmatch rules out schemes, hosts, backslashes,
+# control characters and trailing newlines. Keep in sync with SAFE_NEXT in public/js/qs/account.js.
+SAFE_NEXT = re.compile(r"/quote|/account|/q/[A-Za-z0-9-]+(\?t=[A-Za-z0-9_-]+)?")
 
 
 def money(value, currency="INR"):
@@ -16,19 +23,19 @@ def date(value):
 	return formatdate(getdate(value), "d MMM yyyy") if value else ""
 
 
-def get_context(context):
+def safe_next(url: str | None) -> str:
+	"""`?next=` target after sign-in: an allow-listed internal path, else /account."""
+	return url if isinstance(url, str) and SAFE_NEXT.fullmatch(url) else "/account"
+
+
+def get_context(context: dict) -> dict:
 	qs = setup(context, "account", title=_("My account"))
 	context.guest = frappe.session.user == "Guest"
-	nxt = frappe.form_dict.get("next") or ""
-	context.next_url = nxt if nxt.startswith("/") and not nxt.startswith("//") else "/account"
+	context.next_url = safe_next(frappe.form_dict.get("next"))
 	if context.guest:
 		return context
 
-	try:
-		get_account_data = frappe.get_attr("quoteshop.quoteshop_enquiry.portal.get_account_data")
-	except ImportError, AttributeError:
-		get_account_data = None  # ponytail: backend phase 7 not deployed yet → empty account
-	data = frappe._dict(get_account_data() if get_account_data else {})
+	data = frappe._dict(get_account_data())
 	show_savings = cint(frappe.get_cached_doc("QS Store Settings").show_savings_to_buyer)
 
 	orders = [order_view(frappe._dict(o), show_savings) for o in data.orders or []]
@@ -86,7 +93,8 @@ def order_view(o, show_savings):
 			)
 			for l in lines
 		],
-		pdf_url=f"/api/method/frappe.utils.print_format.download_pdf?doctype=Sales%20Order&name={o.name}",
+		pdf_url="/api/method/frappe.utils.print_format.download_pdf?"
+		+ urlencode({"doctype": "Sales Order", "name": o.name}),
 	)
 
 

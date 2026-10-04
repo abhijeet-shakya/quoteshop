@@ -2,6 +2,7 @@
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.rate_limiter import rate_limit
 from frappe.utils import flt
 from frappe.utils.xlsxutils import make_xlsx
@@ -59,6 +60,7 @@ def request_changes(name: str, token: str | None, items: list | str) -> dict:
 	lines += [{**line, "change_flag": "Removed"} for code, line in quoted.items() if code not in wanted]
 	doc.set("items", lines)
 	doc.status = "Changes Requested"
+	doc.flags.qs_status_change = True
 	raw = versions.create_version(doc, "Buyer")
 	doc.save(ignore_permissions=True)
 	crm.sync_deal_status(doc)
@@ -85,7 +87,9 @@ def download_quote(name: str, token: str | None = None, format: str = "pdf") -> 
 	if not current:
 		frappe.throw(_("This link is outdated. Please open the latest quote."))
 	if format == "pdf":
-		content, extension = render_pdf(doc, row), "pdf"
+		stored = whatsapp.stored_quote_pdf(doc.name, row.version)
+		content = frappe.get_doc("File", stored).get_content(encodings=[]) if stored else render_pdf(doc, row)
+		extension = "pdf"
 	elif format == "xlsx":
 		content, extension = render_xlsx(doc, row), "xlsx"
 	else:
@@ -95,7 +99,7 @@ def download_quote(name: str, token: str | None = None, format: str = "pdf") -> 
 	)
 
 
-def resolve(name, token, for_update: bool = False):
+def resolve(name: str, token: str | None, for_update: bool = False) -> tuple[Document, Document, bool]:
 	"""(enquiry, version matched by token, is it the open latest version). Invalid link → PermissionError."""
 	if not isinstance(name, str) or not frappe.db.exists("QS Enquiry", name):
 		_deny()
@@ -119,7 +123,7 @@ def resolve(name, token, for_update: bool = False):
 	return doc, row, current
 
 
-def view_data(doc, row) -> dict:
+def view_data(doc: Document, row: Document) -> dict:
 	data = versions.snapshot(row)
 	totals = data["totals"]
 	show_savings = frappe.get_cached_doc("QS Store Settings").show_savings_to_buyer
@@ -274,8 +278,13 @@ def _is_buyer(doc) -> bool:
 
 
 def _outdated(doc) -> dict:
-	# raw tokens are never stored, so the current link can't be rebuilt here; the buyer has it on WhatsApp
-	return {"outdated": True, "url": None, "current_version": doc.current_version, "status": doc.status}
+	# raw tokens are never stored, so the current tokenised link can't be rebuilt; offer sign-in instead
+	return {
+		"outdated": True,
+		"url": versions.login_url(doc.name),
+		"current_version": doc.current_version,
+		"status": doc.status,
+	}
 
 
 def _deny():

@@ -1,0 +1,24 @@
+[d-light] chip filter -> http://quoteshop.localhost:8008/c/pool-tables OK
+[d-light] search 'cue' -> http://quoteshop.localhost:8008/search?q=cue results=2
+[d-light] added 3 items, quote badge=3
+[d-light] /quote rows=3
+[d-light] after Send: otpInputVisible=true sendLabel="Verify and send" error=""
+[d-light] pageerrors=none
+[d-dark] chip filter -> http://quoteshop.localhost:8008/c/pool-tables OK
+[d-dark] search 'cue' -> http://quoteshop.localhost:8008/search?q=cue results=2
+[d-dark] added 3 items, quote badge=3
+[d-dark] /quote rows=3
+[d-dark] after Send: otpInputVisible=true sendLabel="Verify and send" error=""
+[d-dark] pageerrors=none
+[m-light] chip filter -> http://quoteshop.localhost:8008/c/pool-tables OK
+[m-light] search 'cue' -> http://quoteshop.localhost:8008/search?q=cue results=2
+[m-light] added 3 items, quote badge=3
+[m-light] /quote rows=3
+[m-light] after Send: otpInputVisible=true sendLabel="Verify and send" error=""
+[m-light] pageerrors=none
+[m-dark] chip filter -> http://quoteshop.localhost:8008/c/pool-tables OK
+[m-dark] search 'cue' -> http://quoteshop.localhost:8008/search?q=cue results=2
+[m-dark] added 3 items, quote badge=3
+[m-dark] /quote rows=3
+[m-dark] after Send: otpInputVisible=true sendLabel="Verify and send" error=""
+[m-dark] pageerrors=none

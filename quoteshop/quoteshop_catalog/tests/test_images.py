@@ -171,6 +171,7 @@ class TestIdempotent(ImageTestCase):
 		generate()
 		(row,) = rows()
 		new = make_photo(ITEM, 2400, 1200, color=(30, 30, 200), stem="_qs_img_new")
+		frappe.db.delete("QS Item Photo", new.row)  # only the new source File is needed, not a 2nd row
 		frappe.db.set_value("QS Item Photo", row["name"], "image", new.file_url)
 		self.assertNotEqual(old.sha1, new.sha1)
 
@@ -189,6 +190,7 @@ class TestIdempotent(ImageTestCase):
 		row_a_before, row_b = rows()
 		files_a_before = [f for f in webp_files() if f.file_url in {row_a_before[c] for c in SIZES}]
 		new = make_photo(ITEM, 2400, 1200, color=(200, 200, 10), stem="_qs_img_c")
+		frappe.db.delete("QS Item Photo", new.row)  # only the new source File is needed, not a 3rd row
 		frappe.db.set_value("QS Item Photo", row_b["name"], "image", new.file_url)
 
 		generate()

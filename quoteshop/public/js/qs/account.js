@@ -1,5 +1,9 @@
 // /account – WhatsApp OTP sign-in (guest), tabs, expandable orders, reorder into the quote list.
+import { __ } from "./i18n.js";
 import { call, fillQuote, normaliseMobile } from "./quote.js";
+
+// Same allow-list as SAFE_NEXT in www/account.py (re-checked here before navigating).
+const SAFE_NEXT = /^(\/quote|\/account|\/q\/[A-Za-z0-9-]+(\?t=[A-Za-z0-9_-]+)?)$/;
 
 export function init() {
 	const root = document.querySelector("[data-qs-account]");
@@ -21,7 +25,7 @@ export function init() {
 		loginBtn.addEventListener("click", async () => {
 			errEl.hidden = true;
 			const mobile = normaliseMobile(mobileEl.value);
-			if (!mobile) return fail("Please enter a valid WhatsApp number.", mobileEl);
+			if (!mobile) return fail(__("Please enter a valid WhatsApp number."), mobileEl);
 			loginBtn.disabled = true;
 			try {
 				if (sentTo !== mobile) {
@@ -33,10 +37,10 @@ export function init() {
 					otpEl.focus();
 				} else {
 					const otp = otpEl.value.replace(/\D/g, "");
-					if (otp.length !== 6) throw Object.assign(new Error("Please enter the 6-digit code."), { field: otpEl });
+					if (otp.length !== 6) throw Object.assign(new Error(__("Please enter the 6-digit code.")), { field: otpEl });
 					const { otp_token } = await call("api.verify_otp", { mobile, otp });
 					const r = await call("portal.portal_login", { mobile, otp_token });
-					location.href = root.dataset.next !== "/account" ? root.dataset.next : r?.redirect || "/account";
+					location.href = [root.dataset.next, r?.redirect].find((u) => u !== "/account" && SAFE_NEXT.test(u || "")) || "/account";
 					return;
 				}
 			} catch (e) {

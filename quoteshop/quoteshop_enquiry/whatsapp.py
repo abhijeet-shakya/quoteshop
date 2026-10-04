@@ -7,6 +7,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.model.document import Document
 from frappe.utils import fmt_money, formatdate, get_url, now_datetime
 
 from quoteshop.quoteshop_enquiry.tokens import hash_token
@@ -34,7 +35,7 @@ DEFAULT_PARAMS = {
 	),
 	"accepted": ("buyer_name", "ref", "version", "sales_order"),
 	"changes_requested": ("ref", "buyer_name", "version", "url"),
-	"version_outdated": ("buyer_name", "ref", "version", "current_version"),
+	"version_outdated": ("buyer_name", "ref", "version", "current_version", "url"),
 }
 
 
@@ -60,25 +61,30 @@ def send_otp_message(mobile: str, code: str) -> None:
 	_insert_message(mobile, "otp", {"otp": code})
 
 
-def queue_message(enquiry: str, event: str, version: int | None = None, url: str | None = None) -> None:
-	"""Enqueue `send_message` after commit, at most once per (enquiry, version, event)."""
+def queue_message(
+	enquiry: str, event: str, version: int | None = None, url: str | None = None, resend: bool = False
+) -> None:
+	"""Enqueue `send_message` after commit, at most once per (enquiry, version, event) unless `resend`."""
 	if version is None:
 		version = frappe.db.get_value("QS Enquiry", enquiry, "current_version") or 0
 	frappe.enqueue(
 		"quoteshop.quoteshop_enquiry.whatsapp.send_message",
 		queue="short",
 		enqueue_after_commit=True,
-		job_id=f"qs-wa-{enquiry}-{version}-{event}",
+		job_id=f"qs-wa-{enquiry}-{version}-{event}" + ("-resend" if resend else ""),
 		deduplicate=True,
 		enquiry=enquiry,
 		event=event,
 		version=version,
 		url=url,
+		resend=resend,
 	)
 
 
-def send_message(enquiry: str, event: str, version: int, url: str | None = None) -> None:
-	"""Job: send the event's template once and log its message_id. Not retried (CONTRACTS §4.1)."""
+def send_message(
+	enquiry: str, event: str, version: int, url: str | None = None, resend: bool = False
+) -> None:
+	"""Job: send the event's template once (again if `resend`) and log its message_id. Not retried (§4.1)."""
 	if not _template_name(event):
 		frappe.log_error(
 			title=f"QuoteShop: no WhatsApp template for {event}",
@@ -87,7 +93,7 @@ def send_message(enquiry: str, event: str, version: int, url: str | None = None)
 			reference_name=enquiry,
 		)
 		return
-	if frappe.db.exists(
+	if not resend and frappe.db.exists(
 		"QS Enquiry Message",
 		{
 			"parenttype": "QS Enquiry",
@@ -116,7 +122,7 @@ def send_message(enquiry: str, event: str, version: int, url: str | None = None)
 	log_message(enquiry, version, event, "Outgoing", message)
 
 
-def on_whatsapp_message(doc, method=None) -> None:
+def on_whatsapp_message(doc: Document, method: str | None = None) -> None:
 	"""WhatsApp Message after_insert: queue quick-reply handling for replies to QS messages. Never raises."""
 	try:
 		if (
@@ -183,6 +189,7 @@ def handle_reply(message: str) -> None:
 	if doc.status == "Price Sent" and latest.version == sent.version and versions.is_open(doc, latest):
 		versions.set_items_from_version(doc, latest)
 		doc.status = "Changes Requested"
+		doc.flags.qs_status_change = True
 		doc.save(ignore_permissions=True)
 		crm.sync_deal_status(doc)
 		queue_message(doc.name, "changes_requested", sent.version)
@@ -251,8 +258,11 @@ def _params(doc, event: str, version: int, url: str | None) -> dict:
 		"partial": str(totals["partial_count"]),
 		"not_available": str(totals["not_available_count"]),
 		"valid_till": formatdate(totals["valid_till"]) if totals.get("valid_till") else "",
-		# sales get the desk link; buyer links carry a token and are passed in explicitly
-		"url": url or get_url(f"/app/qs-enquiry/{doc.name}" if event in SALES_EVENTS else f"/q/{doc.name}"),
+		# sales get the desk link; tokenised buyer links are passed in, else the sign-in link
+		"url": url
+		or (
+			get_url(f"/app/qs-enquiry/{doc.name}") if event in SALES_EVENTS else versions.login_url(doc.name)
+		),
 		"sales_order": doc.sales_order or "",
 	}
 
@@ -271,10 +281,28 @@ def _recipient(doc, event: str) -> str | None:
 		return None
 
 
+def stored_quote_pdf(enquiry: str, version: int) -> str | None:
+	"""Name of the File already rendered for this version by `_quote_pdf`, if any."""
+	files = frappe.get_all(
+		"File",
+		filters={
+			"attached_to_doctype": "QS Enquiry",
+			"attached_to_name": enquiry,
+			"file_name": ("like", f"{enquiry}-v{version}-%.pdf"),
+		},
+		order_by="creation desc",
+		limit=1,
+		pluck="name",
+	)
+	return files[0] if files else None
+
+
 def _quote_pdf(doc, version: int) -> str:
-	"""Public PDF of the version (unguessable file name, CONTRACTS §5.6)."""
+	"""Public PDF of the version (unguessable file name, CONTRACTS §5.6), rendered once per version."""
 	from quoteshop.quoteshop_enquiry.quote_view import render_pdf
 
+	if stored := stored_quote_pdf(doc.name, version):
+		return frappe.db.get_value("File", stored, "file_url")
 	row = next(v for v in doc.versions if v.version == version)
 	file = frappe.get_doc(
 		{

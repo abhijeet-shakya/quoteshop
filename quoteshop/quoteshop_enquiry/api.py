@@ -1,5 +1,6 @@
 """Phase 3 guest APIs: quote list, paste import, OTP and enquiry submission (CONTRACTS §7.2)."""
 
+import math
 import re
 
 import frappe
@@ -11,7 +12,11 @@ from quoteshop.quoteshop_enquiry import crm, whatsapp
 from quoteshop.quoteshop_enquiry import otp as otp_service
 
 MAX_LINES = 500
-PASTE_LINE = re.compile(r"^\s*(.+?)\s*[\t,; ]\s*([0-9]+(?:\.[0-9]+)?)\s*$")
+MAX_QTY = 100_000
+MAX_PASTE_BYTES = 50 * 1024
+MAX_PASTE_LINE = 200
+# split, never backtrack: a "name<sep>qty" regex was quadratic on long separator runs (ReDoS)
+PASTE_SEPARATORS = re.compile(r"[\t,; ]+")
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
@@ -29,17 +34,24 @@ def parse_quote_paste(text: str) -> dict:
 	"""Match "<code or exact name><tab|,|;|space><qty>" lines against published items."""
 	if not isinstance(text, str):
 		frappe.throw(_("Paste text is required."))
+	if len(text.encode()) > MAX_PASTE_BYTES:
+		frappe.throw(_("Paste at most {0} KB of text.").format(MAX_PASTE_BYTES // 1024))
 	lines = [line for line in text.splitlines() if line.strip()]
 	if len(lines) > MAX_LINES:
 		frappe.throw(_("Paste at most {0} lines.").format(MAX_LINES))
 
 	parsed, unmatched = [], []
 	for line in lines:
-		match = PASTE_LINE.match(line)
-		if not match or flt(match[2]) <= 0:
+		if len(line) > MAX_PASTE_LINE:
+			unmatched.append({"line": line[:MAX_PASTE_LINE] + "…", "reason": _("Line too long")})
+			continue
+		*name, qty = PASTE_SEPARATORS.split(line.strip())
+		qty = _paste_qty(qty)
+		key = " ".join(name).strip("\"'")
+		if not key or not qty:
 			unmatched.append({"line": line, "reason": _("Expected item code or name followed by a quantity")})
 		else:
-			parsed.append((line, match[1].strip().strip("\"'"), flt(match[2])))
+			parsed.append((line, key, qty))
 
 	keys = list({key for _line, key, _qty in parsed})
 	found = (
@@ -79,6 +91,7 @@ def send_otp(mobile: str) -> dict:
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(key="mobile", ip_based=False, limit=10, seconds=3600)
 @rate_limit(limit=30, seconds=3600)
 def verify_otp(mobile: str, otp: str) -> dict:
 	"""Verify the code; the returned otp_token proves the number for 30 minutes."""
@@ -139,6 +152,8 @@ def build_lines(items, existing: dict | None = None) -> list[dict]:
 	`existing` (item_code -> row dict) keeps already-quoted rows and only updates their quantity."""
 	if not isinstance(items, list) or not items:
 		frappe.throw(_("Add at least one item."))
+	if len(items) > MAX_LINES:
+		frappe.throw(_("A quote can have at most {0} items.").format(MAX_LINES))
 	qty_by_code: dict[str, float] = {}
 	for row in items:
 		if not isinstance(row, dict) or set(row) - {"item_code", "qty"}:
@@ -146,9 +161,10 @@ def build_lines(items, existing: dict | None = None) -> list[dict]:
 		code = row.get("item_code")
 		if not isinstance(code, str) or not code:
 			frappe.throw(_("Item code is required."))
-		qty_by_code[code] = qty_by_code.get(code, 0) + flt(row.get("qty"))
-	if len(qty_by_code) > MAX_LINES:
-		frappe.throw(_("A quote can have at most {0} items.").format(MAX_LINES))
+		qty = qty_by_code.get(code, 0) + flt(row.get("qty"))
+		if not math.isfinite(qty) or qty > MAX_QTY:
+			frappe.throw(_("Quantity for {0} must be a number up to {1}.").format(code, MAX_QTY))
+		qty_by_code[code] = qty
 
 	existing = existing or {}
 	items_meta = {
@@ -344,6 +360,15 @@ def _text(value, max_length: int) -> str | None:
 	if not isinstance(value, str | int | float):
 		frappe.throw(_("Invalid value."))
 	return str(value).strip()[:max_length] or None
+
+
+def _paste_qty(value: str) -> float | None:
+	"""A positive, finite quantity up to MAX_QTY, else None."""
+	try:
+		qty = float(value)
+	except ValueError:
+		return None
+	return qty if math.isfinite(qty) and 0 < qty <= MAX_QTY else None
 
 
 def _min_qty(value) -> int:

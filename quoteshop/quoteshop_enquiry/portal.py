@@ -8,6 +8,7 @@ from frappe.utils import flt
 from quoteshop.quoteshop_enquiry import otp
 from quoteshop.quoteshop_enquiry.api import find_or_create_contact
 
+BUYER_DOMAIN = "@buyers.invalid"  # users QuoteShop creates for OTP login
 REQUEST_FIELDS = [
 	"name",
 	"status",
@@ -33,7 +34,13 @@ def portal_login(mobile: str, otp_token: str) -> dict:
 		frappe.throw(_("Please verify your mobile number again."), frappe.AuthenticationError)
 
 	contact = frappe.get_doc("Contact", find_or_create_contact(mobile, mobile))
-	user = contact.user or f"{mobile.lstrip('+')}@buyers.invalid"
+	if contact.user and not contact.user.endswith(BUYER_DOMAIN):
+		# an account QuoteShop didn't create (e.g. an ERPNext portal user) keeps its own sign-in
+		frappe.throw(
+			_("This number belongs to an existing account. Please sign in with your email and password."),
+			frappe.AuthenticationError,
+		)
+	user = contact.user or f"{mobile.lstrip('+')}{BUYER_DOMAIN}"
 	user_type = frappe.db.get_value("User", user, "user_type")
 	if user_type is None:
 		frappe.get_doc(

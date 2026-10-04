@@ -139,14 +139,16 @@ SALES_ORDER = [  # A3
 	)
 ]
 
-CRM_DEAL = [  # A5, one section, all ro; the map gives no section label ("" below, label ignored)
+CRM_DEAL = [  # A5, one section; the map gives no section label ("" below, label ignored)
+	# qs_open_quote is NOT read-only (CRM hides read-only valueless fields) and shows only with an enquiry
+	# (CONTRACTS §6.6).
 	(
 		"Storefront",
 		[
 			(
 				"",
 				[
-					["qs_enquiry Link:QS Enquiry ro idx", "qs_open_quote HTML ro"],
+					["qs_enquiry Link:QS Enquiry ro idx", "qs_open_quote HTML ↓qs_enquiry"],
 					["qs_buyer_type Data ro"],
 					["qs_version Int ro"],
 				],

@@ -1,8 +1,8 @@
 {%- from "quoteshop/templates/qs/icons.html" import icon -%}
-{%- set tabs = [("home", "/", "Home"), ("browse", "/search", "Browse"), ("quote", "/quote", "Quotes"), ("account", "/account", "Account")] -%}
+{%- set tabs = [("home", "/", _("Home")), ("browse", "/search", _("Browse")), ("quote", "/quote", _("Quotes")), ("account", "/account", _("Account"))] -%}
 {%- set active = {"home": "home", "category": "browse", "search": "browse", "quote": "quote", "quote_view": "quote", "account": "account"}.get(qs.page) -%}
-<nav class="qs-tabs qs-only-m" aria-label="Sections">
+<nav class="qs-tabs qs-only-m" aria-label="{{ _('Sections')|e }}">
 	{%- for key, href, label in tabs %}
-	<a href="{{ href }}" class="qs-tab"{% if key == active %} aria-current="page"{% endif %}><span class="qs-tab-i">{{ icon(key) }}</span>{{ label }}</a>
+	<a href="{{ href }}" class="qs-tab"{% if key == active %} aria-current="page"{% endif %}><span class="qs-tab-i">{{ icon(key) }}</span>{{ label|e }}</a>
 	{%- endfor %}
 </nav>

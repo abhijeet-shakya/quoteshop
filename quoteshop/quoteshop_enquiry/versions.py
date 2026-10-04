@@ -142,12 +142,28 @@ def send_price(name: str) -> dict:
 	"""New Sales version, status Price Sent, PDF + price_sent WhatsApp enqueued."""
 	doc = _get_for_edit(name)
 	doc.status = "Price Sent"
+	doc.flags.qs_status_change = True
 	raw = create_version(doc, "Sales")
 	doc.save()
 	crm.sync_deal_status(doc)
 	url = quote_url(doc.name, raw)
 	whatsapp.queue_message(doc.name, "price_sent", doc.current_version, url=url)
 	return {"version": doc.current_version, "url": url}
+
+
+@frappe.whitelist(methods=["POST"])
+def resend_price(name: str) -> dict:
+	"""Send the current version's price_sent message (+ PDF) again; no new version, same validity.
+
+	Raw tokens are never stored, so the link is the sign-in path /account?next=/q/<name>."""
+	doc = frappe.get_doc("QS Enquiry", name)
+	doc.check_permission("write")
+	latest = latest_version(doc)
+	if doc.status != "Price Sent" or not is_open(doc, latest):
+		frappe.throw(_("Only an open quote with a price sent can be resent."))
+	url = login_url(doc.name)
+	whatsapp.queue_message(doc.name, "price_sent", latest.version, url=url, resend=True)
+	return {"version": latest.version, "url": url}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -160,6 +176,7 @@ def mark_lost(name: str, reason: str) -> None:
 	if not reason:
 		frappe.throw(_("Please enter a reason."))
 	doc.status = "Lost"
+	doc.flags.qs_status_change = True
 	doc.lost_reason = reason[:1000]
 	doc.save()
 	crm.sync_deal_status(doc)
@@ -258,6 +275,11 @@ def doc_at_version(doc, version_row):
 
 def quote_url(name: str, raw_token: str) -> str:
 	return get_url(f"/q/{name}?t={raw_token}")
+
+
+def login_url(name: str) -> str:
+	"""Token-less buyer link: sign in on /account (OTP), then open /q/<name>."""
+	return get_url(f"/account?next=/q/{name}")
 
 
 def _get_for_edit(name: str):

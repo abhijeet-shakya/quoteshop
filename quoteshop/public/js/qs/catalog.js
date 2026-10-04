@@ -1,11 +1,12 @@
 // Catalog pages (/, /c, /search, /p): card quick-add steppers, header/floating quote counters, product page.
+import { __ } from "./i18n.js";
 import { count, qtyOf, setQty, units } from "./quote_store.js";
 
 const $$ = (sel, root = document) => root.querySelectorAll(sel);
 const TIERS = [
-	["Single piece", "Single piece"],
-	["Multi-piece rate applies", "Multi-piece rate"],
-	["Bulk / dealer rate applies", "Bulk rate"],
+	[__("Single piece"), __("Single piece")],
+	[__("Multi-piece rate applies"), __("Multi-piece rate")],
+	[__("Bulk / dealer rate applies"), __("Bulk rate")],
 ];
 
 /** Header pill, floating bar and tab badges; runs on every QS page. */
@@ -14,14 +15,14 @@ export function initCounts() {
 		const n = count();
 		$$("[data-qs-quote-count]").forEach((el) => (el.textContent = n));
 		$$("[data-qs-quote-units]").forEach((el) => (el.textContent = units()));
-		$$("[data-qs-word]").forEach((el) => (el.textContent = el.dataset.qsWord + (n === 1 ? "" : "s")));
+		$$("[data-qs-word]").forEach((el) => (el.textContent = n === 1 ? el.dataset.one : el.dataset.many));
 		$$("[data-qs-quote-bar]").forEach((el) => (el.hidden = !n));
 	};
 	window.addEventListener("qs:quote-changed", render);
 	render();
 	// Pages stay cacheable for guests; a signed-in buyer is detected from Frappe's readable user_id cookie.
 	const user = /(?:^|; )user_id=([^;]*)/.exec(document.cookie);
-	if (user && decodeURIComponent(user[1]) !== "Guest") $$("[data-qs-signin]").forEach((a) => (a.textContent = "Account"));
+	if (user && decodeURIComponent(user[1]) !== "Guest") $$("[data-qs-signin]").forEach((a) => (a.textContent = __("Account")));
 }
 
 export function init() {
@@ -42,7 +43,7 @@ function initCards() {
 			const add = card.querySelector("[data-qs-add]");
 			card.classList.toggle("is-in", qty > 0);
 			card.querySelector("[data-qs-qty]").textContent = qty;
-			add.setAttribute("aria-label", qty ? "Increase quantity" : add.dataset.label);
+			add.setAttribute("aria-label", qty ? __("Increase quantity") : add.dataset.label);
 		});
 	document.addEventListener("click", (e) => {
 		const btn = e.target.closest("[data-qs-add], [data-qs-dec]");
@@ -74,7 +75,7 @@ function initProduct() {
 		root.querySelector("[data-qs-qty]").textContent = qty;
 		const tier = TIERS[qty >= t3 ? 2 : qty >= t2 ? 1 : 0];
 		$$("[data-qs-tier] > span", root).forEach((el, i) => (el.textContent = tier[i]));
-		const label = qtyOf(code) ? "Update quote" : "Add to quote";
+		const label = qtyOf(code) ? __("Update quote") : __("Add to quote");
 		$$("[data-qs-pd-add]").forEach((b) => (b.textContent = label));
 		$$("[data-qs-addon]", root).forEach((a) => {
 			const on = qtyOf(a.dataset.item) > 0;
@@ -103,7 +104,7 @@ function initProduct() {
 		else if (t.closest("[data-qs-pdec]")) qty = Math.max(min, qty - 1);
 		else if (t.closest("[data-qs-pd-add]")) {
 			setQty(code, qty);
-			toast.querySelector("[data-qs-toast-qty]").textContent = qty;
+			toast.querySelector("[data-qs-toast-text]").textContent = __("Added {0} to your quote", [qty]);
 			toast.hidden = false;
 			clearTimeout(toastTimer);
 			toastTimer = setTimeout(() => (toast.hidden = true), 6000);

@@ -31,7 +31,8 @@
 {%- for d in lines -%}
 	{%- set _ = rows.append({"group": group_of.get(d.item_code) or _("Other"), "d": d}) -%}
 {%- endfor -%}
-{%- set show_savings = doc.total_saved > 0 and frappe.db.get_single_value("QS Store Settings", "show_savings_to_buyer") -%}
+{#- Setting off: no listed rates, struck listed total or savings anywhere on the quote. -#}
+{%- set show_listed = frappe.db.get_single_value("QS Store Settings", "show_savings_to_buyer") -%}
 
 <div class="qs-quote">
 	<h2>{{ _("Quotation") }}</h2>
@@ -56,7 +57,9 @@
 				<th style="width: 4%">#</th>
 				<th>{{ _("Item") }}</th>
 				<th class="num">{{ _("Qty") }}</th>
+				{%- if show_listed %}
 				<th class="num">{{ _("Listed") }}</th>
+				{%- endif %}
 				<th class="num">{{ _("Your rate") }}</th>
 				<th class="num">{{ _("Amount") }}</th>
 			</tr>
@@ -64,7 +67,7 @@
 		<tbody>
 		{%- set n = namespace(i=0) -%}
 		{%- for group in rows | groupby("group") %}
-			<tr class="qs-group"><td colspan="6">{{ group.grouper | e }}</td></tr>
+			<tr class="qs-group"><td colspan="{{ 6 if show_listed else 5 }}">{{ group.grouper | e }}</td></tr>
 			{%- for r in group.list %}
 			{%- set d = r.d -%}
 			{%- set n.i = n.i + 1 -%}
@@ -86,10 +89,12 @@
 					{%- if d.offered_qty != d.requested_qty %}<span class="muted">{{ d.get_formatted("requested_qty") }} →</span> {% endif -%}
 					{{ d.get_formatted("offered_qty") }}
 				</td>
+				{%- if show_listed %}
 				<td class="num muted">
 					{%- if d.listed_rate and d.offered_rate < d.listed_rate %}<s>{{ d.get_formatted("listed_rate", doc) }}</s>
 					{%- elif d.listed_rate %}{{ d.get_formatted("listed_rate", doc) }}{% endif -%}
 				</td>
+				{%- endif %}
 				<td class="num">{% if not na %}{{ d.get_formatted("offered_rate", doc) }}{% endif %}</td>
 				<td class="num">{% if na %}<span class="na">{{ _("Not available") }}</span>{% else %}{{ d.get_formatted("amount", doc) }}{% endif %}</td>
 			</tr>
@@ -99,11 +104,11 @@
 	</table>
 
 	<table class="qs-totals">
-		{%- if doc.total_listed != doc.total_offered %}
+		{%- if show_listed and doc.total_listed != doc.total_offered %}
 		<tr><td class="muted">{{ _("Listed total") }}</td><td class="num muted"><s>{{ doc.get_formatted("total_listed") }}</s></td></tr>
 		{%- endif %}
 		<tr class="grand"><td>{{ _("Your price") }}</td><td class="num">{{ doc.get_formatted("total_offered") }}</td></tr>
-		{%- if show_savings %}
+		{%- if show_listed and doc.total_saved > 0 %}
 		<tr><td>{{ _("You save") }}</td><td class="num">{{ doc.get_formatted("total_saved") }} ({{ doc.get_formatted("saved_pct") }})</td></tr>
 		{%- endif %}
 	</table>

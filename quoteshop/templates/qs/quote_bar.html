@@ -1,6 +1,6 @@
 <div class="qs-qbar" data-qs-quote-bar hidden>
 	<a href="/quote" class="qs-qbar-link">
-		<span class="qs-qbar-text"><strong><span data-qs-quote-count>0</span> <span class="qs-only-d" data-qs-word="item">items</span><span class="qs-only-m" data-qs-word="product">products</span></strong> · <span data-qs-quote-units>0</span> pcs</span>
-		<span class="qs-qbar-cta">Get price</span>
+		<span class="qs-qbar-text"><strong><span data-qs-quote-count>0</span> <span class="qs-only-d" data-qs-word data-one="{{ _('item')|e }}" data-many="{{ _('items')|e }}">{{ _("items")|e }}</span><span class="qs-only-m" data-qs-word data-one="{{ _('product')|e }}" data-many="{{ _('products')|e }}">{{ _("products")|e }}</span></strong> · <span data-qs-quote-units>0</span> {{ _("pcs")|e }}</span>
+		<span class="qs-qbar-cta">{{ _("Get price")|e }}</span>
 	</a>
 </div>

@@ -9,7 +9,7 @@
 		<div class="qs-mhdr-btns">
 			{{ theme_toggle(qs, "qs-round") }}
 			{%- if qs.whatsapp_url %}
-			<a href="{{ qs.whatsapp_url|e }}" class="qs-round" aria-label="Chat on WhatsApp" target="_blank" rel="noopener">{{ icon("whatsapp") }}</a>
+			<a href="{{ qs.whatsapp_url|e }}" class="qs-round" aria-label="{{ _('Chat on WhatsApp')|e }}" target="_blank" rel="noopener">{{ icon("whatsapp") }}</a>
 			{%- endif %}
 		</div>
 	</div>
@@ -20,7 +20,7 @@
 <form class="qs-msearch qs-only-m" action="/search" method="get" role="search">
 	<div class="qs-search qs-search-m">
 		{{ icon("search", 18, color="#5E625F") }}
-		<label for="qs-mq" class="qs-sr">Search products</label>
-		<input id="qs-mq" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="Search products" autocomplete="off">
+		<label for="qs-mq" class="qs-sr">{{ _("Search products")|e }}</label>
+		<input id="qs-mq" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="{{ _('Search products')|e }}" autocomplete="off">
 	</div>
 </form>

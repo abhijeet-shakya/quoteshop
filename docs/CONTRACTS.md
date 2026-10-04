@@ -321,3 +321,13 @@ Mobile numbers: E.164 (`+` and 8–15 digits); a bare 10-digit number is prefixe
 11. Brand colour contrast failure: **warn, not block**.
 12. CRM products table. PHASES §4 says mirror lines into it. **Don't mirror; set `deal_value` = total offered** (CRM computes product totals only in browser JS and needs CRM Product master records; ERPNext sync is off).
 13. "Template placeholders" seed. **Leave the 7 template links empty + list templates to register in the README**; never insert WhatsApp Templates (each insert calls Meta).
+
+## 10. Review fix pass (2026-10-04) — supersedes earlier wording where it differs
+- **Status lock**: `status` and `valid_till` are read-only. Changing status on an existing QS Enquiry requires `doc.flags.qs_status_change = True`; only these writers set it: versions.send_price / mark_lost, quote_view.request_changes, orders.accept, orders.expire_quotes, whatsapp.handle_reply. Kanban drags and set_value are refused.
+- **§2.7 Alternative lines**: a line with availability Alternative and `alternative_item` orders that item (its item_name, uom = its stock_uom); qty = offered_qty, rate = offered_rate, price_list_rate = listed_rate.
+- **Phase 3 limits**: paste text ≤ 50 KB, lines ≤ 200 chars, split at the last separator `[\t,; ]+`; qty > 0, finite, ≤ 100000 (also in build_lines; ≤ 500 items checked before iterating). verify_otp: + per-number limit 10/hour; failures counted atomically in `qs:otp-fail:<mobile>` (600 s) before comparing; 5th failure burns the code. developer_mode OTP logged at WARNING to `quoteshop` logger.
+- **Phase 5**: `versions.resend_price(name) -> {"version", "url"}` — same version, no token rotation, link `/account?next=/q/<name>`, stored PDF. `queue_message/send_message(..., resend: bool = False)`, job_id suffix `-resend`.
+- **Phase 6**: outdated → `{"outdated": true, "url": "<abs>/account?next=/q/<name>", "current_version", "status"}`; version_outdated params (buyer_name, ref, version, current_version, url). `create_order` always runs as Administrator, never raises (savepoint rollback, Error Log "QuoteShop: Sales Order not created", Comment on the enquiry). `orders.retry_order(name) -> {"queued": true}` (Sales Manager/System Manager; Accepted + no sales_order). download_quote serves the stored PDF when present.
+- **Phase 7**: portal_login refuses Contacts whose user is not a QuoteShop `@buyers.invalid` user. `/account?next=` accepts only `/account`, `/quote`, `/q/<name>[?t=…]`.
+- **Website**: all template output escaped (`|e`); search results with `q` / empty pages not cached; catalog GET APIs rate-limited; UI strings translatable (JS strings via `#qs-i18n` JSON).
+- **Print format**: listed column, listed total and savings shown only when `show_savings_to_buyer` is on.

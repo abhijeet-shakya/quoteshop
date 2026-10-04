@@ -455,7 +455,9 @@ class TestCacheHeaders(Storefront):
 
 	def test_no_per_user_bits_in_guest_pages(self):
 		for name, page in self.pages().items():
-			self.assertNotIn("csrf_token", page.html, name)
+			# the `<!-- csrf_token -->` placeholder is Frappe's hook for signed-in users; a guest page must
+			# never carry an actual token
+			self.assertNotIn("frappe.csrf_token", page.html, name)
 			self.assertNotIn("sid=", page.html, name)
 
 	def test_dynamic_pages_never_send_no_store(self):

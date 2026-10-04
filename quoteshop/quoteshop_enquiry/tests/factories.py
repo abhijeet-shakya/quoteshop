@@ -327,3 +327,305 @@ def make_homepage_settings(sections=("Hero", "Categories", "Products"), **overri
 	doc.set("section_order", [{"section": s, "enabled": 1} for s in sections])
 	doc.save(ignore_permissions=True)
 	return doc
+
+
+# --- phases 5-8: pricing, versions, accept/order, portal, reports (test-lead B, appended) ------------
+
+SECOND_MOBILE = "+919800000002"
+
+
+def make_order_settings(**overrides):
+	"""Store settings that can create Sales Orders: company, fiscal year (today), group, territory."""
+	make_fiscal_year(today())
+	return make_store_settings(
+		**{"default_warehouse": None, "auto_submit_sales_order": 0, "show_savings_to_buyer": 1, **overrides}
+	)
+
+
+def make_enquiry_settings(**overrides):
+	"""Save QS Enquiry Settings: validity 15 days, no OTP, WhatsApp templates left as they are (+ overrides)."""
+	doc = frappe.get_doc("QS Enquiry Settings")
+	doc.update({"quote_validity_days": 15, "otp_required": 0, "login_mode": "Not required", **overrides})
+	doc.save(ignore_permissions=True)
+	return doc
+
+
+def make_buyer_contact(mobile=DEFAULT_MOBILE, name="_QS Test Buyer"):
+	"""Contact found/created exactly like submit_enquiry does (E.164 mobile_no)."""
+	from quoteshop.quoteshop_enquiry.api import find_or_create_contact
+
+	return find_or_create_contact(mobile, name)
+
+
+def make_quote(lines, mobile=DEFAULT_MOBILE, deal=False, **fields):
+	"""A "Requested" QS Enquiry with a Contact, as submit_enquiry leaves it.
+
+	`lines` = [{"item_code", "requested_qty", "listed_rate", ...}]; items are created published (so a buyer
+	may re-add them). `deal=True` also creates the CRM Deal.
+	"""
+	for line in lines:
+		make_published_item(line["item_code"])
+	contact = make_buyer_contact(mobile, fields.get("buyer_name") or "_QS Test Buyer")
+	doc = make_enquiry(lines, **{"status": "Requested", "mobile": mobile, "contact": contact, **fields})
+	if deal:
+		from quoteshop.quoteshop_enquiry import crm
+
+		crm.create_deal(doc)
+		doc.reload()
+	return doc
+
+
+def send_quote(name):
+	"""versions.send_price with frappe.enqueue patched → _dict(token, version, url, enqueue)."""
+	from unittest.mock import patch
+	from urllib.parse import parse_qs, urlsplit
+
+	from quoteshop.quoteshop_enquiry.versions import send_price
+
+	with patch("frappe.enqueue") as enqueue:
+		result = send_price(name)
+	token = parse_qs(urlsplit(result["url"]).query)["t"][0]
+	return frappe._dict(token=token, enqueue=enqueue, **result)
+
+
+def accept_and_order(name, token):
+	"""accept_quote as the buyer (Guest) + run the order job directly → Sales Order name."""
+	from unittest.mock import patch
+
+	from quoteshop.quoteshop_enquiry import orders, quote_view
+
+	user = frappe.session.user
+	try:
+		with patch("frappe.enqueue"):
+			frappe.set_user("Guest")
+			quote_view.accept_quote(name, token)
+			version = frappe.db.get_value("QS Enquiry", name, "current_version")
+			return orders.create_order(name, version)
+	finally:
+		frappe.set_user(user)
+
+
+def make_otp_token(mobile=DEFAULT_MOBILE):
+	"""An otp_token as verify_otp would issue it for `mobile` (30 minutes)."""
+	from frappe.utils import add_to_date, now_datetime
+
+	from quoteshop.quoteshop_enquiry.tokens import new_token
+
+	raw, token_hash = new_token()
+	frappe.cache.set_value(
+		f"qs:otp-ok:{token_hash}",
+		{"mobile": mobile, "expires_at": str(add_to_date(now_datetime(), seconds=1800))},
+		expires_in_sec=1800,
+	)
+	return raw
+
+
+# --- phases 3-4: enquiry APIs, OTP, CRM, WhatsApp (test-lead A, appended) ----------------------------
+
+from frappe.tests import IntegrationTestCase  # noqa: E402
+
+WA_ACCOUNT = "_QS Test WhatsApp"
+WA_PHONE_ID = "_qs_test_phone_id"
+WA_EVENTS = (
+	"otp",
+	"enquiry_received_buyer",
+	"enquiry_alert_sales",
+	"price_sent",
+	"accepted",
+	"changes_requested",
+	"version_outdated",
+)
+WA_POST = "frappe_whatsapp.frappe_whatsapp.doctype.whatsapp_message.whatsapp_message.make_post_request"
+SAVEPOINT_A = "qs_test_a"
+
+
+def make_wa_account(name=WA_ACCOUNT):
+	"""Default outgoing + incoming WhatsApp Account (CONTRACTS §4.5); no network on insert."""
+	if not frappe.db.exists("WhatsApp Account", name):
+		frappe.get_doc(
+			{
+				"doctype": "WhatsApp Account",
+				"account_name": name,
+				"token": "_qs_test_token",
+				"url": "https://graph.invalid",
+				"version": "v17.0",
+				"phone_id": WA_PHONE_ID,
+				"business_id": "_qs_test_business",
+				"status": "Active",
+				"is_default_outgoing": 1,
+				"is_default_incoming": 1,
+			}
+		).insert(ignore_permissions=True)
+	return name
+
+
+def make_wa_template(template_name, sample_values="a,b", field_names=None, header_type=None, buttons=()):
+	"""Approved WhatsApp Template via db_insert (never calls Meta); returns its name."""
+	name = f"{template_name}-en"
+	if not frappe.db.exists("WhatsApp Templates", name):
+		doc = frappe.get_doc(
+			{
+				"doctype": "WhatsApp Templates",
+				"name": name,
+				"template_name": template_name,
+				"actual_name": template_name,
+				"template": "_QS Test body {{1}}",
+				"language": "en",
+				"language_code": "en",
+				"category": "UTILITY",
+				"status": "APPROVED",
+				"sample_values": sample_values,
+				"field_names": field_names,
+				"header_type": header_type,
+				"buttons": [dict(b) for b in buttons],
+			}
+		)
+		doc.db_insert()
+		for row in doc.buttons:
+			row.db_insert()
+	frappe.clear_document_cache("WhatsApp Templates", name)
+	return name
+
+
+def link_wa_templates(*events, **field_names):
+	"""Create one template per event and link it in QS Enquiry Settings; `field_names` per event."""
+	make_wa_account()
+	doc = frappe.get_doc("QS Enquiry Settings")
+	for event in events:
+		doc.set(f"{event}_template", make_wa_template(f"_qs_test_{event}", field_names=field_names.get(event)))
+	doc.save(ignore_permissions=True)
+	return doc
+
+
+def make_qs_customer(name, contact=None, account_manager=None):
+	"""Customer (+ Dynamic Link on `contact`, CONTRACTS §2.6: customer_primary_contact set on insert)."""
+	if not frappe.db.exists("Customer", name):
+		frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": name,
+				"customer_type": "Company",
+				"customer_group": make_customer_group(),
+				"territory": make_territory(),
+				"account_manager": account_manager,
+				"customer_primary_contact": contact,
+			}
+		).insert(ignore_permissions=True)
+	if contact:
+		doc = frappe.get_doc("Contact", contact)
+		if not any(link.link_doctype == "Customer" and link.link_name == name for link in doc.links):
+			doc.append("links", {"link_doctype": "Customer", "link_name": name})
+			doc.save(ignore_permissions=True)
+	return name
+
+
+def make_website_user(email, mobile=None):
+	"""Website User (portal buyer); with `mobile`, linked as Contact.user of that buyer's Contact."""
+	if not frappe.db.exists("User", email):
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": email,
+				"first_name": "_QS Test Portal",
+				"user_type": "Website User",
+				"send_welcome_email": 0,
+			}
+		).insert(ignore_permissions=True)
+	if mobile:
+		contact = make_buyer_contact(mobile)
+		frappe.db.set_value("Contact", contact, "user", email)
+	return email
+
+
+def wa_incoming_payload(from_digits, reply_to, message_id, label="Accept quote", kind="button"):
+	"""Meta webhook body for a quick-reply (template button) or plain text reply (CONTRACTS §4.3)."""
+	message = {"from": from_digits, "id": message_id, "timestamp": "1700000000", "type": kind}
+	if reply_to:
+		message["context"] = {"from": "910000000000", "id": reply_to}
+	if kind == "button":
+		message["button"] = {"text": label, "payload": label}
+	else:
+		message["text"] = {"body": label}
+	return {
+		"object": "whatsapp_business_account",
+		"entry": [
+			{
+				"id": "_qs_test_business",
+				"changes": [
+					{
+						"field": "messages",
+						"value": {
+							"messaging_product": "whatsapp",
+							"metadata": {"phone_number_id": WA_PHONE_ID},
+							"contacts": [{"profile": {"name": "_QS Test Buyer"}, "wa_id": from_digits}],
+							"messages": [message],
+						},
+					}
+				],
+			}
+		],
+	}
+
+
+def call_api(cmd, *, user="Guest", http_method="POST", ip="10.9.9.1", **params):
+	"""Call a whitelisted method like /api/method/<cmd> does: whitelist + guest + HTTP method checks,
+	type validation and rate limits (frappe.request, request_ip and form_dict.cmd set; CONTRACTS §5.1)."""
+	from frappe.handler import execute_cmd
+	from frappe.utils import set_request
+
+	previous_user = frappe.session.user
+	previous_request = getattr(frappe.local, "request", None)
+	frappe.set_user(user)  # resets form_dict, so it goes first
+	set_request(method=http_method, path=f"/api/method/{cmd}")
+	frappe.local.request_ip = ip
+	frappe.local.form_dict = frappe._dict(cmd=cmd, **params)
+	try:
+		return execute_cmd(cmd)
+	finally:
+		frappe.set_user(previous_user)
+		frappe.local.request = previous_request
+		frappe.local.form_dict = frappe._dict()
+
+
+def clear_qs_redis():
+	"""Redis is not rolled back: drop QS OTP/rate-limit keys and the cached settings/templates."""
+	for prefix in ("qs:otp", "qs:catalog:", "rl:"):
+		frappe.cache.delete_keys(prefix)
+	for doctype in ("QS Store Settings", "QS Homepage Settings", "QS Enquiry Settings"):
+		frappe.clear_document_cache(doctype)
+	for name in frappe.get_all("WhatsApp Templates", pluck="name"):
+		frappe.clear_document_cache("WhatsApp Templates", name)
+
+
+class EnquiryTestCase(IntegrationTestCase):
+	"""Phase 3-4 base: store + enquiry settings (OTP on, no templates), each test in a savepoint."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		from quoteshop.patches.v1_0 import seed_crm_statuses
+
+		seed_crm_statuses.execute()
+		make_store_settings()
+
+	def setUp(self):
+		super().setUp()
+		frappe.local.request = None  # a request left by an earlier test would switch rate limits on
+		frappe.db.savepoint(SAVEPOINT_A)
+		clear_qs_redis()
+		make_enquiry_settings(
+			otp_required=1,
+			show_pincode=0,
+			require_pincode=0,
+			show_business_name=1,
+			show_notes=1,
+			buyer_types=[],
+			questions=[],
+			**{f"{event}_template": None for event in WA_EVENTS},
+		)
+		self.addCleanup(self._reset)
+
+	def _reset(self):
+		frappe.set_user("Administrator")
+		frappe.db.rollback(save_point=SAVEPOINT_A)
+		clear_qs_redis()

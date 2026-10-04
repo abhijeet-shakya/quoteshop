@@ -59,11 +59,18 @@ class QSEnquiry(Document):
 
 	def validate(self) -> None:
 		self.validate_not_accepted()
+		self.validate_status_change()
 		self.set_totals()
 
 	def validate_not_accepted(self) -> None:
 		if (before := self.get_doc_before_save()) and before.status == "Accepted":
 			frappe.throw(_("Enquiry {0} is accepted and can no longer be changed.").format(self.name))
+
+	def validate_status_change(self) -> None:
+		"""Kanban drag, set_value and form edits can't move the status; QuoteShop actions set the flag."""
+		before = self.get_doc_before_save()
+		if before and before.status != self.status and not self.flags.qs_status_change:
+			frappe.throw(_("Status changes only through QuoteShop actions."))
 
 	def set_totals(self) -> None:
 		"""Line amounts, totals and counts in one pass over the items (CONTRACTS §6.1)."""

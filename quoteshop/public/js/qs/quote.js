@@ -1,5 +1,6 @@
 // /quote – quote list (localStorage via quote_store), paste/upload, details form, OTP, submit.
 // Also exports the small helpers (call, money, esc, fillQuote, startChange) used by quote_view.js and account.js.
+import { __ } from "./i18n.js";
 import { getQuote, setQty, remove, clear } from "./quote_store.js";
 
 const API = "/api/method/quoteshop.quoteshop_enquiry.";
@@ -15,18 +16,16 @@ export async function call(method, args = {}) {
 		res = await fetch(API + method, { method: "POST", headers, credentials: "same-origin", body: JSON.stringify(args) });
 		data = await res.json();
 	} catch (e) {
-		throw new Error(res ? "Something went wrong. Please try again." : "You seem to be offline. Please try again.");
+		throw new Error(res ? __("Something went wrong. Please try again.") : __("You seem to be offline. Please try again."));
 	}
-	if (!res.ok || data.exc_type) throw new Error(serverMessage(data) || "Something went wrong. Please try again.");
+	if (!res.ok || data.exc_type) throw new Error(serverMessage(data) || __("Something went wrong. Please try again."));
 	return data.message;
 }
 
 function serverMessage(data) {
 	try {
 		const msg = JSON.parse(JSON.parse(data._server_messages).pop()).message;
-		const div = document.createElement("div");
-		div.innerHTML = msg;
-		return div.textContent;
+		return new DOMParser().parseFromString(msg, "text/html").body.textContent; // inert: no scripts, no image loads
 	} catch (e) {
 		return "";
 	}
@@ -55,7 +54,8 @@ export function normaliseMobile(raw) {
 	return null;
 }
 
-const plural = (n, one, many) => `${n.toLocaleString("en-IN")} ${n === 1 ? one : many}`;
+// one / many are translated "{0} …" templates
+const plural = (n, one, many) => (n === 1 ? one : many).replace("{0}", n.toLocaleString("en-IN"));
 
 export function listItems() {
 	const q = getQuote();
@@ -135,7 +135,7 @@ export function init() {
 			const group = r.card.item_group || "";
 			if (grouped && group !== lastGroup) {
 				const n = ordered.filter((x) => (x.card.item_group || "") === group).length;
-				html += `<h2 class="qs-q-group" data-group="${esc(group)}">${esc(group || "Other")} · ${n}</h2>`;
+				html += `<h2 class="qs-q-group" data-group="${esc(group)}">${esc(group || __("Other"))} · ${n}</h2>`;
 				lastGroup = group;
 			}
 			html += rowHtml(r, idx);
@@ -145,11 +145,11 @@ export function init() {
 
 		const n = rows.length;
 		const u = rows.reduce((s, r) => s + Number(r.qty || 0), 0);
-		$("[data-qs-summary]").textContent = `${plural(n, "product", "products")} · ${u.toLocaleString("en-IN")} pcs.`;
-		$("[data-qs-count-text]").textContent = plural(n, "item", "items");
-		$("[data-qs-units-text]").textContent = `${u.toLocaleString("en-IN")} pcs total`;
+		$("[data-qs-summary]").textContent = __("{0} · {1} pcs.", [plural(n, __("{0} product"), __("{0} products")), u.toLocaleString("en-IN")]);
+		$("[data-qs-count-text]").textContent = plural(n, __("{0} item"), __("{0} items"));
+		$("[data-qs-units-text]").textContent = __("{0} pcs total", [u.toLocaleString("en-IN")]);
 		const sendCount = $("[data-qs-send-count]");
-		if (sendCount) sendCount.textContent = n ? `\u00a0· ${plural(n, "item", "items")}` : "";
+		if (sendCount) sendCount.textContent = n ? `\u00a0· ${plural(n, __("{0} item"), __("{0} items"))}` : "";
 		$("[data-qs-empty]").hidden = n > 0;
 		$("[data-qs-list-search]").hidden = n <= 10;
 		applyFind();
@@ -165,7 +165,7 @@ export function init() {
 		const c = r.card;
 		const name = c.item_name || c.item_code;
 		const note = c.short_description || "";
-		const price = showPrices && c.starting_price != null ? `from ${money(c.starting_price, c.currency)} each` : "price on request";
+		const price = showPrices && c.starting_price != null ? __("from {0} each", [money(c.starting_price, c.currency)]) : __("price on request");
 		const img = c.image?.thumb
 			? `<img class="qs-q-thumb" src="${esc(c.image.thumb)}" alt="" width="64" height="64" loading="lazy">`
 			: `<div class="qs-q-thumb" aria-hidden="true"></div>`;
@@ -177,12 +177,12 @@ export function init() {
 				<div class="qs-q-note">${esc(note)}<span class="qs-q-price${note ? " qs-q-sep" : ""}">${esc(price)}</span></div>
 			</div>
 			<div class="qs-q-step">
-				<button type="button" aria-label="Decrease quantity" data-act="dec">−</button>
-				<label class="qs-p-sr" for="qs-q-qty-${idx}">Quantity for ${esc(name)}</label>
+				<button type="button" aria-label="${esc(__("Decrease quantity"))}" data-act="dec">−</button>
+				<label class="qs-p-sr" for="qs-q-qty-${idx}">${esc(__("Quantity for {0}", [name]))}</label>
 				<input id="qs-q-qty-${idx}" type="number" min="${minQty(c)}" step="1" inputmode="numeric" value="${esc(r.qty)}" data-act="qty">
-				<button type="button" aria-label="Increase quantity" data-act="inc">+</button>
+				<button type="button" aria-label="${esc(__("Increase quantity"))}" data-act="inc">+</button>
 			</div>
-			<button type="button" class="qs-q-x" aria-label="Remove ${esc(name)}" data-act="rm">
+			<button type="button" class="qs-q-x" aria-label="${esc(__("Remove {0}", [name]))}" data-act="rm">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
 			</button>
 		</div>`;
@@ -248,8 +248,8 @@ export function init() {
 			const have = Object.fromEntries(listItems().map((i) => [i.item_code, Number(i.qty) || 0]));
 			(r.matched || []).forEach((m) => setQty(m.item_code, (have[m.item_code] || 0) + Number(m.qty)));
 			const bad = r.unmatched || [];
-			pasteResult.innerHTML = `${esc(`Added ${plural((r.matched || []).length, "product", "products")}.`)}${
-				bad.length ? ` ${esc(`${plural(bad.length, "line", "lines")} not matched:`)}<ul>${bad.map((u) => `<li>${esc(u.line)} — ${esc(u.reason)}</li>`).join("")}</ul>` : ""
+			pasteResult.innerHTML = `${esc(__("Added {0}.", [plural((r.matched || []).length, __("{0} product"), __("{0} products"))]))}${
+				bad.length ? ` ${esc(__("{0} not matched:", [plural(bad.length, __("{0} line"), __("{0} lines"))]))}<ul>${bad.map((u) => `<li>${esc(u.line)} — ${esc(u.reason)}</li>`).join("")}</ul>` : ""
 			}`;
 			if (!bad.length) pasteText.value = "";
 		} catch (err) {
@@ -297,16 +297,16 @@ export function init() {
 		const val = (id) => root.querySelector(`#${id}`)?.value.trim() || "";
 		const nameEl = $("#qs-q-name");
 		const waEl = $("#qs-q-wa");
-		if (!nameEl.value.trim()) return fail("Please enter your name.", nameEl);
+		if (!nameEl.value.trim()) return fail(__("Please enter your name."), nameEl);
 		const mobile = normaliseMobile(waEl.value);
-		if (!mobile) return fail("Please enter a valid WhatsApp number.", waEl);
+		if (!mobile) return fail(__("Please enter a valid WhatsApp number."), waEl);
 		const pin = $("#qs-q-pin");
-		if (pin?.required && !pin.value.trim()) return fail("Please enter your delivery pincode.", pin);
+		if (pin?.required && !pin.value.trim()) return fail(__("Please enter your delivery pincode."), pin);
 		const answers = [];
 		for (const q of root.querySelectorAll("[data-qs-question]")) {
 			const input = q.querySelector("input, select, textarea, .qs-q-toggle");
 			const value = q.dataset.type === "Check" ? input.textContent.trim() : input.value.trim();
-			if (q.dataset.required && !value) return fail(`Please answer: ${q.dataset.qsQuestion}`, input);
+			if (q.dataset.required && !value) return fail(__("Please answer: {0}", [q.dataset.qsQuestion]), input);
 			if (value) answers.push({ question: q.dataset.qsQuestion, value });
 		}
 		const data = {
@@ -330,7 +330,7 @@ export function init() {
 
 	async function send() {
 		errEl.hidden = true;
-		if (!rows.length) return fail("Add at least one product to your list.");
+		if (!rows.length) return fail(__("Add at least one product to your list."));
 		if (change) {
 			const r = await call("quote_view.request_changes", {
 				name: change.name,
@@ -357,7 +357,7 @@ export function init() {
 				return;
 			}
 			const code = otpInput.value.replace(/\D/g, "");
-			if (code.length !== 6) return fail("Please enter the 6-digit code.", otpInput);
+			if (code.length !== 6) return fail(__("Please enter the 6-digit code."), otpInput);
 			otpToken = (await call("api.verify_otp", { mobile: data.mobile, otp: code })).otp_token;
 		}
 		if (otpToken) data.otp_token = otpToken;
@@ -371,7 +371,7 @@ export function init() {
 		$("[data-qs-form-view]").hidden = true;
 		$("[data-qs-done]").hidden = false;
 		$("[data-qs-ref]").textContent = ref;
-		$("[data-qs-done-summary]").textContent = `${plural(items.length, "product", "products")}, ${u.toLocaleString("en-IN")} pcs`;
+		$("[data-qs-done-summary]").textContent = __("{0}, {1} pcs", [plural(items.length, __("{0} product"), __("{0} products")), u.toLocaleString("en-IN")]);
 		const wa = $("[data-qs-wa-link]");
 		if (wa) wa.href += `?text=${encodeURIComponent(ref)}`;
 		window.scrollTo(0, 0);
@@ -393,7 +393,7 @@ export function init() {
 	$("[data-qs-otp-resend]").addEventListener("click", async () => {
 		try {
 			await call("api.send_otp", { mobile: otpFor });
-			fail("A new code is on its way.");
+			fail(__("A new code is on its way."));
 		} catch (e) {
 			fail(e.message);
 		}
@@ -402,7 +402,7 @@ export function init() {
 	// ---- change mode (coming from /q "Change") ----
 	if (change) {
 		$("[data-qs-change-banner]").hidden = false;
-		$("[data-qs-change-text]").textContent = `Changing ${change.name}${change.version ? ` · v${change.version}` : ""}`;
+		$("[data-qs-change-text]").textContent = change.version ? __("Changing {0} · v{1}", [change.name, change.version]) : __("Changing {0}", [change.name]);
 		$("[data-qs-details]").querySelectorAll(":scope > :not(.qs-q-send):not([data-qs-error]), .qs-q-fine").forEach((el) => (el.hidden = true));
 		setLabel("labelChange");
 		$("[data-qs-change-cancel]").addEventListener("click", () => {

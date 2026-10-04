@@ -176,10 +176,12 @@ class TestQSEnquiry(IntegrationTestCase):
 	def test_zero_offered_rate_rejected_when_moving_to_price_sent(self):
 		doc = make_enquiry([line(A, 2, 50, offered_rate=0)], status="Requested")
 		doc.status = "Price Sent"
+		doc.flags.qs_status_change = True  # CONTRACTS §10: only QuoteShop actions move the status
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
 		doc.reload()  # a rejected save leaves the in-memory doc stale
 		doc.status = "Price Sent"
+		doc.flags.qs_status_change = True
 		doc.items[0].offered_rate = 45
 		doc.save(ignore_permissions=True)  # control: priced line is fine
 		self.assertTotals(doc, total_offered=90.0)
@@ -198,6 +200,7 @@ class TestQSEnquiry(IntegrationTestCase):
 		self.assertEqual((doc.items[0].offered_rate, doc.items[0].amount), (0.0, 0.0))
 		self.assertTotals(doc, total_listed=0.0, total_offered=0.0, saved_pct=0.0)
 		doc.status = "Price Sent"
+		doc.flags.qs_status_change = True
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
 
@@ -213,3 +216,23 @@ class TestQSEnquiry(IntegrationTestCase):
 		doc.append("items", line(A, 2, 10))
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
+
+	def test_status_change_only_through_quoteshop_actions(self):
+		"""CONTRACTS §10: a plain save / client set_value (Kanban drag) cannot move the status."""
+		from frappe.client import set_value
+
+		doc = make_enquiry([line(A, 2, 50, offered_rate=45)], status="Requested")
+		doc.status = "Lost"
+		with self.assertRaisesRegex(frappe.ValidationError, "Status changes only through QuoteShop actions"):
+			doc.save(ignore_permissions=True)
+		with self.assertRaisesRegex(frappe.ValidationError, "Status changes only through QuoteShop actions"):
+			set_value("QS Enquiry", doc.name, "status", "Price Sent")
+		self.assertEqual(frappe.db.get_value("QS Enquiry", doc.name, "status"), "Requested")
+
+		doc.reload()
+		doc.notes = "edit without a status change"
+		doc.save(ignore_permissions=True)  # control: other edits still save
+		doc.status = "Lost"
+		doc.flags.qs_status_change = True
+		doc.save(ignore_permissions=True)  # control: the QuoteShop flag allows it
+		self.assertEqual(frappe.db.get_value("QS Enquiry", doc.name, "status"), "Lost")

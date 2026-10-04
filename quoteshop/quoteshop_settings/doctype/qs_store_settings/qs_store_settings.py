@@ -6,7 +6,7 @@ import re
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 from quoteshop.quoteshop_catalog.cache import clear_catalog_cache
 
@@ -54,6 +54,7 @@ class QSStoreSettings(Document):
 
 	def validate(self) -> None:
 		self.warn_low_contrast()
+		warn_crm_auto_customer()
 
 	def on_update(self) -> None:
 		clear_catalog_cache()
@@ -72,6 +73,22 @@ class QSStoreSettings(Document):
 				title=_("Low contrast"),
 				indicator="orange",
 			)
+
+
+def warn_crm_auto_customer() -> None:
+	"""CONTRACTS §3.5: CRM's ERPNext sync would create a second Customer when a deal is Won. Warn only."""
+	if not frappe.db.exists("DocType", "ERPNext CRM Settings"):
+		return
+	crm = frappe.db.get_singles_dict("ERPNext CRM Settings")
+	if cint(crm.get("enabled")) and cint(crm.get("create_customer_on_status_change")):
+		frappe.msgprint(
+			_(
+				"ERPNext CRM Settings creates a Customer when a deal changes status. QuoteShop creates"
+				" Customers itself, so turn off 'Create customer on status change' to avoid duplicates."
+			),
+			title=_("Duplicate Customers"),
+			indicator="orange",
+		)
 
 
 def contrast_ratio(hex1: str, hex2: str) -> float:

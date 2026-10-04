@@ -21,7 +21,7 @@
 			</div>
 			{%- endif %}
 			{%- if hp.hero_image %}
-			<img class="qs-hero-art qs-hero-img" src="{{ hp.hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0] }}" height="{{ hero_size[1] }}" fetchpriority="high" decoding="async">
+			<img class="qs-hero-art qs-hero-img" src="{{ hp.hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0]|e }}" height="{{ hero_size[1]|e }}" fetchpriority="high" decoding="async">
 			{%- else %}
 			<svg class="qs-hero-art" viewBox="0 0 320 180" width="460" aria-hidden="true" focusable="false">
 				<rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
@@ -45,13 +45,13 @@
 		{%- endif %}
 	</section>
 {%- elif b.kind == "trust" %}
-	<section class="qs-trust" aria-label="Why buy from us">
+	<section class="qs-trust" aria-label="{{ _('Why buy from us')|e }}">
 		{%- for t in hp.trust_points if t.text %}
 		<span class="qs-trust-item"><span class="qs-dot" aria-hidden="true"></span>{{ t.text|e }}</span>
 		{%- endfor %}
 	</section>
 {%- elif b.kind == "how" %}
-	<section class="qs-how" aria-label="How it works">
+	<section class="qs-how" aria-label="{{ _('How it works')|e }}">
 		{%- for step in hp.how_it_works %}
 		<div class="qs-how-step">
 			<span class="qs-how-num{% if loop.last %} qs-how-num-accent{% endif %}">{{ loop.index }}</span>
@@ -60,7 +60,7 @@
 		{%- endfor %}
 	</section>
 {%- elif b.kind == "catalog" %}
-	{%- call catalog(qs, data, "All products", chips=b.chips, grid=b.grid, head_cls="qs-hide-m") %}
+	{%- call catalog(qs, data, _("All products"), chips=b.chips, grid=b.grid, head_cls="qs-hide-m") %}
 	{%- if b.grid and hp.show_mobile_strip and hp.mobile_strip_text %}
 	<a href="{{ (hp.mobile_strip_link or qs.whatsapp_url or '#catalog')|e }}" class="qs-strip qs-only-m"><span>{{ hp.mobile_strip_text|e }}</span>{{ icon("chevron", 18, "2.2") }}</a>
 	{%- endif %}

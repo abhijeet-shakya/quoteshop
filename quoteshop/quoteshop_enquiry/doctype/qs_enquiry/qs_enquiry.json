@@ -69,6 +69,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nRequested\nPrice Sent\nChanges Requested\nAccepted\nLost\nExpired",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -81,7 +82,8 @@
    "fieldname": "valid_till",
    "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Valid till"
+   "label": "Valid till",
+   "read_only": 1
   },
   {
    "fieldname": "summary_col_2",
@@ -316,7 +318,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-04 12:00:00.000000",
+ "modified": "2026-10-04 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "QuoteShop Enquiry",
  "name": "QS Enquiry",

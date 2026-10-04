@@ -36,6 +36,7 @@ def issue(mobile: str) -> None:
 		frappe.throw(_("Verification by WhatsApp is not configured. Please contact us."))
 
 	code = f"{secrets.randbelow(10**6):06d}"
+	frappe.cache.delete(_fail_key(mobile))  # a new code gets fresh attempts (sends are rate limited)
 	frappe.cache.set_value(
 		_key(mobile),
 		{
@@ -47,10 +48,8 @@ def issue(mobile: str) -> None:
 	)
 	if can_send:
 		whatsapp.queue_otp(mobile, code)
-	else:
-		frappe.logger("quoteshop").info(
-			f"QS OTP for {mobile}: {code} (developer_mode, WhatsApp not configured)"
-		)
+	else:  # developer_mode only (checked above); WARNING because the dev log level drops INFO
+		frappe.logger("quoteshop").warning("DEV OTP for %s: %s (WhatsApp not configured)", mobile, code)
 
 
 def verify(mobile: str, code: str) -> str:
@@ -61,17 +60,27 @@ def verify(mobile: str, code: str) -> str:
 		frappe.cache.delete_value(key)
 		frappe.throw(_("The code has expired. Please request a new one."))
 
+	# Count the attempt atomically BEFORE comparing: parallel guesses can't share one remaining try.
+	fail_key = _fail_key(mobile)
+	attempt = frappe.cache.incrby(fail_key, 1)
+	if attempt == 1:
+		frappe.cache.expire(fail_key, OTP_TTL)
+	if attempt > MAX_ATTEMPTS:
+		frappe.cache.delete_value(key)  # burned
+		frappe.throw(_("Too many wrong attempts. Please request a new code."))
+
 	if not re.fullmatch(r"\d{6}", str(code or "")) or not secrets.compare_digest(
 		_hash(mobile, str(code)), state["hash"]
 	):
-		state["attempts"] += 1
-		if state["attempts"] >= MAX_ATTEMPTS:
+		if attempt >= MAX_ATTEMPTS:
 			frappe.cache.delete_value(key)
 			frappe.throw(_("Too many wrong attempts. Please request a new code."))
+		state["attempts"] = attempt  # informational; the counter above is authoritative
 		frappe.cache.set_value(key, state, expires_in_sec=OTP_TTL)
 		frappe.throw(_("Wrong code. Please try again."))
 
 	frappe.cache.delete_value(key)
+	frappe.cache.delete(fail_key)
 	raw, token_hash = new_token()
 	frappe.cache.set_value(
 		f"qs:otp-ok:{token_hash}",
@@ -93,6 +102,10 @@ def verified_mobile(otp_token: str | None) -> str | None:
 
 def _key(mobile: str) -> str:
 	return f"qs:otp:{mobile}"
+
+
+def _fail_key(mobile: str) -> str:
+	return frappe.cache.make_key(f"qs:otp-fail:{mobile}")
 
 
 def _hash(mobile: str, code: str) -> str:

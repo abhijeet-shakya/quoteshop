@@ -10,6 +10,9 @@ const QS_AVAILABILITY_COLORS = { "Available": "green", "Partial": "orange", "Mad
 const QS_VERSION_BY_COLORS = { "Buyer": "cyan", "Sales": "blue" };
 
 const QS_VERSIONS = "quoteshop.quoteshop_enquiry.versions.";
+const QS_ORDERS = "quoteshop.quoteshop_enquiry.orders.";
+// Minutes after acceptance before a missing Sales Order is reported as failed (the job usually takes seconds).
+const QS_ORDER_GRACE_MINUTES = 10;
 // Statuses versions.py lets sales price (EDITABLE_STATUSES there).
 const QS_PRICEABLE = ["Requested", "Changes Requested", "Price Sent", "Expired"];
 
@@ -61,14 +64,43 @@ function qs_headline(frm) {
 		"Changes Requested": __(
 			"The buyer requested changes. Review the flagged lines, then click Send price."
 		),
-		"Price Sent": __("Price v{0} sent, valid till {1}. Waiting for the buyer to accept or request changes.", [d.current_version, till]),
+		"Price Sent": __(
+			"Price v{0} sent, valid till {1}. Waiting for the buyer to accept or request changes.",
+			[d.current_version, till]
+		),
 		Accepted: so
 			? __("Accepted (v{0}). Sales Order {1} created.", [d.current_version, so])
-			: __("Accepted (v{0}). The Sales Order is being created.", [d.current_version]),
+			: qs_order_pending_text(d),
 		Lost: __("Lost: {0}", [frappe.utils.escape_html(d.lost_reason || "")]),
 		Expired: __("The quote expired on {0}. Send a fresh price to reopen it.", [till]),
 	}[d.status];
-	frm.dashboard.set_headline_alert(text, QS_STATUS_COLORS[d.status] || "gray");
+	const failed = d.status === "Accepted" && !so && qs_order_overdue(d);
+	frm.dashboard.set_headline_alert(text, failed ? "red" : QS_STATUS_COLORS[d.status] || "gray");
+}
+
+function qs_accepted_on(d) {
+	return (d.versions || []).find((v) => v.version === d.current_version)?.accepted_on;
+}
+
+function qs_order_overdue(d) {
+	const on = qs_accepted_on(d);
+	return (
+		!on ||
+		frappe.datetime.get_minute_diff(frappe.datetime.now_datetime(), on) >
+			QS_ORDER_GRACE_MINUTES
+	);
+}
+
+function qs_order_pending_text(d) {
+	if (!qs_order_overdue(d)) {
+		return __("Accepted (v{0}). The Sales Order is being created.", [d.current_version]);
+	}
+	const on = qs_accepted_on(d);
+	const when = on ? frappe.datetime.comment_when(on) : "";
+	return __(
+		"Accepted (v{0}) {1}, but no Sales Order was created. Check the Error Log, then use Create Sales Order.",
+		[d.current_version, when]
+	);
 }
 
 function qs_buttons(frm) {
@@ -79,11 +111,16 @@ function qs_buttons(frm) {
 		Requested: [__("Send price"), () => qs_send_price(frm)],
 		"Changes Requested": [__("Send price"), () => qs_send_price(frm)],
 		Expired: [__("Send price"), () => qs_send_price(frm)],
-		"Price Sent": [__("Resend on WhatsApp"), () => qs_send_price(frm)],
-		Accepted: frm.doc.sales_order && [
-			__("Open Sales Order"),
-			() => frappe.set_route("Form", "Sales Order", frm.doc.sales_order),
-		],
+		"Price Sent": [__("Resend on WhatsApp"), () => qs_resend_price(frm)],
+		Accepted: frm.doc.sales_order
+			? [
+					__("Open Sales Order"),
+					() => frappe.set_route("Form", "Sales Order", frm.doc.sales_order),
+			  ]
+			: frappe.user.has_role(["Sales Manager", "System Manager"]) && [
+					__("Create Sales Order"),
+					() => qs_retry_order(frm),
+			  ],
 	}[status];
 	if (primary) frm.add_custom_button(...primary).addClass("btn-primary");
 
@@ -93,13 +130,16 @@ function qs_buttons(frm) {
 
 	if (QS_PRICEABLE.includes(status)) {
 		const actions = __("Actions");
+		if (status === "Price Sent") {
+			frm.add_custom_button(__("Send updated price"), () => qs_send_price(frm), actions);
+		}
 		frm.add_custom_button(__("Apply discount %"), () => qs_apply_discount(frm), actions);
 		frm.add_custom_button(__("Set availability"), () => qs_set_availability(frm), actions);
 		frm.add_custom_button(
 			__("Copy from last order"),
 			() =>
 				frappe.confirm(__("Copy offered rates from this buyer's last Sales Order?"), () =>
-					qs_call(frm, "copy_from_last_order")
+					qs_call(frm, QS_VERSIONS + "copy_from_last_order")
 				),
 			actions
 		);
@@ -110,7 +150,7 @@ function qs_buttons(frm) {
 async function qs_call(frm, method, args = {}) {
 	if (frm.is_dirty()) await frm.save();
 	const r = await frappe.call({
-		method: QS_VERSIONS + method,
+		method,
 		args: { name: frm.doc.name, ...args },
 		freeze: true,
 	});
@@ -128,15 +168,40 @@ function qs_send_price(frm) {
 		frappe.utils.escape_html(frm.doc.buyer_name),
 	]);
 	frappe.confirm(msg, async () => {
-		const r = await qs_call(frm, "send_price");
+		const r = await qs_call(frm, QS_VERSIONS + "send_price");
 		frappe.show_alert({ message: __("Price v{0} sent", [r.version]), indicator: "green" });
 	});
+}
+
+// Same version and link again; the buyer's token is not rotated.
+function qs_resend_price(frm) {
+	const msg = __("Resend price v{0} to {1} on WhatsApp?", [
+		frm.doc.current_version,
+		frappe.utils.escape_html(frm.doc.buyer_name),
+	]);
+	frappe.confirm(msg, async () => {
+		await qs_call(frm, QS_VERSIONS + "resend_price");
+		frappe.show_alert({
+			message: __("Price v{0} resent", [frm.doc.current_version]),
+			indicator: "green",
+		});
+	});
+}
+
+function qs_retry_order(frm) {
+	frappe.confirm(
+		__("Create the Sales Order for the accepted version v{0} now?", [frm.doc.current_version]),
+		async () => {
+			await qs_call(frm, QS_ORDERS + "retry_order");
+			frappe.show_alert({ message: __("Sales Order creation started"), indicator: "green" });
+		}
+	);
 }
 
 function qs_mark_lost(frm) {
 	frappe.prompt(
 		{ fieldname: "reason", fieldtype: "Small Text", label: __("Reason"), reqd: 1 },
-		({ reason }) => qs_call(frm, "mark_lost", { reason }),
+		({ reason }) => qs_call(frm, QS_VERSIONS + "mark_lost", { reason }),
 		__("Mark Lost"),
 		__("Mark Lost")
 	);
@@ -175,8 +240,16 @@ function qs_apply_discount(frm) {
 				frappe.throw(__("Select lines in the Items table first."));
 			}
 			dialog.hide();
-			const r = await qs_call(frm, "apply_discount", { percent, scope, rows, item_group });
-			frappe.show_alert({ message: __("{0} lines updated", [r.updated]), indicator: "green" });
+			const r = await qs_call(frm, QS_VERSIONS + "apply_discount", {
+				percent,
+				scope,
+				rows,
+				item_group,
+			});
+			frappe.show_alert({
+				message: __("{0} lines updated", [r.updated]),
+				indicator: "green",
+			});
 		},
 	});
 	dialog.show();
@@ -214,8 +287,11 @@ function qs_set_availability(frm) {
 					args[key] = values[key];
 				}
 			}
-			const r = await qs_call(frm, "set_availability", args);
-			frappe.show_alert({ message: __("{0} lines updated", [r.updated]), indicator: "green" });
+			const r = await qs_call(frm, QS_VERSIONS + "set_availability", args);
+			frappe.show_alert({
+				message: __("{0} lines updated", [r.updated]),
+				indicator: "green",
+			});
 		},
 	});
 	dialog.show();

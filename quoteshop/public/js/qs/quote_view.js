@@ -1,4 +1,5 @@
 // /q/<name>?t= – filters, search, collapsible groups, "Show all", accept, change (edits on /quote).
+import { __ } from "./i18n.js";
 import { call, money, startChange } from "./quote.js";
 
 export function init() {
@@ -77,7 +78,7 @@ export function init() {
 			root.querySelectorAll("[data-qs-actions] > :not([data-qs-accepted])").forEach((el) => (el.hidden = true));
 			root.querySelector("[data-qs-accepted]").hidden = false;
 			root.querySelectorAll("[data-qs-status]").forEach((s) => {
-				s.textContent = "Accepted";
+				s.textContent = __("Accepted");
 				s.className = s.className.replace(/qs-v-tone-\w+/, "qs-v-tone-accent");
 			});
 		} catch (e) {

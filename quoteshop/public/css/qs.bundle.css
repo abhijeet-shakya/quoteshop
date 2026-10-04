@@ -114,6 +114,9 @@ button { font: inherit; }
 .qs-card.is-in .qs-tile { outline-color: var(--accent); }
 .qs-tile > img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
 [data-theme="light"] .qs-tile > img, [data-theme="light"] .qs-stage-img, [data-theme="light"] .qs-thumb img { mix-blend-mode: multiply; }
+/* Dark: opaque (light-background) photos fill their tile edge to edge, dimmed, instead of a bright panel inside a dark tile. */
+[data-theme="dark"] .qs-tile:has(> img), [data-theme="dark"] .qs-stage:has(> .qs-stage-img), [data-theme="dark"] .qs-thumb { padding: 0; overflow: hidden; }
+[data-theme="dark"] .qs-tile > img, [data-theme="dark"] .qs-stage-img, [data-theme="dark"] .qs-thumb img { border-radius: inherit; filter: brightness(0.85); }
 .qs-noimg { color: var(--dot); display: flex; }
 .qs-card-info { display: flex; flex-direction: column; gap: 3px; padding: 0 4px; }
 .qs-card-cat { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -232,7 +235,7 @@ button { font: inherit; }
 	.qs-main { padding: 0 20px 24px; gap: 0; }
 	.qs-hero, .qs-trust, .qs-how { display: none; }
 	.qs-bento { display: contents; }
-	.qs-promos { margin-top: 16px; }
+	.qs-promos { flex: none; margin-top: 16px; } /* .qs-bento is display: contents here, so the desktop flex-basis (300px) would become a fixed height in the column .qs-main */
 	.qs-catalog { gap: 0; }
 	.qs-cat-head { padding: 16px 0 6px; }
 	.qs-h2 { font-size: 22px; line-height: 1.15; letter-spacing: -0.03em; }

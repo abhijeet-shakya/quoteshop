@@ -4,7 +4,7 @@ from quoteshop.quoteshop_website.context import DEFAULT_SECTIONS, listing, setup
 
 
 def get_context(context):
-	from quoteshop.quoteshop_catalog.catalog import get_categories, get_image_size
+	from quoteshop.quoteshop_catalog.catalog import categories, get_image_size
 
 	hp = frappe.get_cached_doc("QS Homepage Settings")
 	qs = setup(context, "home", description=hp.hero_subtitle)
@@ -21,7 +21,7 @@ def get_context(context):
 	if any(b["kind"] == "catalog" and b["grid"] for b in blocks):
 		data = listing(context)
 	elif any(b["kind"] == "catalog" for b in blocks):
-		data.categories = get_categories()
+		data.categories = categories()
 
 	hero_size = get_image_size(hp.hero_image) or (1200, 800)
 	context.hp = hp

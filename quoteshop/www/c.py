@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 
 from quoteshop.quoteshop_website.context import listing, setup
 
@@ -9,6 +10,6 @@ def get_context(context):
 	name = next((c["name"] for c in data.categories if c["route"] == route), None)
 	if not name:
 		raise frappe.PageDoesNotExistError
-	setup(context, "category", title=name, description=f"{name}: {data.total} products")
+	setup(context, "category", title=name, description=_("{0}: {1} products").format(name, data.total))
 	context.data = data
 	context.group = {"name": name, "route": route}

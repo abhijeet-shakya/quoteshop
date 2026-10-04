@@ -33,6 +33,12 @@ def after_install() -> None:
 	seed_crm_statuses.execute()
 	seed_desk.execute()
 
+	from quoteshop.quoteshop_settings.doctype.qs_store_settings.qs_store_settings import (
+		warn_crm_auto_customer,
+	)
+
+	warn_crm_auto_customer()
+
 
 def make_starting_price_list(company: str | None) -> None:
 	if frappe.db.exists("Price List", PRICE_LIST):

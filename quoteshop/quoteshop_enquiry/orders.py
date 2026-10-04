@@ -2,7 +2,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, flt, now_datetime, nowdate
+from frappe.utils import add_days, cint, escape_html, flt, now_datetime, nowdate
 
 from quoteshop.quoteshop_enquiry import crm, versions, whatsapp
 
@@ -24,25 +24,65 @@ def accept(doc, version: int, via: str) -> bool:
 
 	versions.set_items_from_version(doc, latest)  # unsent desk edits never become part of the order
 	doc.status = "Accepted"
+	doc.flags.qs_status_change = True
 	latest.accepted_on = now_datetime()
 	latest.accepted_via = via
 	doc.save(ignore_permissions=True)
+	_enqueue_order(doc.name, latest.version)
+	return True
+
+
+@frappe.whitelist(methods=["POST"])
+def retry_order(name: str) -> dict:
+	"""Re-queue the order job for an Accepted enquiry whose Sales Order could not be created."""
+	frappe.only_for(("Sales Manager", "System Manager"))
+	doc = frappe.get_doc("QS Enquiry", name)
+	accepted = next((v for v in doc.versions if v.accepted_on), None)
+	if doc.status != "Accepted" or not accepted:
+		frappe.throw(_("Only an accepted enquiry can be ordered."))
+	if doc.sales_order or frappe.db.exists("Sales Order", {"qs_enquiry": name, "docstatus": ("<", 2)}):
+		frappe.throw(_("Enquiry {0} already has a Sales Order.").format(name))
+	_enqueue_order(name, accepted.version)
+	return {"queued": True}
+
+
+def _enqueue_order(enquiry: str, version: int) -> None:
 	frappe.enqueue(
 		"quoteshop.quoteshop_enquiry.orders.create_order",
 		queue="default",
 		enqueue_after_commit=True,
-		job_id=f"qs-order-{doc.name}",
+		job_id=f"qs-order-{enquiry}",
 		deduplicate=True,
-		enquiry=doc.name,
-		version=latest.version,
+		enquiry=enquiry,
+		version=version,
 	)
-	return True
 
 
 def create_order(enquiry: str, version: int) -> str | None:
-	"""Job (idempotent): Deal Won, Customer found/created, ONE Sales Order, confirmation WhatsApp."""
-	if frappe.session.user == "Guest":  # accepted from the website / WhatsApp webhook
-		frappe.set_user("Administrator")
+	"""Job (idempotent): Deal Won, Customer found/created, ONE Sales Order, confirmation WhatsApp.
+
+	Always runs as Administrator. A failure is rolled back, logged and noted on the enquiry
+	(retry with `retry_order`); it never raises."""
+	user = frappe.session.user
+	frappe.set_user("Administrator")
+	frappe.db.savepoint("qs_create_order")
+	try:
+		return _create_order(enquiry, version)
+	except Exception as e:
+		frappe.db.rollback(save_point="qs_create_order")
+		frappe.log_error(
+			title="QuoteShop: Sales Order not created", reference_doctype="QS Enquiry", reference_name=enquiry
+		)
+		frappe.get_doc("QS Enquiry", enquiry).add_comment(
+			"Comment",
+			_("Sales Order could not be created: {0}").format(escape_html(str(e) or repr(e))),
+		)
+		return None
+	finally:
+		frappe.set_user(user)
+
+
+def _create_order(enquiry: str, version: int) -> str | None:
 	doc = frappe.get_doc("QS Enquiry", enquiry, for_update=True)
 	existing = doc.sales_order or frappe.db.get_value(
 		"Sales Order", {"qs_enquiry": enquiry, "docstatus": ("<", 2)}
@@ -79,6 +119,7 @@ def expire_quotes() -> None:
 		try:
 			doc = frappe.get_doc("QS Enquiry", name, for_update=True)
 			doc.status = "Expired"
+			doc.flags.qs_status_change = True
 			doc.save(ignore_permissions=True)
 			crm.sync_deal_status(doc)
 			frappe.db.commit()  # one enquiry per transaction: a bad one never blocks the rest
@@ -136,6 +177,15 @@ def _sales_order(doc, row, customer: str, store):
 	if not lines:
 		frappe.throw(_("Accepted quote {0} has no lines to order.").format(doc.name))
 
+	# an Alternative line orders the offered alternative item at the quoted rate (listed_rate kept)
+	alternatives = {
+		item.name: item
+		for item in frappe.get_all(
+			"Item",
+			filters={"name": ("in", [_alternative(line) for line in lines if _alternative(line)] or [""])},
+			fields=["name", "item_name", "stock_uom"],
+		)
+	}
 	order = frappe.new_doc("Sales Order")
 	order.update(
 		{
@@ -152,12 +202,14 @@ def _sales_order(doc, row, customer: str, store):
 		}
 	)
 	for line in lines:
+		alt = alternatives.get(_alternative(line))
 		order.append(
 			"items",
 			{
-				"item_code": line["item_code"],
+				"item_code": alt.name if alt else line["item_code"],
+				"item_name": alt.item_name if alt else line.get("item_name"),
 				"qty": flt(line["offered_qty"]),
-				"uom": line.get("uom"),
+				"uom": alt.stock_uom if alt else line.get("uom"),
 				"price_list_rate": flt(line.get("listed_rate")),
 				"rate": flt(line["offered_rate"]),
 				"discount_percentage": 0,
@@ -169,3 +221,7 @@ def _sales_order(doc, row, customer: str, store):
 	if store.auto_submit_sales_order:
 		order.submit()
 	return order
+
+
+def _alternative(line: dict) -> str | None:
+	return line.get("alternative_item") if line.get("availability") == "Alternative" else None

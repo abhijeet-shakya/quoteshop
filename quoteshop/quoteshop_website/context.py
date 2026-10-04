@@ -3,6 +3,7 @@
 import re
 
 import frappe
+from frappe import _
 from frappe.utils import cint, get_url, strip_html_tags
 
 DEFAULT_ACCENT = "#146B47"
@@ -14,6 +15,50 @@ DESIGN_TINTS = {
 	"#B4372A": ("#F8E7E4", "#8A2A20", "#3D211D", "#F2A79C"),
 	"#121413": ("#F0F0EC", "#121413", "#2C312E", "#EEF0EC"),
 }
+# Every __("…") string in public/js/qs/*.js; their translations go to the page as JSON (#qs-i18n).
+JS_STRINGS = (
+	"Account",
+	"Accepted",
+	"Add at least one product to your list.",
+	"Add to quote",
+	"A new code is on its way.",
+	"Added {0}.",
+	"Added {0} to your quote",
+	"Bulk / dealer rate applies",
+	"Bulk rate",
+	"Changing {0}",
+	"Changing {0} · v{1}",
+	"Decrease quantity",
+	"Increase quantity",
+	"Multi-piece rate",
+	"Multi-piece rate applies",
+	"Other",
+	"Please answer: {0}",
+	"Please enter a valid WhatsApp number.",
+	"Please enter the 6-digit code.",
+	"Please enter your delivery pincode.",
+	"Please enter your name.",
+	"Quantity for {0}",
+	"Remove {0}",
+	"Single piece",
+	"Something went wrong. Please try again.",
+	"Switch to dark mode",
+	"Switch to light mode",
+	"Update quote",
+	"You seem to be offline. Please try again.",
+	"from {0} each",
+	"price on request",
+	"{0} item",
+	"{0} items",
+	"{0} line",
+	"{0} lines",
+	"{0} not matched:",
+	"{0} pcs total",
+	"{0} product",
+	"{0} products",
+	"{0} · {1} pcs.",
+	"{0}, {1} pcs",
+)
 
 
 def setup(context, page: str, title: str | None = None, description: str | None = None) -> dict:
@@ -40,9 +85,9 @@ def setup(context, page: str, title: str | None = None, description: str | None 
 		theme="dark" if default_theme == "dark" else "light",
 		default_theme=default_theme,
 		allow_switch=cint(s.allow_theme_switch),
-		search_placeholder=s.search_placeholder or "Search products",
-		quote_label=s.quote_button_label or "Quote",
-		price_suffix=s.price_suffix or "per piece",
+		search_placeholder=s.search_placeholder or _("Search products"),
+		quote_label=s.quote_button_label or _("Quote"),
+		price_suffix=s.price_suffix or _("per piece"),
 		show_prices=cint(s.show_starting_prices),
 		response_time=s.response_time_text,
 		whatsapp_number=s.whatsapp_number,
@@ -50,6 +95,9 @@ def setup(context, page: str, title: str | None = None, description: str | None 
 		email=s.email,
 		address=" ".join((s.address or "").split()),
 		q=(frappe.form_dict.get("q") or "").strip()[:100],
+		i18n={
+			text: tr for text in JS_STRINGS if (tr := _(text)) != text
+		},  # only non-English text reaches the page
 	)
 	return context.qs
 
@@ -71,10 +119,10 @@ def with_prices(cards: list[dict]) -> list[dict]:
 
 def listing(context, *, category: str | None = None, q: str | None = None) -> dict:
 	"""Catalog listing for the grid pages (page from ?page=N); unknown category → 404."""
-	from quoteshop.quoteshop_catalog.catalog import get_categories, list_products
+	from quoteshop.quoteshop_catalog.catalog import categories, products
 
 	try:
-		result = list_products(category=category, q=q, page=cint(frappe.form_dict.get("page")) or 1)
+		result = products(category=category, q=q, page=cint(frappe.form_dict.get("page")) or 1)
 	except frappe.DoesNotExistError:
 		raise frappe.PageDoesNotExistError
 	page = result["page"]
@@ -84,7 +132,7 @@ def listing(context, *, category: str | None = None, q: str | None = None) -> di
 		total=result["total"],
 		prev_url=_page_url(base, page - 1) if page > 1 else None,
 		next_url=_page_url(base, page + 1) if result["has_more"] else None,
-		categories=get_categories(),
+		categories=categories(),
 	)
 
 

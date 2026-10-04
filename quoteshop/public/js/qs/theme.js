@@ -1,8 +1,10 @@
 // Theme toggle: <html data-theme> + localStorage "qs-theme" (the inline head script applies it before paint).
+import { __ } from "./i18n.js";
+
 const root = document.documentElement;
 
 function sync() {
-	const label = root.dataset.theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+	const label = root.dataset.theme === "dark" ? __("Switch to light mode") : __("Switch to dark mode");
 	document.querySelectorAll("[data-qs-theme-toggle]").forEach((b) => b.setAttribute("aria-label", label));
 }
 

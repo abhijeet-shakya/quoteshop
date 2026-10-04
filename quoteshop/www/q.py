@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, fmt_money, formatdate, getdate
 
+from quoteshop.quoteshop_enquiry.quote_view import get_quote_view
 from quoteshop.quoteshop_website.context import setup
 
 no_cache = 1
@@ -33,16 +34,10 @@ def short_date(value):
 	return formatdate(getdate(value), "d MMM") if value else ""
 
 
-def get_context(context):
+def get_context(context: dict) -> dict:
 	name, token = frappe.form_dict.name, frappe.form_dict.t or ""
 	setup(context, "quote_view", title=name)
 	context.update(name=name, token=token)
-
-	try:
-		get_quote_view = frappe.get_attr("quoteshop.quoteshop_enquiry.quote_view.get_quote_view")
-	except ImportError, AttributeError:
-		context.unavailable = True  # ponytail: backend phase 6 not deployed yet
-		return context
 
 	view = frappe._dict(get_quote_view(name, token))
 	if view.outdated:

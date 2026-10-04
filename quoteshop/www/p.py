@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 import frappe
+from frappe import _
 from frappe.utils import cint, strip_html_tags
 from frappe.utils.html_utils import sanitize_html
 
@@ -8,10 +9,10 @@ from quoteshop.quoteshop_website.context import setup, with_prices
 
 
 def get_context(context):
-	from quoteshop.quoteshop_catalog.catalog import get_categories, get_product
+	from quoteshop.quoteshop_catalog import catalog
 
 	try:
-		product = get_product(frappe.form_dict.get("route") or "")
+		product = catalog.product(frappe.form_dict.get("route") or "")
 	except frappe.DoesNotExistError:
 		raise frappe.PageDoesNotExistError
 	qs = setup(
@@ -21,7 +22,7 @@ def get_context(context):
 		description=product["short_description"] or product["description"] or product["item_name"],
 	)
 	enquiry = frappe.get_cached_doc("QS Enquiry Settings")
-	published = {c["route"] for c in get_categories()}
+	published = {c["route"] for c in catalog.categories()}
 	p = with_prices([product])[0]
 	p["related"] = with_prices(product["related"])
 	text = strip_html_tags(p["description"] or "").strip()
@@ -36,7 +37,9 @@ def get_context(context):
 	context.tier2 = cint(enquiry.bulk_tier_2) or 2
 	context.tier3 = cint(enquiry.bulk_tier_3) or 5
 	context.ask_url = (
-		qs.whatsapp_url + "?text=" + quote(f"Hi, I have a question about {p['item_name']} ({p['item_code']})")
+		qs.whatsapp_url
+		+ "?text="
+		+ quote(_("Hi, I have a question about {0} ({1})").format(p["item_name"], p["item_code"]))
 		if qs.whatsapp_url
 		else None
 	)

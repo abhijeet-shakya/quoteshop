@@ -3,9 +3,9 @@
 
 {% block mobile_header %}
 <header class="qs-ihdr qs-only-m">
-	<a href="{{ (group_url or '/')|e }}" class="qs-round qs-round-plain" aria-label="Back">{{ icon("back", 22) }}</a>
+	<a href="{{ (group_url or '/')|e }}" class="qs-round qs-round-plain" aria-label="{{ _('Back')|e }}">{{ icon("back", 22) }}</a>
 	<span class="qs-ihdr-title">{{ p.item_group|e }}</span>
-	<a href="/quote" class="qs-round qs-round-plain qs-ihdr-quote" aria-label="Quote list">{{ icon("quote", 22) }}<span class="qs-ihdr-badge" data-qs-quote-count>0</span></a>
+	<a href="/quote" class="qs-round qs-round-plain qs-ihdr-quote" aria-label="{{ _('Quote list')|e }}">{{ icon("quote", 22) }}<span class="qs-ihdr-badge" data-qs-quote-count>0</span></a>
 </header>
 {% endblock %}
 {% block quote_bar %}{% endblock %}
@@ -14,10 +14,10 @@
 {% block content %}
 {%- set photos = p.photos -%}
 {%- set n = photos|length -%}
-{%- set tier_d, tier_m = ("Bulk / dealer rate applies", "Bulk rate") if p.min_qty >= tier3 else (("Multi-piece rate applies", "Multi-piece rate") if p.min_qty >= tier2 else ("Single piece", "Single piece")) -%}
-<main id="qs-main" class="qs-pmain" data-qs-product data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty }}" data-t2="{{ tier2 }}" data-t3="{{ tier3 }}">
-	<nav aria-label="Breadcrumb" class="qs-crumbs qs-only-d">
-		<a href="/">Home</a><span aria-hidden="true">/</span>{% if group_url %}<a href="{{ group_url|e }}">{{ p.item_group|e }}</a>{% else %}<span>{{ p.item_group|e }}</span>{% endif %}
+{%- set tier_d, tier_m = (_("Bulk / dealer rate applies"), _("Bulk rate")) if p.min_qty >= tier3 else ((_("Multi-piece rate applies"), _("Multi-piece rate")) if p.min_qty >= tier2 else (_("Single piece"), _("Single piece"))) -%}
+<main id="qs-main" class="qs-pmain" data-qs-product data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty|e }}" data-t2="{{ tier2|e }}" data-t3="{{ tier3|e }}">
+	<nav aria-label="{{ _('Breadcrumb')|e }}" class="qs-crumbs qs-only-d">
+		<a href="/">{{ _("Home")|e }}</a><span aria-hidden="true">/</span>{% if group_url %}<a href="{{ group_url|e }}">{{ p.item_group|e }}</a>{% else %}<span>{{ p.item_group|e }}</span>{% endif %}
 	</nav>
 
 	<section class="qs-pd">
@@ -25,7 +25,7 @@
 			{%- if n > 1 %}
 			<div class="qs-thumbs qs-only-d">
 				{%- for ph in photos %}
-				<button type="button" class="qs-thumb" data-qs-thumb="{{ loop.index0 }}" aria-label="Show photo {{ loop.index }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"
+				<button type="button" class="qs-thumb" data-qs-thumb="{{ loop.index0 }}" aria-label="{{ _('Show photo {0}').format(loop.index)|e }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"
 					data-src="{{ ph.medium|e }}" data-alt="{{ ph.alt|e }}"{% if ph.thumb != ph.large %} data-srcset="{{ ph.thumb|replace(' ', '%20')|e }} 400w, {{ ph.medium|replace(' ', '%20')|e }} 1000w, {{ ph.large|replace(' ', '%20')|e }} 1800w"{% endif %}>
 					<img src="{{ ph.thumb|e }}" alt="" role="presentation" width="72" height="72" loading="lazy" decoding="async">
 				</button>
@@ -36,10 +36,10 @@
 				{%- if photos %}{{ img(photos[0], "(max-width: 767px) 100vw, 560px", 1000, 1000, priority=True, cls="qs-stage-img") }}
 				{%- else %}<span class="qs-noimg">{{ icon("photo", 72, "1.5") }}</span>{% endif %}
 				{%- if n > 1 %}
-				<span class="qs-stage-label"><span class="qs-only-d">Photo <span data-qs-photo-n>1</span></span><span class="qs-only-m"><span data-qs-photo-n>1</span> / {{ n }}</span> · <span data-qs-photo-alt>{{ photos[0].alt|e }}</span></span>
+				<span class="qs-stage-label"><span class="qs-only-d">{{ _("Photo")|e }} <span data-qs-photo-n>1</span></span><span class="qs-only-m"><span data-qs-photo-n>1</span> / {{ n|e }}</span> · <span data-qs-photo-alt>{{ photos[0].alt|e }}</span></span>
 				<div class="qs-dots qs-only-m">
 					{%- for ph in photos %}
-					<button type="button" class="qs-dot-btn" data-qs-thumb="{{ loop.index0 }}" aria-label="Show photo {{ loop.index }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><span></span></button>
+					<button type="button" class="qs-dot-btn" data-qs-thumb="{{ loop.index0 }}" aria-label="{{ _('Show photo {0}').format(loop.index)|e }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><span></span></button>
 					{%- endfor %}
 				</div>
 				{%- endif %}
@@ -50,35 +50,36 @@
 			<div class="qs-phead">
 				<span class="qs-kicker">{{ p.item_group|e }}</span>
 				<h1 class="qs-ptitle">{{ p.item_name|e }}</h1>
+				{#- description_html is sanitize_html / escape_html output from p.py, so it is not escaped again -#}
 				{%- if p.description_html %}<div class="qs-pdesc">{{ p.description_html }}</div>{% endif %}
 			</div>
 
 			<div class="qs-pprice">
 				{%- if p.price %}
-				<span class="qs-pprice-main">From {{ p.price|e }}</span>
-				<span class="qs-pprice-sub">{{ qs.price_suffix|e }} · lower for bulk · final price in your quote</span>
+				<span class="qs-pprice-main">{{ _("From {0}").format(p.price)|e }}</span>
+				<span class="qs-pprice-sub">{{ qs.price_suffix|e }} · {{ _("lower for bulk · final price in your quote")|e }}</span>
 				{%- else %}
-				<span class="qs-pprice-main">Price on request</span>
-				<span class="qs-pprice-sub">We send the best price on WhatsApp</span>
+				<span class="qs-pprice-main">{{ _("Price on request")|e }}</span>
+				<span class="qs-pprice-sub">{{ _("We send the best price on WhatsApp")|e }}</span>
 				{%- endif %}
 			</div>
 
 			<div class="qs-pqty">
-				<div class="qs-label" id="qs-qty-label">Quantity<span class="qs-only-d qs-label-note"> · starts at {{ p.min_qty }} piece{{ "" if p.min_qty == 1 else "s" }}</span></div>
+				<div class="qs-label" id="qs-qty-label">{{ _("Quantity")|e }}<span class="qs-only-d qs-label-note"> · {{ (_("starts at {0} piece") if p.min_qty == 1 else _("starts at {0} pieces")).format(p.min_qty)|e }}</span></div>
 				<div class="qs-pqty-row">
 					<div class="qs-pstep" role="group" aria-labelledby="qs-qty-label">
-						<button type="button" data-qs-pdec aria-label="Decrease quantity">−</button>
-						<span class="qs-pstep-val" data-qs-qty aria-live="polite">{{ p.min_qty }}</span>
-						<button type="button" data-qs-pinc aria-label="Increase quantity">+</button>
+						<button type="button" data-qs-pdec aria-label="{{ _('Decrease quantity')|e }}">−</button>
+						<span class="qs-pstep-val" data-qs-qty aria-live="polite">{{ p.min_qty|e }}</span>
+						<button type="button" data-qs-pinc aria-label="{{ _('Increase quantity')|e }}">+</button>
 					</div>
-					<span class="qs-tier" data-qs-tier><span class="qs-only-d">{{ tier_d }}</span><span class="qs-only-m">{{ tier_m }}</span></span>
+					<span class="qs-tier" data-qs-tier><span class="qs-only-d">{{ tier_d|e }}</span><span class="qs-only-m">{{ tier_m|e }}</span></span>
 				</div>
 			</div>
 
 			<div class="qs-pactions qs-only-d">
-				<button type="button" class="qs-btn-ink" data-qs-add data-qs-pd-add>Add to quote</button>
+				<button type="button" class="qs-btn-ink" data-qs-add data-qs-pd-add>{{ _("Add to quote")|e }}</button>
 				{%- if ask_url %}
-				<a href="{{ ask_url|e }}" class="qs-btn-line" target="_blank" rel="noopener">{{ icon("whatsapp", 18) }}Ask on WhatsApp</a>
+				<a href="{{ ask_url|e }}" class="qs-btn-line" target="_blank" rel="noopener">{{ icon("whatsapp", 18) }}{{ _("Ask on WhatsApp")|e }}</a>
 				{%- endif %}
 			</div>
 
@@ -87,19 +88,19 @@
 				{%- for s in p.specs %}
 				<div class="qs-spec"><dt>{{ s.label|e }}</dt><dd>{{ s.value|e }}</dd></div>
 				{%- endfor %}
-				{%- if p.lead_time %}<div class="qs-spec"><dt>Lead time</dt><dd>{{ p.lead_time }} day{{ "" if p.lead_time == 1 else "s" }}</dd></div>{% endif %}
+				{%- if p.lead_time %}<div class="qs-spec"><dt>{{ _("Lead time")|e }}</dt><dd>{{ (_("{0} day") if p.lead_time == 1 else _("{0} days")).format(p.lead_time)|e }}</dd></div>{% endif %}
 			</dl>
 			{%- endif %}
 		</div>
 
 		{%- if p.related %}
 		<section class="qs-related" aria-labelledby="qs-related-h">
-			<h2 class="qs-related-h" id="qs-related-h">Complete the setup</h2>
+			<h2 class="qs-related-h" id="qs-related-h">{{ _("Complete the setup")|e }}</h2>
 			<div class="qs-addons">
 				{%- for r in p.related %}
-				{%- set note = [r.short_description, ("from " ~ r.price) if r.price else None]|select|join(" · ") %}
-				<div class="qs-addon" data-qs-addon data-item="{{ r.item_code|e }}" data-min="{{ r.min_qty }}">
-					<button type="button" class="qs-addon-sign" aria-pressed="false" aria-label="Add {{ r.item_name|e }} to quote"><span data-qs-sign aria-hidden="true">+</span></button>
+				{%- set note = [r.short_description, _("from {0}").format(r.price) if r.price else None]|select|join(" · ") %}
+				<div class="qs-addon" data-qs-addon data-item="{{ r.item_code|e }}" data-min="{{ r.min_qty|e }}">
+					<button type="button" class="qs-addon-sign" aria-pressed="false" aria-label="{{ _('Add {0} to quote').format(r.item_name)|e }}"><span data-qs-sign aria-hidden="true">+</span></button>
 					<span class="qs-addon-text"><a href="/p/{{ r.route|e }}" class="qs-addon-name">{{ r.item_name|e }}</a>{% if note %}<span class="qs-addon-note">{{ note|e }}</span>{% endif %}</span>
 				</div>
 				{%- endfor %}
@@ -110,13 +111,13 @@
 </main>
 
 <div class="qs-toast" data-qs-toast role="status" hidden>
-	<span class="qs-toast-text">Added <span data-qs-toast-qty>1</span> to your quote</span>
-	<a href="/quote" class="qs-toast-link">View quote</a>
+	<span class="qs-toast-text" data-qs-toast-text></span>
+	<a href="/quote" class="qs-toast-link">{{ _("View quote")|e }}</a>
 </div>
 <div class="qs-pbar qs-only-m">
 	{%- if ask_url %}
-	<a href="{{ ask_url|e }}" class="qs-pbar-wa" aria-label="Ask a question on WhatsApp" target="_blank" rel="noopener">{{ icon("whatsapp", 22) }}</a>
+	<a href="{{ ask_url|e }}" class="qs-pbar-wa" aria-label="{{ _('Ask a question on WhatsApp')|e }}" target="_blank" rel="noopener">{{ icon("whatsapp", 22) }}</a>
 	{%- endif %}
-	<button type="button" class="qs-pbar-add" data-qs-add data-qs-pd-add>Add to quote</button>
+	<button type="button" class="qs-pbar-add" data-qs-add data-qs-pd-add>{{ _("Add to quote")|e }}</button>
 </div>
 {% endblock %}

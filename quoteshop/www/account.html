@@ -11,9 +11,9 @@
 			{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
 			<span class="qs-brand-name">{{ qs.name|e }}</span>
 		</a>
-		<nav class="qs-a-nav" aria-label="{{ _('Main') }}">
-			<a href="/search">{{ _("Browse") }}</a>
-			<a href="/quote" class="qs-a-quote">{{ qs.quote_label }}</a>
+		<nav class="qs-a-nav" aria-label="{{ _('Main')|e }}">
+			<a href="/search">{{ _("Browse")|e }}</a>
+			<a href="/quote" class="qs-a-quote">{{ qs.quote_label|e }}</a>
 		</nav>
 	</div>
 </header>
@@ -21,44 +21,44 @@
 
 {% block content %}
 {% set chat_icon %}<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"></path></svg>{% endset %}
-<div class="qs-a" data-qs-account data-next="{{ next_url }}">
+<div class="qs-a" data-qs-account data-next="{{ next_url|e }}">
 {%- if guest %}
 	<main id="qs-main" class="qs-a-login">
-		<h1>{{ _("My account") }}</h1>
-		<p>{{ _("See your requests, prices and orders. Sign in with a one-time code on WhatsApp, no password needed.") }}</p>
+		<h1>{{ _("My account")|e }}</h1>
+		<p>{{ (_("See your requests, prices and orders. Sign in with a one-time code on WhatsApp, no password needed."))|e }}</p>
 		<div class="qs-q-field">
-			<label for="qs-a-wa">{{ _("WhatsApp number") }}</label>
+			<label for="qs-a-wa">{{ _("WhatsApp number")|e }}</label>
 			<div class="qs-p-tel">
 				<span>+91</span>
 				<input id="qs-a-wa" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="98765 43210" data-qs-login-mobile>
 			</div>
 		</div>
 		<div class="qs-q-field" data-qs-login-otp hidden>
-			<label for="qs-a-otp">{{ _("Code sent on WhatsApp to") }} <span data-qs-otp-to></span></label>
+			<label for="qs-a-otp">{{ _("Code sent on WhatsApp to")|e }} <span data-qs-otp-to></span></label>
 			<input id="qs-a-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
 		</div>
 		<p class="qs-q-err" data-qs-error role="alert" hidden></p>
-		<button type="button" class="qs-p-ink qs-a-login-btn" data-qs-login data-label-verify="{{ _('Sign in') }}">{{ _("Send code") }}</button>
+		<button type="button" class="qs-p-ink qs-a-login-btn" data-qs-login data-label-verify="{{ _('Sign in')|e }}">{{ _("Send code")|e }}</button>
 	</main>
 {%- else %}
 	<main id="qs-main" class="qs-p-wrap qs-a-main">
 		<aside class="qs-a-aside">
 			<div class="qs-a-hirow">
 				<div>
-					<div class="qs-a-hi">{{ _("Hi, {0}").format(buyer_name) }}</div>
-					<h1>{{ _("My account") }}</h1>
-					{%- if buyer_meta %}<div class="qs-a-meta qs-p-d">{{ buyer_meta }}</div>{% endif %}
+					<div class="qs-a-hi">{{ _("Hi, {0}").format(buyer_name)|e }}</div>
+					<h1>{{ _("My account")|e }}</h1>
+					{%- if buyer_meta %}<div class="qs-a-meta qs-p-d">{{ buyer_meta|e }}</div>{% endif %}
 				</div>
 				{%- if qs.whatsapp_url %}
-				<a class="qs-a-round qs-p-m" href="{{ qs.whatsapp_url|e }}" aria-label="{{ _('Chat on WhatsApp') }}" target="_blank" rel="noopener">{{ chat_icon }}</a>
+				<a class="qs-a-round qs-p-m" href="{{ qs.whatsapp_url|e }}" aria-label="{{ _('Chat on WhatsApp')|e }}" target="_blank" rel="noopener">{{ chat_icon }}</a>
 				{%- endif %}
 			</div>
-			<div class="qs-a-tabs" role="tablist" aria-label="{{ _('My account') }}">
-				<button type="button" role="tab" id="qs-a-t-orders" aria-selected="true" aria-controls="qs-a-orders" data-qs-tab="orders"><span>{{ _("Orders") }}</span><span class="qs-a-n qs-p-d">{{ orders|length }}</span></button>
-				<button type="button" role="tab" id="qs-a-t-requests" aria-selected="false" aria-controls="qs-a-requests" data-qs-tab="requests" tabindex="-1"><span>{{ _("Requests") }}</span><span class="qs-a-n qs-p-d">{{ requests|length }}</span></button>
+			<div class="qs-a-tabs" role="tablist" aria-label="{{ _('My account')|e }}">
+				<button type="button" role="tab" id="qs-a-t-orders" aria-selected="true" aria-controls="qs-a-orders" data-qs-tab="orders"><span>{{ _("Orders")|e }}</span><span class="qs-a-n qs-p-d">{{ orders|length|e }}</span></button>
+				<button type="button" role="tab" id="qs-a-t-requests" aria-selected="false" aria-controls="qs-a-requests" data-qs-tab="requests" tabindex="-1"><span>{{ _("Requests")|e }}</span><span class="qs-a-n qs-p-d">{{ requests|length|e }}</span></button>
 			</div>
 			{%- if qs.whatsapp_url %}
-			<a class="qs-a-chat qs-p-d" href="{{ qs.whatsapp_url|e }}" target="_blank" rel="noopener">{{ chat_icon }}{{ _("Chat with sales") }}</a>
+			<a class="qs-a-chat qs-p-d" href="{{ qs.whatsapp_url|e }}" target="_blank" rel="noopener">{{ chat_icon }}{{ _("Chat with sales")|e }}</a>
 			{%- endif %}
 		</aside>
 
@@ -66,17 +66,17 @@
 			<div class="qs-a-cards qs-p-d">
 				{%- if show_savings %}
 				<div class="qs-a-card qs-a-card-accent">
-					<div class="qs-a-card-l">{{ _("Saved vs listed prices") }}</div>
-					<div class="qs-a-card-v">{{ total_saved }}</div>
+					<div class="qs-a-card-l">{{ _("Saved vs listed prices")|e }}</div>
+					<div class="qs-a-card-v">{{ total_saved|e }}</div>
 				</div>
 				{%- endif %}
 				<div class="qs-a-card">
-					<div class="qs-a-card-l">{{ _("Orders") }}</div>
-					<div class="qs-a-card-v">{{ orders|length }}</div>
+					<div class="qs-a-card-l">{{ _("Orders")|e }}</div>
+					<div class="qs-a-card-v">{{ orders|length|e }}</div>
 				</div>
 				<div class="qs-a-card">
-					<div class="qs-a-card-l">{{ _("Open requests") }}</div>
-					<div class="qs-a-card-v">{{ open_count }}</div>
+					<div class="qs-a-card-l">{{ _("Open requests")|e }}</div>
+					<div class="qs-a-card-v">{{ open_count|e }}</div>
 				</div>
 			</div>
 
@@ -84,49 +84,49 @@
 				{%- if show_savings %}
 				<div class="qs-a-saved qs-p-m">
 					<div>
-						<div class="qs-a-saved-l">{{ _("Saved vs listed prices") }}</div>
-						<div class="qs-a-saved-v">{{ total_saved }}</div>
+						<div class="qs-a-saved-l">{{ _("Saved vs listed prices")|e }}</div>
+						<div class="qs-a-saved-v">{{ total_saved|e }}</div>
 					</div>
-					<div class="qs-a-saved-n">{{ _("across {0} orders").format(orders|length) }}</div>
+					<div class="qs-a-saved-n">{{ _("across {0} orders").format(orders|length)|e }}</div>
 				</div>
 				{%- endif %}
 
 				{%- if not orders %}
-				<p class="qs-a-empty">{{ _("No orders yet.") }} <a href="/">{{ _("Browse products") }}</a></p>
+				<p class="qs-a-empty">{{ _("No orders yet.")|e }} <a href="/">{{ _("Browse products")|e }}</a></p>
 				{%- else %}
 				<div class="qs-a-table qs-p-d">
 					<div class="qs-a-scroll">
 						<table>
 							<thead>
 								<tr>
-									<th scope="col">{{ _("Order") }}</th>
-									<th scope="col">{{ _("Items") }}</th>
-									<th scope="col" class="qs-a-r">{{ _("Listed") }}</th>
-									<th scope="col" class="qs-a-r">{{ _("Your price") }}</th>
-									{%- if show_savings %}<th scope="col" class="qs-a-r">{{ _("You saved") }}</th>{% endif %}
-									<th scope="col">{{ _("Status") }}</th>
-									<th scope="col" class="qs-a-r"><span class="qs-p-sr">{{ _("Actions") }}</span></th>
+									<th scope="col">{{ _("Order")|e }}</th>
+									<th scope="col">{{ _("Items")|e }}</th>
+									<th scope="col" class="qs-a-r">{{ _("Listed")|e }}</th>
+									<th scope="col" class="qs-a-r">{{ _("Your price")|e }}</th>
+									{%- if show_savings %}<th scope="col" class="qs-a-r">{{ _("You saved")|e }}</th>{% endif %}
+									<th scope="col">{{ _("Status")|e }}</th>
+									<th scope="col" class="qs-a-r"><span class="qs-p-sr">{{ _("Actions")|e }}</span></th>
 								</tr>
 							</thead>
 							<tbody>
 								{%- for o in orders %}
 								<tr>
-									<td><div class="qs-a-id">{{ o.name }}</div><div class="qs-a-sub">{{ o.date }}</div></td>
-									<td class="qs-a-muted">{{ o.line_count }} {{ _("items") }} · {{ o.units }} {{ _("pcs") }}</td>
-									<td class="qs-a-r qs-a-muted"><s>{{ o.listed }}</s></td>
-									<td class="qs-a-r qs-a-strong">{{ o.sold }}</td>
-									{%- if show_savings %}<td class="qs-a-r qs-a-strong qs-a-save">{% if o.saved %}{{ o.saved }} <span>({{ o.pct }})</span>{% else %}—{% endif %}</td>{% endif %}
-									<td><span class="qs-a-chip qs-v-tone-{{ o.tone }}">{{ o.status }}</span></td>
-									<td class="qs-a-r"><button type="button" class="qs-a-toggle" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="qs-a-o{{ loop.index }}" data-qs-order-toggle data-hide="{{ _('Hide') }}" data-show="{{ _('Details') }}">{{ _("Hide") if loop.first else _("Details") }}</button></td>
+									<td><div class="qs-a-id">{{ o.name|e }}</div><div class="qs-a-sub">{{ o.date|e }}</div></td>
+									<td class="qs-a-muted">{{ o.line_count|e }} {{ _("items")|e }} · {{ o.units|e }} {{ _("pcs")|e }}</td>
+									<td class="qs-a-r qs-a-muted"><s>{{ o.listed|e }}</s></td>
+									<td class="qs-a-r qs-a-strong">{{ o.sold|e }}</td>
+									{%- if show_savings %}<td class="qs-a-r qs-a-strong qs-a-save">{% if o.saved %}{{ o.saved|e }} <span>({{ o.pct|e }})</span>{% else %}—{% endif %}</td>{% endif %}
+									<td><span class="qs-a-chip qs-v-tone-{{ o.tone|e }}">{{ o.status|e }}</span></td>
+									<td class="qs-a-r"><button type="button" class="qs-a-toggle" aria-expanded="{{ ('true' if loop.first else 'false')|e }}" aria-controls="qs-a-o{{ loop.index|e }}" data-qs-order-toggle data-hide="{{ _('Hide')|e }}" data-show="{{ _('Details')|e }}">{{ (_("Hide") if loop.first else _("Details"))|e }}</button></td>
 								</tr>
-								<tr id="qs-a-o{{ loop.index }}" class="qs-a-detail"{% if not loop.first %} hidden{% endif %}>
-									<td colspan="{{ 7 if show_savings else 6 }}">
+								<tr id="qs-a-o{{ loop.index|e }}" class="qs-a-detail"{% if not loop.first %} hidden{% endif %}>
+									<td colspan="{{ (7 if show_savings else 6)|e }}">
 										{%- for l in o.lines %}
-										<div class="qs-a-line"><span class="qs-a-strong">{{ l.name }}</span><span class="qs-a-muted">{{ l.qty }} × {% if l.listed %}<s>{{ l.listed }}</s> → {% endif %}<strong>{{ l.sold }}</strong> {{ _("each") }}</span></div>
+										<div class="qs-a-line"><span class="qs-a-strong">{{ l.name|e }}</span><span class="qs-a-muted">{{ l.qty|e }} × {% if l.listed %}<s>{{ l.listed|e }}</s> → {% endif %}<strong>{{ l.sold|e }}</strong> {{ _("each")|e }}</span></div>
 										{%- endfor %}
 										<div class="qs-a-btns">
-											<button type="button" class="qs-p-ink qs-a-reorder" data-qs-reorder="{{ o.name }}">{{ _("Reorder") }}</button>
-											<a class="qs-p-pill qs-a-pdf" href="{{ o.pdf_url }}" download>{{ _("Order PDF") }}</a>
+											<button type="button" class="qs-p-ink qs-a-reorder" data-qs-reorder="{{ o.name|e }}">{{ _("Reorder")|e }}</button>
+											<a class="qs-p-pill qs-a-pdf" href="{{ o.pdf_url|e }}" download>{{ _("Order PDF")|e }}</a>
 										</div>
 									</td>
 								</tr>
@@ -139,24 +139,24 @@
 				<div class="qs-a-mlist qs-p-m">
 					{%- for o in orders %}
 					<article class="qs-a-ocard">
-						<button type="button" class="qs-a-ohead" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="qs-a-mo{{ loop.index }}" data-qs-order-toggle>
-							<span class="qs-a-row"><span class="qs-a-id">{{ o.name }}</span><span class="qs-a-chip qs-v-tone-{{ o.tone }}">{{ o.status }}</span></span>
-							<span class="qs-a-sub">{{ o.date }} · {{ o.line_count }} {{ _("items") }} · {{ o.units }} {{ _("pcs") }}</span>
+						<button type="button" class="qs-a-ohead" aria-expanded="{{ ('true' if loop.first else 'false')|e }}" aria-controls="qs-a-mo{{ loop.index|e }}" data-qs-order-toggle>
+							<span class="qs-a-row"><span class="qs-a-id">{{ o.name|e }}</span><span class="qs-a-chip qs-v-tone-{{ o.tone|e }}">{{ o.status|e }}</span></span>
+							<span class="qs-a-sub">{{ o.date|e }} · {{ o.line_count|e }} {{ _("items")|e }} · {{ o.units|e }} {{ _("pcs")|e }}</span>
 							<span class="qs-a-row qs-a-end">
-								<span><span class="qs-a-sub">{{ _("Your price") }}</span><span class="qs-a-big">{{ o.sold }}</span></span>
-								<span class="qs-a-right"><s class="qs-a-sub">{{ o.listed }}</s>{% if o.saved %}<span class="qs-a-save">{{ _("You saved") }} {{ o.saved }} ({{ o.pct }})</span>{% endif %}</span>
+								<span><span class="qs-a-sub">{{ _("Your price")|e }}</span><span class="qs-a-big">{{ o.sold|e }}</span></span>
+								<span class="qs-a-right"><s class="qs-a-sub">{{ o.listed|e }}</s>{% if o.saved %}<span class="qs-a-save">{{ _("You saved")|e }} {{ o.saved|e }} ({{ o.pct|e }})</span>{% endif %}</span>
 							</span>
 						</button>
-						<div class="qs-a-obody" id="qs-a-mo{{ loop.index }}"{% if not loop.first %} hidden{% endif %}>
+						<div class="qs-a-obody" id="qs-a-mo{{ loop.index|e }}"{% if not loop.first %} hidden{% endif %}>
 							{%- for l in o.lines %}
 							<div class="qs-a-mline">
-								<div class="qs-a-strong">{{ l.name }}</div>
-								<div class="qs-a-row qs-a-muted"><span>{{ l.qty }} × <s>{{ l.listed }}</s></span><span class="qs-a-each">{{ l.sold }} {{ _("each") }}</span></div>
+								<div class="qs-a-strong">{{ l.name|e }}</div>
+								<div class="qs-a-row qs-a-muted"><span>{{ l.qty|e }} × <s>{{ l.listed|e }}</s></span><span class="qs-a-each">{{ l.sold|e }} {{ _("each")|e }}</span></div>
 							</div>
 							{%- endfor %}
 							<div class="qs-a-btns">
-								<button type="button" class="qs-p-ink qs-a-reorder" data-qs-reorder="{{ o.name }}">{{ _("Reorder") }}</button>
-								<a class="qs-p-pill qs-a-pdf" href="{{ o.pdf_url }}" download>{{ _("Order PDF") }}</a>
+								<button type="button" class="qs-p-ink qs-a-reorder" data-qs-reorder="{{ o.name|e }}">{{ _("Reorder")|e }}</button>
+								<a class="qs-p-pill qs-a-pdf" href="{{ o.pdf_url|e }}" download>{{ _("Order PDF")|e }}</a>
 							</div>
 						</div>
 					</article>
@@ -168,19 +168,19 @@
 
 			<div id="qs-a-requests" role="tabpanel" aria-labelledby="qs-a-t-requests" data-qs-panel="requests" class="qs-a-panel" hidden>
 				{%- if not requests %}
-				<p class="qs-a-empty">{{ _("No requests yet.") }} <a href="/quote">{{ _("Start a quote") }}</a></p>
+				<p class="qs-a-empty">{{ _("No requests yet.")|e }} <a href="/quote">{{ _("Start a quote")|e }}</a></p>
 				{%- endif %}
 				<div class="qs-a-reqs">
 					{%- for r in requests %}
 					<article class="qs-a-req">
-						<div class="qs-a-row"><span class="qs-a-id">{{ r.name }}</span><span class="qs-a-chip qs-v-tone-{{ r.tone }}">{{ r.status }}</span></div>
-						<div class="qs-a-sub">{{ r.date }} · {{ r.summary }}</div>
-						{%- if r.note %}<div class="qs-a-note">{{ r.note }}</div>{% endif %}
+						<div class="qs-a-row"><span class="qs-a-id">{{ r.name|e }}</span><span class="qs-a-chip qs-v-tone-{{ r.tone|e }}">{{ r.status|e }}</span></div>
+						<div class="qs-a-sub">{{ r.date|e }} · {{ r.summary|e }}</div>
+						{%- if r.note %}<div class="qs-a-note">{{ r.note|e }}</div>{% endif %}
 						{%- if r.priced %}
 						<div class="qs-a-btns qs-a-btns-eq">
-							<a class="qs-p-ink" href="{{ r.url }}">{{ _("View price") }}</a>
+							<a class="qs-p-ink" href="{{ r.url|e }}">{{ _("View price")|e }}</a>
 							{%- if qs.whatsapp_url %}
-							<a class="qs-p-pill" href="{{ qs.whatsapp_url|e }}?text={{ r.name|urlencode }}" target="_blank" rel="noopener"><span class="qs-p-d">{{ _("Reply") }}</span><span class="qs-p-m">{{ _("Reply on WhatsApp") }}</span></a>
+							<a class="qs-p-pill" href="{{ qs.whatsapp_url|e }}?text={{ r.name|urlencode|e }}" target="_blank" rel="noopener"><span class="qs-p-d">{{ _("Reply")|e }}</span><span class="qs-p-m">{{ _("Reply on WhatsApp")|e }}</span></a>
 							{%- endif %}
 						</div>
 						{%- endif %}

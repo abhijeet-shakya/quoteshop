@@ -7,6 +7,7 @@ from urllib.parse import unquote, urlsplit
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, fmt_money, get_files_path, nowdate
 
 from quoteshop.quoteshop_catalog.cache import PREFIX
@@ -52,14 +53,41 @@ order by i.qs_display_order, i.item_name, i.name
 """
 
 
+# Guest GET APIs are rate limited per IP. rate_limit counts every call made during a web request,
+# page renders included, so the www pages call the undecorated products/product/categories below.
 @frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=600, seconds=3600)
 def list_products(category: str | None = None, q: str | None = None, page: int | str = 1) -> dict:
 	"""Published product cards, filtered by category route (incl. descendants) and search text, paginated."""
+	return products(category, q, page)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=600, seconds=3600)
+def get_product(route: str) -> dict:
+	"""Product page payload: card fields plus description, photos, specs, related cards, lead time, UOM."""
+	return product(route)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=600, seconds=3600)
+def get_categories() -> list[dict]:
+	"""Published Item Groups, flat, ordered by display order then name."""
+	return categories()
+
+
+def products(category: str | None = None, q: str | None = None, page: int | str = 1) -> dict:
+	"""list_products without the rate limit (for page renders)."""
 	q = (q or "").strip()[:MAX_QUERY]
 	page = max(cint(page), 1)
 	params = {"category": category or None, "q": q, "page": page}
+	if q:
+		# ponytail: searches are never cached (free text = unbounded keys); add a short-TTL cache if
+		# search load ever shows up in the slow log.
+		return _list_products(**params)
 	key = f"{PREFIX}list:{hashlib.sha1(json.dumps(params, sort_keys=True).encode()).hexdigest()}"
-	return _cached(key, lambda: _list_products(**params))
+	# empty pages (past the end, empty category) are not cached, so ?page=N can't fill redis
+	return _cached(key, lambda: _list_products(**params), keep=lambda result: bool(result["items"]))
 
 
 def _list_products(category: str | None, q: str, page: int) -> dict:
@@ -97,9 +125,8 @@ def _list_products(category: str | None, q: str, page: int) -> dict:
 	}
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
-def get_product(route: str) -> dict:
-	"""Product page payload: card fields plus description, photos, specs, related cards, lead time, UOM."""
+def product(route: str) -> dict:
+	"""get_product without the rate limit; unknown routes raise (never cached)."""
 	return _cached(f"{PREFIX}product:{route}", lambda: _get_product(route))
 
 
@@ -135,9 +162,8 @@ def _get_product(route: str) -> dict:
 	}
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
-def get_categories() -> list[dict]:
-	"""Published Item Groups, flat, ordered by display order then name."""
+def categories() -> list[dict]:
+	"""get_categories without the rate limit."""
 	return _cached(
 		f"{PREFIX}categories",
 		lambda: frappe.get_all(
@@ -203,11 +229,12 @@ def _settings():
 	return frappe.get_cached_doc("QS Store Settings")
 
 
-def _cached(key: str, build: Callable[[], Any]) -> Any:
+def _cached(key: str, build: Callable[[], Any], keep: Callable[[Any], bool] | None = None) -> Any:
 	value = frappe.cache.get_value(key, expires=True)
 	if value is None:
 		value = build()
-		frappe.cache.set_value(key, value, expires_in_sec=TTL)
+		if keep is None or keep(value):
+			frappe.cache.set_value(key, value, expires_in_sec=TTL)
 	return value
 
 
