@@ -24,6 +24,7 @@ class QSStoreSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		from quoteshop.quoteshop_settings.doctype.qs_header_message.qs_header_message import QSHeaderMessage
 		from quoteshop.quoteshop_settings.doctype.qs_social_link.qs_social_link import QSSocialLink
 
 		address: DF.SmallText | None
@@ -38,13 +39,17 @@ class QSStoreSettings(Document):
 		default_warehouse: DF.Link | None
 		email: DF.Data | None
 		favicon: DF.AttachImage | None
+		header_max_links: DF.Int
+		header_messages: DF.Table[QSHeaderMessage]
 		logo: DF.AttachImage | None
 		price_suffix: DF.Data | None
 		products_per_page: DF.Int
+		quote_bar_delay: DF.Int
 		quote_button_label: DF.Data | None
 		response_time_text: DF.Data | None
 		search_placeholder: DF.Data | None
 		short_name: DF.Data | None
+		show_all_categories: DF.Check
 		show_savings_to_buyer: DF.Check
 		show_starting_prices: DF.Check
 		social_links: DF.Table[QSSocialLink]
@@ -53,6 +58,8 @@ class QSStoreSettings(Document):
 	# end: auto-generated types
 
 	def validate(self) -> None:
+		self.header_max_links = min(max(cint(self.header_max_links), 0), 8)
+		self.quote_bar_delay = min(max(cint(self.quote_bar_delay), 0), 5000)
 		self.warn_low_contrast()
 		warn_crm_auto_customer()
 

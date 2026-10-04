@@ -31,12 +31,13 @@
 		{%- else %}<span class="qs-noimg">{{ icon("photo", 48, "1.5") }}</span>{% endif %}
 	</div>
 	<div class="qs-card-info">
+		{#- colour tiles sit above the name; an item without colours keeps the row's height so cards line up -#}
+		{%- if p.colours %}{{ swatches(p, (p.route ~ "-" ~ idx)) }}{% else %}<div class="qs-cs qs-cs-none" aria-hidden="true"></div>{% endif %}
 		<span class="qs-card-cat">{{ p.item_group|e }}</span>
 		<a href="/p/{{ p.route|e }}" class="qs-card-name">{{ p.item_name|e }}</a>
 		{%- if p.short_description %}<span class="qs-card-spec">{{ p.short_description|e }}</span>{% endif %}
-		<span class="qs-card-price">{% if p.price %}{{ p.price|e }}{% else %}{{ _("Price on request")|e }}{% endif %}</span>
 		<div class="qs-card-foot">
-			{%- if p.colours %}{{ swatches(p, (p.route ~ "-" ~ idx)) }}{% endif %}
+			<span class="qs-card-price">{% if p.price %}{{ p.price|e }}{% else %}{{ _("Price on request")|e }}{% endif %}</span>
 			{%- if p.has_colours and not p.colours %}
 			{#- no colour data on this card: choose the colour on the product page -#}
 			<div class="qs-step"><a class="qs-step-add" href="/p/{{ p.route|e }}" aria-label="{{ _('Choose a colour for {0}').format(p.item_name)|e }}">{{ icon("plus", 22, "2.4") }}</a></div>
@@ -46,40 +47,117 @@
 </article>
 {%- endmacro -%}
 
-{%- macro chip_row(categories, active_route=None) -%}
-<nav class="qs-chips" aria-label="{{ _('Categories')|e }}">
-	<a href="/" class="qs-chip" data-qs-chip{% if not active_route %} aria-current="page"{% endif %}>{{ _("All")|e }}</a>
-	{%- for c in categories %}
-	<a href="/c/{{ c.route|e }}" class="qs-chip" data-qs-chip{% if c.route == active_route %} aria-current="page"{% endif %}>{{ c.name|e }}</a>
-	{%- endfor %}
-</nav>
-{%- endmacro -%}
-
-{#- Heading + chips + grid (+ pager). `chips` may be False when the Categories section is rendered elsewhere. -#}
-{%- macro catalog(qs, data, heading, chips=True, grid=True, active_route=None, heading_tag="h2", head_cls="") -%}
-<section{% if grid %} id="catalog"{% endif %} class="qs-catalog">
-	{%- if grid %}
-	<div class="qs-cat-head {{ head_cls|e }}">
-		<{{ heading_tag|e }} class="qs-h2">{{ heading|e }}</{{ heading_tag|e }}>
-		<p class="qs-cat-sub">{{ (_("{0} product") if data.total == 1 else _("{0} products")).format(data.total)|e }} · {% if qs.show_prices %}{{ _("starting prices shown · final best price on WhatsApp")|e }}{% else %}{{ _("order from 1 piece · prices sent on WhatsApp")|e }}{% endif %}</p>
+{#- One category row on the home page: heading, View all, the first products. Desktop = scroll row with arrows (4 cards
+    per view); phone = first 4 as a 2x2 grid and a View all button when the category has more. -#}
+{%- macro category_rows(rows, qs) -%}
+{%- for r in rows %}
+<section class="qs-row" aria-labelledby="qs-row-h{{ loop.index|e }}">
+	<div class="qs-row-head">
+		<div>
+			<h2 class="qs-h2" id="qs-row-h{{ loop.index|e }}">{{ r.name|e }}</h2>
+			<p class="qs-cat-sub">{{ (_("{0} product") if r.total == 1 else _("{0} products")).format(r.total)|e }}</p>
+		</div>
+		<a href="/c/{{ r.route|e }}" class="qs-viewall qs-only-d">{{ _("View all")|e }}{{ icon("chevron", 16, "2.2") }}</a>
 	</div>
-	{%- endif %}
-	{%- if chips %}{{ chip_row(data.categories, active_route) }}{% endif %}
-	{%- if caller is defined %}{{ caller() }}{% endif %}
-	{%- if grid %}
-	{%- if not data["items"] %}
-	<div class="qs-empty">{% if qs.q %}{{ _("No products match your search. Try a simpler word, or tell us what you need on WhatsApp.")|e }}{% else %}{{ _("No products here yet. Tell us what you need on WhatsApp.")|e }}{% endif %}</div>
-	{%- else %}
-	<div class="qs-grid">
-		{%- for p in data["items"] %}{{ card(p, qs, loop.index) }}{% endfor %}
+	<div class="qs-rowwrap" data-qs-row>
+		<div class="qs-rowtrack" data-qs-row-track>
+			{%- set ri = loop.index %}
+			{%- for p in r.cards %}{{ card(p, qs, ri ~ "-" ~ loop.index) }}{% endfor %}
+		</div>
+		<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-row-prev aria-label="{{ _('Previous products')|e }}" hidden>{{ icon("back", 20, "2.2") }}</button>
+		<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-row-next aria-label="{{ _('Next products')|e }}" hidden>{{ icon("chevron", 20, "2.2") }}</button>
 	</div>
-	{%- endif %}
-	{%- if data.prev_url or data.next_url %}
-	<nav class="qs-pager" aria-label="{{ _('Pages')|e }}">
-		{%- if data.prev_url %}<a class="qs-chip" rel="prev" href="{{ data.prev_url|e }}">{{ _("Previous")|e }}</a>{% endif %}
-		{%- if data.next_url %}<a class="qs-chip" rel="next" href="{{ data.next_url|e }}">{{ _("Next")|e }}</a>{% endif %}
-	</nav>
-	{%- endif %}
+	{%- if r.total > 4 %}
+	<a href="/c/{{ r.route|e }}" class="qs-viewall-m qs-only-m">{{ _("View all")|e }}</a>
 	{%- endif %}
 </section>
+{%- endfor %}
+{%- endmacro -%}
+
+{#- Category tree filter: server-rendered (links work without JS). Sidebar on desktop, bottom sheet on phones. -#}
+{%- macro category_filter(data, qs) -%}
+{%- set top_name = data.top.name if data.top else "" -%}
+<div class="qs-fback qs-only-m" data-qs-filter-close hidden></div>
+<aside class="qs-filter" id="qs-filter" data-qs-filter aria-label="{{ _('Categories')|e }}">
+	<div class="qs-filter-top">
+		<h2 class="qs-filter-h">{{ _("Categories")|e }}</h2>
+		{%- if data.active_route %}<a href="/search" class="qs-filter-clear">{{ _("Clear")|e }}</a>{% endif %}
+		<button type="button" class="qs-x qs-only-m" data-qs-filter-close aria-label="{{ _('Close')|e }}">{{ icon("close", 22, "2.2") }}</button>
+	</div>
+	<div class="qs-filter-body">
+		<div class="qs-search qs-search-find">
+			{{ icon("search", 18, color="#5E625F") }}
+			<label for="qs-ffind" class="qs-sr">{{ _("Find a category")|e }}</label>
+			<input id="qs-ffind" class="qs-search-in" type="search" placeholder="{{ _('Find a category')|e }}" autocomplete="off" data-qs-ffind>
+		</div>
+		<ul class="qs-ftree" data-qs-ftree>
+			{%- for g in data.tree %}
+			<li class="qs-fg{% if g.name == top_name %} is-open{% endif %}{% if loop.index > 8 and g.name != top_name %} qs-fmore{% endif %}" data-name="{{ g.name|lower|e }}">
+				<div class="qs-fg-row{% if g.route == data.active_route %} is-cur{% endif %}">
+					<a href="/c/{{ g.route|e }}" class="qs-fg-link"{% if g.route == data.active_route %} aria-current="page"{% endif %}><span>{{ g.name|e }}</span><span class="qs-fcount">{{ g.count|e }}</span></a>
+					{%- if g.kids %}<button type="button" class="qs-fg-tog" data-qs-ftog aria-expanded="{{ 'true' if g.name == top_name else 'false' }}" aria-label="{{ _('Sub-categories of {0}').format(g.name)|e }}"></button>{% endif %}
+				</div>
+				{%- if g.kids %}
+				<ul class="qs-fk">
+					{%- for k in g.kids %}
+					<li data-name="{{ k.name|lower|e }}"><a href="/c/{{ k.route|e }}" class="qs-fk-link{% if k.route == data.active_route %} is-cur{% endif %}"{% if k.route == data.active_route %} aria-current="page"{% endif %}><span>{{ k.name|e }}</span><span class="qs-fcount">{{ k.count|e }}</span></a></li>
+					{%- endfor %}
+				</ul>
+				{%- endif %}
+			</li>
+			{%- endfor %}
+		</ul>
+		<p class="qs-mega-none" data-qs-fnone hidden>{{ _("No category matches.")|e }}</p>
+		{%- if data.tree|length > 8 %}
+		<button type="button" class="qs-fshow" data-qs-fshow>{{ _("Show all {0} categories").format(data.tree|length)|e }}</button>
+		{%- endif %}
+	</div>
+	<div class="qs-filter-foot qs-only-m"><button type="button" class="qs-btn-ink" data-qs-filter-close>{{ _("Show {0} products").format(data.total)|e }}</button></div>
+</aside>
+{%- endmacro -%}
+
+{#- /search and /c/<category>: category tree beside the grid (Filter button + sheet on phones), chips for the sub-categories
+    of the chosen category, the product grid and pager. -#}
+{%- macro listing_page(qs, data, heading, trail=None) -%}
+<div class="qs-lp">
+	{{ category_filter(data, qs) }}
+	<section id="catalog" class="qs-lp-main">
+		<nav class="qs-crumbs qs-only-d" aria-label="{{ _('Breadcrumb')|e }}"><a href="/">{{ _("Home")|e }}</a><span aria-hidden="true">/</span><span>{{ (trail or heading)|e }}</span></nav>
+		<div class="qs-lp-head">
+			<div class="qs-cat-head">
+				<h1 class="qs-h2">{{ heading|e }}</h1>
+				<p class="qs-cat-sub">{{ (_("{0} product") if data.total == 1 else _("{0} products")).format(data.total)|e }} · {% if qs.show_prices %}{{ _("starting prices shown · final best price on WhatsApp")|e }}{% else %}{{ _("order from 1 piece · prices sent on WhatsApp")|e }}{% endif %}</p>
+			</div>
+			<form class="qs-search qs-lp-search qs-only-d" action="/search" method="get" role="search">
+				{{ icon("search", 18, color="#5E625F") }}
+				<label for="qs-lq" class="qs-sr">{{ _("Search products")|e }}</label>
+				<input id="qs-lq" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="{{ _('Search products')|e }}" autocomplete="off">
+			</form>
+		</div>
+		<div class="qs-lp-bar">
+			<button type="button" class="qs-fbtn qs-only-m" data-qs-filter-open aria-haspopup="dialog" aria-controls="qs-filter">{{ icon("filter", 18) }}{{ _("Filter")|e }}{% if data.active_route %} · 1{% endif %}</button>
+			{%- if data.top and data.top.kids %}
+			<nav class="qs-chips" aria-label="{{ _('Sub-categories')|e }}">
+				<a href="/c/{{ data.top.route|e }}" class="qs-chip"{% if data.active_route == data.top.route %} aria-current="page"{% endif %}>{{ _("All {0}").format(data.top.name|lower)|e }}</a>
+				{%- for k in data.top.kids %}
+				<a href="/c/{{ k.route|e }}" class="qs-chip"{% if k.route == data.active_route %} aria-current="page"{% endif %}>{{ k.name|e }}</a>
+				{%- endfor %}
+			</nav>
+			{%- endif %}
+		</div>
+		{%- if not data["items"] %}
+		<div class="qs-empty">{% if qs.q %}{{ _("No products match your search. Try a simpler word, or tell us what you need on WhatsApp.")|e }}{% else %}{{ _("No products here yet. Tell us what you need on WhatsApp.")|e }}{% endif %}</div>
+		{%- else %}
+		<div class="qs-grid">
+			{%- for p in data["items"] %}{{ card(p, qs, loop.index) }}{% endfor %}
+		</div>
+		{%- endif %}
+		{%- if data.prev_url or data.next_url %}
+		<nav class="qs-pager" aria-label="{{ _('Pages')|e }}">
+			{%- if data.prev_url %}<a class="qs-chip" rel="prev" href="{{ data.prev_url|e }}">{{ _("Previous")|e }}</a>{% endif %}
+			{%- if data.next_url %}<a class="qs-chip" rel="next" href="{{ data.next_url|e }}">{{ _("Next")|e }}</a>{% endif %}
+		</nav>
+		{%- endif %}
+	</section>
+</div>
 {%- endmacro -%}

@@ -1,6 +1,6 @@
 /* Buyer portal (/account) – docs/design/Account.dc.html (desktop) and MobileOrders.dc.html (≤ 767px).
    Uses .qs-p-* utilities and .qs-v-tone-* chips (quote.css / quote_view.css). */
-.qs-a-head { position: sticky; top: 0; z-index: 5; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.qs-a-head { background: var(--glass); border-bottom: 1px solid var(--line); }
 .qs-a-headin { padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .qs-a-nav { display: flex; align-items: center; gap: 8px; }
 .qs-a-nav a { height: 46px; padding: 0 16px; border-radius: 999px; display: flex; align-items: center; text-decoration: none; font-weight: 600; font-size: 14px; }

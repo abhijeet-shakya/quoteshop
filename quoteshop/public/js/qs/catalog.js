@@ -21,13 +21,9 @@ export function initCounts() {
 	};
 	window.addEventListener("qs:quote-changed", render);
 	render();
-	// Pages stay cacheable for guests; a signed-in buyer is detected from Frappe's readable user_id cookie.
-	const user = /(?:^|; )user_id=([^;]*)/.exec(document.cookie);
-	if (user && decodeURIComponent(user[1]) !== "Guest") $$("[data-qs-signin]").forEach((a) => (a.textContent = __("Account")));
 }
 
 export function init() {
-	initMobileSearch();
 	initPromos();
 	initCards();
 	initGallery();
@@ -56,44 +52,6 @@ function initPromos() {
 	row.addEventListener("scroll", sync, { passive: true });
 	new ResizeObserver(sync).observe(row);
 	sync();
-}
-
-// Mobile top bar search button: focuses the in-flow search while that is on screen, else opens a row pinned under the bar.
-function initMobileSearch() {
-	const btn = document.querySelector("[data-qs-msearch]");
-	const pop = document.querySelector("[data-qs-mpop]") || document.getElementById("qs-mpop");
-	const flow = document.querySelector(".qs-msearch");
-	if (!btn || !pop || !flow) return;
-	const input = pop.querySelector("input");
-	const set = (on) => {
-		pop.hidden = !on;
-		btn.setAttribute("aria-expanded", on);
-		document.documentElement.style.setProperty("--qs-pop", on ? `${pop.offsetHeight}px` : "0px"); // chips sit under the open row
-	};
-	const close = () => {
-		set(false);
-		btn.focus();
-	};
-	btn.addEventListener("click", () => {
-		if (!pop.hidden) return close();
-		const r = flow.getBoundingClientRect();
-		if (r.bottom > btn.closest("header").offsetHeight && r.top < innerHeight) return flow.querySelector("input").focus();
-		input.value = flow.querySelector("input").value;
-		set(true);
-		input.focus();
-	});
-	// the bar's search button exists only while the in-flow search bar is out of view (hidden = not focusable either)
-	if ("IntersectionObserver" in window) {
-		new IntersectionObserver(
-			([e]) => {
-				btn.hidden = e.isIntersecting;
-				if (e.isIntersecting && !pop.hidden) set(false); // back at the in-flow search: the pinned row is redundant
-			},
-			{ rootMargin: `-${btn.closest("header").offsetHeight}px 0px 0px 0px` },
-		).observe(flow);
-	} else btn.hidden = false;
-	pop.querySelector("[data-qs-mpop-close]").addEventListener("click", close);
-	pop.addEventListener("keydown", (e) => e.key === "Escape" && close());
 }
 
 function initCards() {

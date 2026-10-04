@@ -250,6 +250,17 @@ export function init() {
 		$("[data-qs-units-text]").textContent = __("{0} pcs total", [u.toLocaleString("en-IN")]);
 		const sendCount = $("[data-qs-send-count]");
 		if (sendCount) sendCount.textContent = n ? `\u00a0· ${plural(n, __("{0} item"), __("{0} items"))}` : "";
+		// estimated total = qty × starting price of the lines that have one; lines on request are named, not guessed
+		const priced = showPrices ? lines.filter((r) => r.card && r.card.starting_price != null) : [];
+		const est = $("[data-qs-est]");
+		if (est) {
+			est.hidden = !priced.length;
+			if (priced.length) {
+				$("[data-qs-est-total]").textContent = money(priced.reduce((sum, r) => sum + r.card.starting_price * Number(r.qty || 0), 0), priced[0].card.currency);
+				const open = lines.filter((r) => r.card).length - priced.length;
+				$("[data-qs-est-note]").textContent = open ? __("Not included: {0} on request", [plural(open, __("{0} item"), __("{0} items"))]) : "";
+			}
+		}
 		$("[data-qs-empty]").hidden = n > 0;
 		$("[data-qs-list-search]").hidden = n <= 10;
 		syncSend(pending.length > 0);
@@ -311,7 +322,9 @@ export function init() {
 		const c = r.card;
 		const name = c.item_name || c.item_code;
 		const note = c.short_description || "";
-		const price = showPrices && c.starting_price != null ? __("from {0} each", [money(c.starting_price, c.currency)]) : __("price on request");
+		const priced = showPrices && c.starting_price != null;
+		const price = priced ? __("{0} each", [money(c.starting_price, c.currency)]) : __("price on request");
+		const total = priced ? `<span class="qs-q-total">${esc(__("Total {0}", [money(c.starting_price * r.qty, c.currency)]))}</span>` : "";
 		const img = c.image?.thumb
 			? `<img class="qs-q-thumb" src="${esc(c.image.thumb)}" alt="" width="64" height="64" loading="lazy">`
 			: `<div class="qs-q-thumb" aria-hidden="true"></div>`;
@@ -328,7 +341,7 @@ export function init() {
 			${img}
 			<div class="qs-q-info">
 				<div class="qs-q-name">${title}${colourText}</div>
-				<div class="qs-q-note">${esc(note)}<span class="qs-q-price${note ? " qs-q-sep" : ""}">${esc(price)}</span></div>
+				<div class="qs-q-note">${esc(note)}<span class="qs-q-price${note ? " qs-q-sep" : ""}">${esc(price)}</span>${total}</div>
 				${select}
 			</div>
 			<div class="qs-q-step">

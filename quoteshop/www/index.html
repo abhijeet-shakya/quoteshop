@@ -1,46 +1,48 @@
 {% extends "quoteshop/templates/qs_base.html" %}
 {%- from "quoteshop/templates/qs/icons.html" import icon -%}
-{%- from "quoteshop/templates/qs/card.html" import catalog -%}
+{%- from "quoteshop/templates/qs/card.html" import category_rows -%}
 
 {% block content %}
 <main id="qs-main" class="qs-main qs-main-home">
 {%- for b in blocks %}
 {%- if b.kind == "bento" %}
-	<section class="qs-bento">
-		{%- if b.hero %}
-		<div class="qs-hero">
-			<div class="qs-hero-copy">
-				{%- if hp.hero_badge %}<span class="qs-hero-badge">{{ hp.hero_badge|e }}</span>{% endif %}
-				<h1 class="qs-hero-title">{{ hp.hero_title|e }}</h1>
-				{%- if hp.hero_subtitle %}<p class="qs-hero-sub">{{ hp.hero_subtitle|e }}</p>{% endif %}
-			</div>
+	{%- if b.hero %}
+	{#- Full-width hero: the header floats transparent over it (qs.overlay). -#}
+	<section class="qs-hero" aria-label="{{ _('Welcome')|e }}">
+		{%- if hero_image %}
+		<img class="qs-hero-img" src="{{ hero_image|e }}" alt="" role="presentation" fetchpriority="high" decoding="async">
+		{%- else %}
+		<svg class="qs-hero-art" viewBox="0 0 320 180" width="460" aria-hidden="true" focusable="false">
+			<rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
+			<rect x="22" y="22" width="276" height="136" rx="6" fill="var(--accent)"></rect>
+			<circle cx="24" cy="24" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="20" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="24" r="9" fill="#0A0A0A"></circle>
+			<circle cx="24" cy="156" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="160" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="156" r="9" fill="#0A0A0A"></circle>
+			<circle cx="210" cy="90" r="7" fill="#D64532"></circle><circle cx="222" cy="83" r="7" fill="#E3B23C"></circle><circle cx="222" cy="97" r="7" fill="#2F5FC4"></circle><circle cx="96" cy="90" r="7" fill="#F7F5EE"></circle>
+		</svg>
+		{%- endif %}
+		<div class="qs-hero-scrim"></div>
+		<div class="qs-hero-in">
+			{%- if hp.hero_badge %}<span class="qs-hero-badge">{{ hp.hero_badge|e }}</span>{% endif %}
+			<h1 class="qs-hero-title">{{ hp.hero_title|e }}</h1>
+			{%- if hp.hero_subtitle %}<p class="qs-hero-sub">{{ hp.hero_subtitle|e }}</p>{% endif %}
 			{%- if hp.hero_primary_label or hp.hero_secondary_label or qs.whatsapp_url %}
 			<div class="qs-hero-btns">
-				{%- if hp.hero_primary_label %}<a href="{{ (hp.hero_primary_link or '#catalog')|e }}" class="qs-btn-light">{{ hp.hero_primary_label|e }}</a>{% endif %}
+				{%- if hp.hero_primary_label %}<a href="{{ (hp.hero_primary_link or '/search')|e }}" class="qs-btn-light">{{ hp.hero_primary_label|e }}</a>{% endif %}
 				{%- if hp.hero_secondary_label and (hp.hero_secondary_link or qs.whatsapp_url) %}<a href="{{ (hp.hero_secondary_link or qs.whatsapp_url)|e }}" class="qs-btn-ghost">{{ hp.hero_secondary_label|e }}</a>{% endif %}
 			</div>
 			{%- endif %}
-			{%- if hero_image %}
-			<img class="qs-hero-art qs-hero-img" src="{{ hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0]|e }}" height="{{ hero_size[1]|e }}" fetchpriority="high" decoding="async">
-			{%- else %}
-			<svg class="qs-hero-art" viewBox="0 0 320 180" width="460" aria-hidden="true" focusable="false">
-				<rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
-				<rect x="22" y="22" width="276" height="136" rx="6" fill="var(--accent)"></rect>
-				<circle cx="24" cy="24" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="20" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="24" r="9" fill="#0A0A0A"></circle>
-				<circle cx="24" cy="156" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="160" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="156" r="9" fill="#0A0A0A"></circle>
-				<circle cx="210" cy="90" r="7" fill="#D64532"></circle><circle cx="222" cy="83" r="7" fill="#E3B23C"></circle><circle cx="222" cy="97" r="7" fill="#2F5FC4"></circle><circle cx="96" cy="90" r="7" fill="#F7F5EE"></circle>
-			</svg>
-			{%- endif %}
 		</div>
-		{%- endif %}
-		{%- if b.promos %}
-		{#- ONE offers row for every breakpoint: tiles carry qs-hide-d / qs-hide-m from their show_on_* flags (CSS removes them from the row, so snapping and peeking stay right) -#}
-		{%- set dtiles = tiles|selectattr('show_on_desktop')|list %}
-		{%- set mtiles = tiles|selectattr('show_on_mobile')|list %}
+	</section>
+	{%- endif %}
+	{%- if b.promos %}
+	{#- ONE offers row for every breakpoint: tiles carry qs-hide-d / qs-hide-m from their show_on_* flags (CSS removes them from the row, so snapping and peeking stay right) -#}
+	{%- set dtiles = tiles|selectattr('show_on_desktop')|list %}
+	{%- set mtiles = tiles|selectattr('show_on_mobile')|list %}
+	<div class="qs-wrap">
 		<div class="qs-promos-wrap{% if not dtiles %} qs-hide-d{% endif %}{% if not mtiles %} qs-hide-m{% endif %}" data-qs-promos>
 			<div class="qs-promos{% if mtiles|length == 1 %} is-one-m{% endif %}" role="region" aria-label="{{ _('Offers')|e }}" tabindex="0" data-qs-promos-row>
 				{%- for t in tiles %}
-				<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
+				<a href="{{ (t.link or '/search')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
 					{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
 					<span class="qs-promo-title">{{ t.title|e }}</span>
 				</a>
@@ -49,29 +51,31 @@
 			<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-promos-prev aria-label="{{ _('Previous offers')|e }}" hidden>{{ icon("back", 20, "2.2") }}</button>
 			<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-promos-next aria-label="{{ _('Next offers')|e }}" hidden>{{ icon("chevron", 20, "2.2") }}</button>
 		</div>
-		{%- endif %}
-	</section>
+	</div>
+	{%- endif %}
 {%- elif b.kind == "trust" %}
-	<section class="qs-trust" aria-label="{{ _('Why buy from us')|e }}">
+	<div class="qs-wrap"><section class="qs-trust" aria-label="{{ _('Why buy from us')|e }}">
 		{%- for t in hp.trust_points if t.text %}
 		<span class="qs-trust-item"><span class="qs-dot" aria-hidden="true"></span>{{ t.text|e }}</span>
 		{%- endfor %}
-	</section>
+	</section></div>
 {%- elif b.kind == "how" %}
-	<section class="qs-how" aria-label="{{ _('How it works')|e }}">
+	<div class="qs-wrap"><section class="qs-how" aria-label="{{ _('How it works')|e }}">
 		{%- for step in hp.how_it_works %}
 		<div class="qs-how-step">
 			<span class="qs-how-num{% if loop.last %} qs-how-num-accent{% endif %}">{{ loop.index }}</span>
 			<div><div class="qs-how-title">{{ step.title|e }}</div>{% if step.text %}<div class="qs-how-text">{{ step.text|e }}</div>{% endif %}</div>
 		</div>
 		{%- endfor %}
-	</section>
-{%- elif b.kind == "catalog" %}
-	{%- call catalog(qs, data, _("All products"), chips=b.chips, grid=b.grid, head_cls="qs-hide-m") %}
-	{%- if b.grid and hp.show_mobile_strip and hp.mobile_strip_text %}
-	<a href="{{ (hp.mobile_strip_link or qs.whatsapp_url or '#catalog')|e }}" class="qs-strip qs-only-m"><span>{{ hp.mobile_strip_text|e }}</span>{{ icon("chevron", 18, "2.2") }}</a>
-	{%- endif %}
-	{%- endcall %}
+	</section></div>
+{%- elif b.kind == "rows" %}
+	<div class="qs-wrap qs-rows" id="catalog">
+		{{ category_rows(rows, qs) }}
+		{%- if not rows %}<div class="qs-empty">{{ _("No products here yet. Tell us what you need on WhatsApp.")|e }}</div>{% endif %}
+		{%- if hp.show_mobile_strip and hp.mobile_strip_text %}
+		<a href="{{ (hp.mobile_strip_link or qs.whatsapp_url or '/search')|e }}" class="qs-strip qs-only-m"><span>{{ hp.mobile_strip_text|e }}</span>{{ icon("chevron", 18, "2.2") }}</a>
+		{%- endif %}
+	</div>
 {%- endif %}
 {%- endfor %}
 </main>

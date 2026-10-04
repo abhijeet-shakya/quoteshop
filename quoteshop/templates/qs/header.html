@@ -1,26 +1,112 @@
 {%- from "quoteshop/templates/qs/icons.html" import icon, theme_toggle -%}
-{%- macro brand(qs, cls="") -%}
-<a href="/" class="qs-brand {{ cls|e }}">
-	{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
-	{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
-	<span class="qs-brand-name">{{ qs.name|e }}</span>
-</a>
+{%- macro logo(qs, size) -%}
+{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="{{ size|e }}" height="{{ size|e }}" loading="eager">
+{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
 {%- endmacro -%}
-<header class="qs-hdr qs-only-d">
-	<div class="qs-hdr-in">
-		{{ brand(qs) }}
-		<form class="qs-search" action="/search" method="get" role="search">
-			{{ icon("search", 18, color="#5E625F") }}
-			<label for="qs-q" class="qs-sr">{{ _("Search products")|e }}</label>
-			<input id="qs-q" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="{{ qs.search_placeholder|e }}" autocomplete="off">
-		</form>
-		<nav class="qs-nav" aria-label="{{ _('Main')|e }}">
-			{%- if qs.whatsapp_url %}
-			<a href="{{ qs.whatsapp_url|e }}" class="qs-icon-btn" aria-label="{{ _('Chat on WhatsApp')|e }}" target="_blank" rel="noopener">{{ icon("whatsapp") }}</a>
-			{%- endif %}
-			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
-			<a href="/account" class="qs-signin" data-qs-signin>{{ _("Sign in")|e }}</a>
-			<a href="/quote" class="qs-quote-pill">{{ qs.quote_label|e }}<span class="qs-badge" data-qs-quote-count>0</span></a>
-		</nav>
+{#- One header for every page: message strip, desktop row, mobile row, search row, All categories panel and the phone menu.
+    It floats transparent over the home hero (qs.overlay), otherwise it is solid; public/js/qs/nav.js hides it while scrolling down. -#}
+<div class="qs-top{% if qs.overlay %} qs-top-over{% endif %}" data-qs-top>
+	{%- if qs.nav.messages %}
+	<div class="qs-ann" data-qs-ann>
+		<button type="button" class="qs-ann-btn" data-qs-ann-prev aria-label="{{ _('Previous message')|e }}"{% if qs.nav.messages|length < 2 %} hidden{% endif %}>{{ icon("back", 16, "2.2") }}</button>
+		<span class="qs-ann-text" aria-live="polite">
+			{%- for m in qs.nav.messages %}
+			{%- if m.link %}<a href="{{ m.link|e }}" class="qs-ann-msg"{% if not loop.first %} hidden{% endif %}>{{ m.text|e }}</a>
+			{%- else %}<span class="qs-ann-msg"{% if not loop.first %} hidden{% endif %}>{{ m.text|e }}</span>{% endif %}
+			{%- endfor %}
+		</span>
+		<button type="button" class="qs-ann-btn" data-qs-ann-next aria-label="{{ _('Next message')|e }}"{% if qs.nav.messages|length < 2 %} hidden{% endif %}>{{ icon("chevron", 16, "2.2") }}</button>
 	</div>
-</header>
+	{%- endif %}
+
+	<header class="qs-hdr">
+		<div class="qs-hdr-in qs-only-d">
+			<a href="/" class="qs-brand">{{ logo(qs, 38) }}<span class="qs-brand-name">{{ qs.name|e }}</span></a>
+			<nav class="qs-hnav" aria-label="{{ _('Categories')|e }}">
+				{%- if qs.nav.show_all %}
+				<a href="/search" class="qs-allcats" data-qs-mega-btn aria-expanded="false" aria-controls="qs-mega">{{ icon("menu", 18) }}{{ _("All categories")|e }}{{ icon("down", 16, "2.2") }}</a>
+				{%- endif %}
+				{%- for g in qs.nav.links %}
+				<a href="/c/{{ g.route|e }}" class="qs-hlink"{% if qs.active_group == g.name %} aria-current="page"{% endif %}>{{ g.name|e }}</a>
+				{%- endfor %}
+			</nav>
+			<div class="qs-nav">
+				<button type="button" class="qs-icon-btn" data-qs-search-btn aria-label="{{ _('Search')|e }}" aria-expanded="false" aria-controls="qs-spanel">{{ icon("search", 20) }}</button>
+				{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
+				<a href="/account" class="qs-icon-btn" aria-label="{{ _('My account')|e }}">{{ icon("account") }}</a>
+				<a href="/quote" class="qs-quote-pill">{{ qs.quote_label|e }}<span class="qs-badge" data-qs-quote-count>0</span></a>
+			</div>
+		</div>
+
+		<div class="qs-hdr-m qs-only-m">
+			<div class="qs-hm-l">
+				<button type="button" class="qs-icon-btn" data-qs-menu-open aria-label="{{ _('Open menu')|e }}" aria-expanded="false" aria-controls="qs-drawer">{{ icon("menu", 22) }}</button>
+				<button type="button" class="qs-icon-btn" data-qs-search-btn aria-label="{{ _('Search')|e }}" aria-expanded="false" aria-controls="qs-spanel">{{ icon("search", 20) }}</button>
+			</div>
+			<a href="/" class="qs-brand qs-brand-m" aria-label="{{ qs.name|e }}">{{ logo(qs, 40) }}</a>
+			<div class="qs-hm-r">
+				{%- if qs.whatsapp_url %}
+				<a href="{{ qs.whatsapp_url|e }}" class="qs-icon-btn" aria-label="{{ _('Chat on WhatsApp')|e }}" target="_blank" rel="noopener">{{ icon("whatsapp") }}</a>
+				{%- endif %}
+				<a href="/quote" class="qs-icon-btn qs-hm-quote" aria-label="{{ _('Quote list')|e }}">{{ icon("quote", 22) }}<span class="qs-hm-badge" data-qs-quote-count>0</span></a>
+			</div>
+		</div>
+
+		<form class="qs-spanel" id="qs-spanel" data-qs-spanel action="/search" method="get" role="search" hidden>
+			<div class="qs-search">
+				{{ icon("search", 18, color="#5E625F") }}
+				<label for="qs-q" class="qs-sr">{{ _("Search products")|e }}</label>
+				<input id="qs-q" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="{{ qs.search_placeholder|e }}" autocomplete="off">
+				<button type="button" class="qs-x" data-qs-search-close aria-label="{{ _('Close search')|e }}">{{ icon("close", 18, "2.2") }}</button>
+			</div>
+		</form>
+	</header>
+
+	{%- if qs.nav.show_all %}
+	<div class="qs-mega qs-only-d" id="qs-mega" data-qs-mega role="region" aria-label="{{ _('All categories')|e }}" hidden>
+		<div class="qs-mega-top">
+			<div class="qs-search qs-search-find">
+				{{ icon("search", 18, color="#5E625F") }}
+				<label for="qs-mega-q" class="qs-sr">{{ _("Find a category")|e }}</label>
+				<input id="qs-mega-q" class="qs-search-in" type="search" placeholder="{{ _('Find a category')|e }}" autocomplete="off" data-qs-mega-find>
+			</div>
+			<span class="qs-mega-count" data-qs-mega-count></span>
+			<a href="/search" class="qs-btn-line qs-mega-all">{{ _("Shop all products")|e }}{{ icon("chevron", 16, "2.2") }}</a>
+		</div>
+		<p class="qs-mega-none" data-qs-mega-none hidden>{{ _("No category matches. Try another word.")|e }}</p>
+		<div class="qs-mega-grid" data-qs-mega-grid></div>
+	</div>
+	{%- endif %}
+</div>
+
+{#- Phone menu: category list (filled by nav.js from the cached tree), then a category's sub-categories one level down -#}
+<div class="qs-drawer qs-only-m" id="qs-drawer" data-qs-drawer role="dialog" aria-modal="true" aria-label="{{ _('Menu')|e }}" hidden>
+	<div class="qs-drawer-top">
+		<button type="button" class="qs-icon-btn" data-qs-menu-close aria-label="{{ _('Close menu')|e }}">{{ icon("close", 22, "2.2") }}</button>
+		{{ logo(qs, 36) }}<span class="qs-brand-name">{{ qs.name|e }}</span>
+	</div>
+	<div class="qs-drawer-body">
+		<div data-qs-menu-l1>
+			<div class="qs-search qs-search-find">
+				{{ icon("search", 18, color="#5E625F") }}
+				<label for="qs-menu-q" class="qs-sr">{{ _("Find a category")|e }}</label>
+				<input id="qs-menu-q" class="qs-search-in" type="search" placeholder="{{ _('Find a category')|e }}" autocomplete="off" data-qs-menu-find>
+			</div>
+			<div class="qs-drawer-h"><span>{{ _("Shop by category")|e }}</span><span data-qs-mega-count></span></div>
+			<div class="qs-drawer-list" data-qs-menu-list></div>
+			<p class="qs-mega-none" data-qs-menu-none hidden>{{ _("No category matches.")|e }}</p>
+			<nav class="qs-drawer-links" aria-label="{{ _('Menu links')|e }}">
+				<a href="/search">{{ _("All products")|e }}{{ icon("chevron", 16, "2.2") }}</a>
+				<a href="/quote">{{ _("My quotes")|e }}{{ icon("chevron", 16, "2.2") }}</a>
+				<a href="/account">{{ _("My account")|e }}{{ icon("chevron", 16, "2.2") }}</a>
+				{%- if qs.whatsapp_url %}<a href="{{ qs.whatsapp_url|e }}" target="_blank" rel="noopener">{{ _("Chat on WhatsApp")|e }}{{ icon("chevron", 16, "2.2") }}</a>{% endif %}
+			</nav>
+			{%- if qs.allow_switch %}<button type="button" class="qs-btn-line qs-drawer-theme" data-qs-theme-toggle data-qs-theme-text>{{ _("Switch to dark mode")|e }}</button>{% endif %}
+		</div>
+		<div data-qs-menu-l2 hidden>
+			<button type="button" class="qs-drawer-back" data-qs-menu-back>{{ icon("back", 16, "2.2") }}{{ _("All categories")|e }}</button>
+			<h2 class="qs-drawer-title" data-qs-menu-title></h2>
+			<div class="qs-drawer-list" data-qs-menu-kids></div>
+		</div>
+	</div>
+</div>

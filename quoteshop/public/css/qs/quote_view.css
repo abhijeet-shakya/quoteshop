@@ -2,7 +2,7 @@
 [data-theme="light"] { --warn-bg: #FBF1DC; --warn-fg: #7A5300; --bad-bg: #FBE6E3; --bad-fg: #8A2A20; }
 [data-theme="dark"] { --warn-bg: #3A2E14; --warn-fg: #F2CF7E; --bad-bg: #3D211D; --bad-fg: #F2A79C; }
 
-.qs-v-head { position: sticky; top: 0; z-index: 5; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.qs-v-head { background: var(--glass); border-bottom: 1px solid var(--line); }
 .qs-v-headin { padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .qs-v-headin .qs-theme-btn { margin-left: auto; }
 .qs-v-acct { height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; text-decoration: none; font-weight: 650; font-size: 14px; box-sizing: border-box; }
@@ -19,7 +19,7 @@
 .qs-v-msg-btn { height: 54px; padding: 0 26px; border-radius: 999px; font-weight: 750; margin-top: 8px; }
 
 .qs-v-main { padding: 28px 28px 64px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
-.qs-v-aside { flex: 1 1 340px; min-width: 0; position: sticky; top: 92px; display: flex; flex-direction: column; gap: 14px; }
+.qs-v-aside { flex: 1 1 340px; min-width: 0; position: sticky; top: 126px; display: flex; flex-direction: column; gap: 14px; }
 .qs-v-titlerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .qs-v-titlerow h1 { margin: 0; font-size: 30px; letter-spacing: -0.04em; font-weight: 800; }
 .qs-v-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
@@ -50,7 +50,7 @@
 .qs-v-history h2 { margin: 0 0 4px; font-size: 14px; font-weight: 800; color: var(--text); }
 
 .qs-v-lines { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-.qs-v-tools { position: sticky; top: 72px; z-index: 3; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.qs-v-tools { position: sticky; top: 110px; z-index: 3; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .qs-v-search { flex: 1 1 260px; }
 .qs-v-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 .qs-v-filters .qs-p-chip { height: 40px; font-size: 13px; }

@@ -6,6 +6,7 @@ const root = document.documentElement;
 function sync() {
 	const label = root.dataset.theme === "dark" ? __("Switch to light mode") : __("Switch to dark mode");
 	document.querySelectorAll("[data-qs-theme-toggle]").forEach((b) => b.setAttribute("aria-label", label));
+	document.querySelectorAll("[data-qs-theme-text]").forEach((b) => (b.textContent = label));
 }
 
 export function initTheme() {

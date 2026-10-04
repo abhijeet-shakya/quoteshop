@@ -1,7 +1,4 @@
 {% extends "quoteshop/templates/qs_base.html" %}
-{%- from "quoteshop/templates/qs/icons.html" import theme_toggle -%}
-{% block header %}{% endblock %}
-{% block mobile_header %}{% endblock %}
 {% block quote_bar %}{% endblock %}
 {% block footer %}{% endblock %}
 {% block tabbar %}{% endblock %}
@@ -13,21 +10,15 @@
 	data-otp="{{ (1 if form.otp_required else 0)|e }}"
 	data-pincode-required="{{ (1 if form.show_pincode and form.require_pincode else 0)|e }}">
 
-	<header class="qs-q-head">
+	<div class="qs-q-head qs-p-m">
 		<div class="qs-p-wrap qs-q-headin">
-			<a class="qs-q-back qs-p-m" href="/" aria-label="{{ _('Back to products')|e }}">
+			<a class="qs-q-back" href="/" aria-label="{{ _('Back to products')|e }}">
 				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
 			</a>
-			<a href="/" class="qs-brand qs-p-d">
-				{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
-				{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
-				<span class="qs-brand-name">{{ qs.name|e }}</span>
-			</a>
-			<span class="qs-q-title qs-p-m">{{ _("Your quote")|e }}</span>
-			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
+			<span class="qs-q-title">{{ _("Your quote")|e }}</span>
 			<a class="qs-q-more" href="/">{{ _("Add more")|e }}</a>
 		</div>
-	</header>
+	</div>
 
 	<main id="qs-main" class="qs-p-wrap qs-q-main">
 		<div class="qs-q-form" data-qs-form-view>
@@ -163,6 +154,11 @@
 					<label for="qs-q-otp">{{ _("Code sent on WhatsApp to")|e }} <span data-qs-otp-to></span></label>
 					<input id="qs-q-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
 					<button type="button" class="qs-q-link" data-qs-otp-resend>{{ _("Resend code")|e }}</button>
+				</div>
+
+				<div class="qs-q-est" data-qs-est hidden>
+					<div class="qs-q-est-row"><span>{{ _("Estimated total")|e }}</span><strong data-qs-est-total></strong></div>
+					<p class="qs-q-est-note" data-qs-est-note></p>
 				</div>
 
 				<p class="qs-q-err" data-qs-error role="alert" hidden></p>

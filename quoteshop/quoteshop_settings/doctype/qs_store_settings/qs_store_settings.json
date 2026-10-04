@@ -39,6 +39,14 @@
   "theme_col_2",
   "default_theme",
   "allow_theme_switch",
+  "header_tab",
+  "header_messages_section",
+  "header_messages",
+  "header_links_section",
+  "header_max_links",
+  "show_all_categories",
+  "header_col_2",
+  "quote_bar_delay",
   "defaults_tab",
   "orders_section",
   "default_company",
@@ -234,6 +242,53 @@
    "fieldname": "allow_theme_switch",
    "fieldtype": "Check",
    "label": "Allow theme switch"
+  },
+  {
+   "fieldname": "header_tab",
+   "fieldtype": "Tab Break",
+   "label": "Header"
+  },
+  {
+   "fieldname": "header_messages_section",
+   "fieldtype": "Section Break",
+   "label": "Message strip"
+  },
+  {
+   "description": "Shown in the strip above the header; visitors step through the active ones with the arrows. No active message hides the strip.",
+   "fieldname": "header_messages",
+   "fieldtype": "Table",
+   "label": "Messages",
+   "options": "QS Header Message"
+  },
+  {
+   "fieldname": "header_links_section",
+   "fieldtype": "Section Break",
+   "label": "Header links"
+  },
+  {
+   "default": "5",
+   "description": "Desktop only. Item Groups ticked Show in menu, lowest Menu order first.",
+   "fieldname": "header_max_links",
+   "fieldtype": "Int",
+   "label": "Category links in header (max)"
+  },
+  {
+   "default": "1",
+   "description": "The panel with every category, sub-category and a find box.",
+   "fieldname": "show_all_categories",
+   "fieldtype": "Check",
+   "label": "Show the All categories menu"
+  },
+  {
+   "fieldname": "header_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "500",
+   "description": "The floating Get price bar hides while the visitor scrolls and returns after this many milliseconds without movement.",
+   "fieldname": "quote_bar_delay",
+   "fieldtype": "Int",
+   "label": "Get price bar delay (ms)"
   },
   {
    "fieldname": "defaults_tab",

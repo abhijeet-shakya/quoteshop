@@ -1,8 +1,8 @@
 {% extends "quoteshop/templates/qs_base.html" %}
-{%- from "quoteshop/templates/qs/card.html" import catalog -%}
+{%- from "quoteshop/templates/qs/card.html" import listing_page -%}
 
 {% block content %}
-<main id="qs-main" class="qs-main">
-	{{ catalog(qs, data, group.name, active_route=group.route, heading_tag="h1") }}
+<main id="qs-main" class="qs-main qs-main-list">
+	{{ listing_page(qs, data, group.name, trail=trail) }}
 </main>
 {% endblock %}

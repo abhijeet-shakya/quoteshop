@@ -43,13 +43,20 @@ JS_STRINGS = (
 	"Please enter your name.",
 	"Quantity for {0}",
 	"Remove {0}",
+	"+ {0} more",
+	"All {0}",
 	"Single piece",
+	"in {0}",
+	"{0} categories · {1} sub-categories",
+	"{0} groups",
 	"Something went wrong. Please try again.",
 	"Switch to dark mode",
 	"Switch to light mode",
 	"Update quote",
 	"You seem to be offline. Please try again.",
-	"from {0} each",
+	"Not included: {0} on request",
+	"Total {0}",
+	"{0} each",
 	"price on request",
 	"{0} item",
 	"{0} items",
@@ -73,6 +80,7 @@ def setup(context, page: str, title: str | None = None, description: str | None 
 	digits = re.sub(r"\D", "", s.whatsapp_number or "")
 	path = (frappe.local.request.path if getattr(frappe.local, "request", None) else "/") or "/"
 	context.no_breadcrumbs = 1
+	delay = s.quote_bar_delay
 	context.qs = frappe._dict(
 		page=page,
 		title=f"{title} · {name}" if title else name,
@@ -98,11 +106,57 @@ def setup(context, page: str, title: str | None = None, description: str | None 
 		email=s.email,
 		address=" ".join((s.address or "").split()),
 		q=(frappe.form_dict.get("q") or "").strip()[:100],
+		bar_delay=500 if delay is None else cint(delay),
+		nav=_nav(s),
+		overlay=False,
 		i18n={
 			text: tr for text in JS_STRINGS if (tr := _(text)) != text
 		},  # only non-English text reaches the page
 	)
 	return context.qs
+
+
+def _nav(s) -> frappe._dict:
+	"""Header data: message strip, category links (Item Groups ticked Show in menu), All categories switch."""
+	from quoteshop.quoteshop_catalog.catalog import category_tree, menu_groups
+
+	max_links = 5 if s.header_max_links is None else cint(s.header_max_links)
+	return frappe._dict(
+		messages=[
+			{"text": m.message, "link": _safe_link(m.link)}
+			for m in (s.header_messages or [])
+			if m.active and (m.message or "").strip()
+		],
+		links=[{"name": g["name"], "route": g["route"]} for g in menu_groups(category_tree())[:max_links]],
+		show_all=1 if s.show_all_categories is None else cint(s.show_all_categories),
+	)
+
+
+def _safe_link(url: str | None) -> str | None:
+	"""Only same-site paths and http(s) URLs: the message link comes from a settings field."""
+	url = (url or "").strip()
+	if url.startswith("/") and not url.startswith("//") or re.match(r"https?://", url, re.I):
+		return url
+	return None
+
+
+def home_rows(limit: int = 12, per_row: int = 12) -> list[dict]:
+	"""Category rows for the home page: [{name, route, total, cards}] for the menu groups (cached per category)."""
+	from quoteshop.quoteshop_catalog.catalog import category_tree, menu_groups, products
+
+	rows = []
+	for g in menu_groups(category_tree())[:limit]:
+		result = products(category=g["route"])
+		if result["items"]:
+			rows.append(
+				{
+					"name": g["name"],
+					"route": g["route"],
+					"total": result["total"],
+					"cards": with_prices(result["items"][:per_row]),
+				}
+			)
+	return rows
 
 
 def with_prices(cards: list[dict]) -> list[dict]:
@@ -122,7 +176,7 @@ def with_prices(cards: list[dict]) -> list[dict]:
 
 def listing(context, *, category: str | None = None, q: str | None = None) -> dict:
 	"""Catalog listing for the grid pages (page from ?page=N); unknown category → 404."""
-	from quoteshop.quoteshop_catalog.catalog import categories, products
+	from quoteshop.quoteshop_catalog.catalog import categories, category_tree, products
 
 	try:
 		result = products(category=category, q=q, page=cint(frappe.form_dict.get("page")) or 1)
@@ -130,12 +184,17 @@ def listing(context, *, category: str | None = None, q: str | None = None) -> di
 		raise frappe.PageDoesNotExistError
 	page = result["page"]
 	base = {"q": q} if q else {}
+	tree = category_tree()
+	top = next((g for g in tree if category in (g["route"], *(k["route"] for k in g["kids"]))), None) if category else None
 	return frappe._dict(
 		items=with_prices(result["items"]),
 		total=result["total"],
 		prev_url=_page_url(base, page - 1) if page > 1 else None,
 		next_url=_page_url(base, page + 1) if result["has_more"] else None,
 		categories=categories(),
+		tree=tree,
+		top=top,
+		active_route=category,
 	)
 
 

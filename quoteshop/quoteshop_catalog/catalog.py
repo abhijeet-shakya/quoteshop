@@ -82,6 +82,13 @@ def get_categories() -> list[dict]:
 	return categories()
 
 
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+@rate_limit(limit=600, seconds=3600)
+def get_category_tree() -> list[dict]:
+	"""Header menu / filter data: top-level published categories with their sub-categories and product counts."""
+	return category_tree()
+
+
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
 @rate_limit(limit=600, seconds=3600)
 def get_colours(item_codes: list[str] | str) -> dict[str, list[dict]]:
@@ -248,6 +255,67 @@ def categories() -> list[dict]:
 			order_by="qs_display_order asc, name asc",
 		),
 	)
+
+
+def category_tree() -> list[dict]:
+	"""Published Item Groups as [{name, route, count, show_in_menu, menu_order, kids: [{name, route, count}]}].
+
+	Top level = published groups with no published ancestor; kids = every published descendant, flattened
+	(ponytail: the website shows two levels; deeper groups appear as kids of their top group). `count` = published
+	products in the group and everything below it; groups with no products are left out. Cached with the catalog."""
+	return _cached(f"{PREFIX}tree", _build_tree)
+
+
+def _build_tree() -> list[dict]:
+	groups = frappe.get_all(
+		"Item Group",
+		filters={"qs_published": 1},
+		fields=[
+			"name",
+			"lft",
+			"rgt",
+			"qs_route as route",
+			"qs_display_order as display_order",
+			"qs_show_in_menu as show_in_menu",
+			"qs_menu_order as menu_order",
+		],
+		order_by="qs_display_order asc, name asc",
+	)
+	per_group = dict(frappe.db.sql(f"select item_group, count(*) from `tabItem` where {VISIBLE} group by item_group"))
+	holders = (
+		frappe.get_all("Item Group", filters={"name": ("in", list(per_group))}, fields=["name", "lft", "rgt"])
+		if per_group
+		else []
+	)
+	for g in groups:
+		g["count"] = sum(per_group[h.name] for h in holders if g.lft <= h.lft and h.rgt <= g.rgt)
+	groups = [g for g in groups if g["count"]]
+	tree = []
+	for g in groups:
+		if any(o.lft < g.lft and g.rgt < o.rgt for o in groups):
+			continue
+		kids = [
+			{"name": k.name, "route": k.route, "count": k["count"]}
+			for k in groups
+			if g.lft < k.lft and k.rgt < g.rgt
+		]
+		tree.append(
+			{
+				"name": g.name,
+				"route": g.route,
+				"count": g["count"],
+				"show_in_menu": cint(g.show_in_menu),
+				"menu_order": cint(g.menu_order),
+				"kids": kids,
+			}
+		)
+	return tree
+
+
+def menu_groups(tree: list[dict]) -> list[dict]:
+	"""Groups for the header links and home rows: those ticked Show in menu by Menu order; none ticked → all top groups."""
+	ticked = sorted((g for g in tree if g["show_in_menu"]), key=lambda g: g["menu_order"] or 9999)
+	return ticked or tree
 
 
 def format_price(amount: float, currency: str | None = None) -> str:

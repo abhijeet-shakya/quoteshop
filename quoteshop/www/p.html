@@ -8,14 +8,6 @@
 </button>
 {%- endmacro -%}
 
-{% block mobile_header %}
-<header class="qs-ihdr qs-only-m">
-	<a href="{{ (group_url or '/')|e }}" class="qs-round qs-round-plain" aria-label="{{ _('Back')|e }}">{{ icon("back", 22) }}</a>
-	<span class="qs-ihdr-title">{{ p.item_group|e }}</span>
-	{{ theme_toggle(qs, "qs-round qs-round-plain") }}
-	<a href="/quote" class="qs-round qs-round-plain qs-ihdr-quote" aria-label="{{ _('Quote list')|e }}">{{ icon("quote", 22) }}<span class="qs-ihdr-badge" data-qs-quote-count>0</span></a>
-</header>
-{% endblock %}
 {% block quote_bar %}{% endblock %}
 {% block tabbar %}{% endblock %}
 
@@ -78,7 +70,7 @@
 
 			<div class="qs-pprice">
 				{%- if p.price %}
-				<span class="qs-pprice-main">{{ _("From {0}").format(p.price)|e }}</span>
+				<span class="qs-pprice-main">{{ p.price|e }}</span>
 				<span class="qs-pprice-sub">{{ qs.price_suffix|e }} · {{ _("lower for bulk · final price in your quote")|e }}</span>
 				{%- else %}
 				<span class="qs-pprice-main">{{ _("Price on request")|e }}</span>
@@ -131,7 +123,7 @@
 			<h2 class="qs-related-h" id="qs-related-h">{{ _("Complete the setup")|e }}</h2>
 			<div class="qs-addons">
 				{%- for r in p.related %}
-				{%- set note = [r.short_description, _("from {0}").format(r.price) if r.price else None]|select|join(" · ") %}
+				{%- set note = [r.short_description, r.price]|select|join(" · ") %}
 				{%- if r.has_colours %}
 				<div class="qs-addon">
 					<a href="/p/{{ r.route|e }}" class="qs-addon-sign" aria-label="{{ _('Choose a colour for {0}').format(r.item_name)|e }}"><span aria-hidden="true">+</span></a>
