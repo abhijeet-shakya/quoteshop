@@ -29,23 +29,19 @@
 	<div class="qs-tile">
 		{%- if p.image %}{{ img(p.image, "(max-width: 767px) 50vw, 300px") }}
 		{%- else %}<span class="qs-noimg">{{ icon("photo", 48, "1.5") }}</span>{% endif %}
-		{%- if p.has_colours and not p.colours %}
-		{#- no colour data on this card: choose the colour on the product page -#}
-		<div class="qs-step"><a class="qs-step-add" href="/p/{{ p.route|e }}" aria-label="{{ _('Choose a colour for {0}').format(p.item_name)|e }}">{{ icon("plus", 22, "2.4") }}</a></div>
-		{%- else %}{{ stepper(p) }}{% endif %}
 	</div>
 	<div class="qs-card-info">
 		<span class="qs-card-cat">{{ p.item_group|e }}</span>
 		<a href="/p/{{ p.route|e }}" class="qs-card-name">{{ p.item_name|e }}</a>
 		{%- if p.short_description %}<span class="qs-card-spec">{{ p.short_description|e }}</span>{% endif %}
-		{%- if p.colours %}{{ swatches(p, (p.route ~ "-" ~ idx)) }}{% endif %}
-		{%- if p.price %}
-		<span class="qs-card-price">{{ _("From {0}").format(p.price)|e }}</span>
-		<span class="qs-card-sub">{{ qs.price_suffix|e }} · {{ _("lower for bulk")|e }}</span>
-		{%- else %}
-		<span class="qs-card-price">{{ _("Price on request")|e }}</span>
-		<span class="qs-card-sub">{{ _("Best price on WhatsApp")|e }}</span>
-		{%- endif %}
+		<span class="qs-card-price">{% if p.price %}{{ p.price|e }}{% else %}{{ _("Price on request")|e }}{% endif %}</span>
+		<div class="qs-card-foot">
+			{%- if p.colours %}{{ swatches(p, (p.route ~ "-" ~ idx)) }}{% endif %}
+			{%- if p.has_colours and not p.colours %}
+			{#- no colour data on this card: choose the colour on the product page -#}
+			<div class="qs-step"><a class="qs-step-add" href="/p/{{ p.route|e }}" aria-label="{{ _('Choose a colour for {0}').format(p.item_name)|e }}">{{ icon("plus", 22, "2.4") }}</a></div>
+			{%- else %}{{ stepper(p) }}{% endif %}
+		</div>
 	</div>
 </article>
 {%- endmacro -%}

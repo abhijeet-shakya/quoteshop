@@ -114,43 +114,49 @@ button { font: inherit; }
 .qs-pager { display: flex; justify-content: center; gap: 8px; }
 
 /* product card */
-.qs-card { display: flex; flex-direction: column; gap: 12px; position: relative; }
-.qs-tile { position: relative; aspect-ratio: 1 / 1; border-radius: 24px; background: var(--tile); display: flex; align-items: center; justify-content: center; padding: 28px; box-sizing: border-box; outline: 2px solid transparent; outline-offset: -2px; }
-.qs-card.is-in .qs-tile { outline-color: var(--accent); }
-.qs-tile > img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+.qs-card { position: relative; display: flex; flex-direction: column; border-radius: 24px; background: var(--tile); overflow: hidden; container-type: inline-size; outline: 2px solid transparent; outline-offset: -2px; }
+.qs-card.is-in { outline-color: var(--accent); } /* any colour of the item is in the quote */
+.qs-tile { position: relative; flex: none; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+.qs-tile > img { width: 100%; height: 100%; object-fit: contain; }
 [data-theme="light"] .qs-tile > img, [data-theme="light"] .qs-stage-img { mix-blend-mode: multiply; }
-/* Dark: opaque (light-background) photos fill their tile edge to edge, dimmed, instead of a bright panel inside a dark tile. */
-[data-theme="dark"] .qs-tile:has(> img) { padding: 0; overflow: hidden; }
-[data-theme="dark"] .qs-tile > img { border-radius: inherit; filter: brightness(0.85); }
+/* Dark: opaque (light-background) photos fill the tile edge to edge, dimmed. */
+[data-theme="dark"] .qs-tile:has(> img) { overflow: hidden; }
+[data-theme="dark"] .qs-tile > img { filter: brightness(0.85); }
 [data-theme="dark"] .qs-stage-img, [data-theme="dark"] .qs-thumb img, [data-theme="dark"] .qs-v-thumb img { filter: brightness(0.85); }
 .qs-noimg { color: var(--dot); display: flex; }
-.qs-card-info { display: flex; flex-direction: column; gap: 3px; padding: 0 4px; }
+.qs-card-info { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 16px; }
 .qs-card-cat { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.qs-card-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; text-decoration: none; }
-.qs-cs { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; margin: -3px 0 -9px -10px; }
-.qs-cs-i { position: relative; width: 44px; height: 44px; }
+.qs-card-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; text-decoration: none; }
+.qs-card-name::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.qs-card-spec { font-size: 14px; color: var(--muted); }
+.qs-card-price { margin-top: 4px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+/* bottom row: colour swatches left, add control right; pinned to the card bottom so it lines up across the grid row */
+.qs-card-foot { margin-top: auto; padding-top: 10px; min-height: 54px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative; z-index: 2; }
+.qs-cs { display: flex; align-items: center; margin-left: -7px; min-width: 0; }
+.qs-cs-i { position: relative; flex: none; width: 36px; height: 44px; }
 .qs-cs-i input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.qs-cs-i label { position: absolute; inset: 11px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--bg); outline: 1.5px solid var(--border); background: var(--sw); pointer-events: none; }
+.qs-cs-i label { position: absolute; inset: 11px 7px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--tile); outline: 1.5px solid var(--border); background: var(--sw); pointer-events: none; }
 .qs-cs-i input:checked + label { outline: 2px solid var(--sel-bg); }
 .qs-cs-i input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
 .qs-cs-more { min-width: 28px; height: 44px; display: flex; align-items: center; padding: 0 6px; font-size: 13px; color: var(--muted); text-decoration: none; }
 .qs-cs-more:hover { text-decoration: underline; }
-.qs-card-name::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: 24px; }
-.qs-card-spec { font-size: 14px; color: var(--muted); }
-.qs-card-price { margin-top: 6px; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-.qs-card-sub { font-size: 12px; color: var(--muted); }
 
-/* card quick-add → qty stepper (the add button is the stepper's "+") */
-.qs-step { position: absolute; right: 14px; bottom: 14px; z-index: 2; height: 48px; border-radius: 999px; display: flex; align-items: center; }
+/* add button → qty stepper (the add button is the stepper's "+") */
+.qs-step { position: relative; z-index: 2; margin-left: auto; flex: none; height: 44px; border-radius: 14px; display: flex; align-items: center; }
 .qs-step-dec, .qs-step-qty, .qs-step-plus-t { display: none; }
-.qs-step-add { width: 48px; height: 48px; border-radius: 999px; border: 0; padding: 0; background: var(--surface); color: var(--text); box-shadow: 0 6px 18px rgba(18,20,19,0.14); cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.qs-card.is-qty .qs-step { background: var(--ink-bg); color: #FFFFFF; box-shadow: 0 6px 18px rgba(18,20,19,0.18); }
-.qs-card.is-qty .qs-step-dec, .qs-card.is-qty .qs-step-add { display: block; width: 46px; height: 48px; border: 0; padding: 0; border-radius: 999px; background: transparent; color: #FFFFFF; font-size: 20px; cursor: pointer; box-shadow: none; }
-.qs-card.is-qty .qs-step-qty { display: block; min-width: 44px; text-align: center; font-weight: 800; font-size: 15px; }
+.qs-step-add { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--border); padding: 0; box-sizing: border-box; background: var(--surface); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.qs-card.is-qty .qs-step { background: var(--ink-bg); color: #FFFFFF; }
+.qs-card.is-qty .qs-step-dec, .qs-card.is-qty .qs-step-add { display: block; width: 40px; height: 44px; border: 0; padding: 0; border-radius: 14px; background: transparent; color: #FFFFFF; font-size: 20px; cursor: pointer; }
+.qs-card.is-qty .qs-step-qty { display: block; min-width: 32px; text-align: center; font-weight: 800; font-size: 15px; }
 .qs-card.is-qty .qs-step-plus-t { display: inline; }
 .qs-card.is-qty .qs-step-plus-i { display: none; }
 .qs-step button:focus-visible { outline-offset: -3px; }
 .qs-card.is-qty .qs-step button:focus-visible { outline-color: #FFFFFF; }
+/* narrow card: swatches on their own row, the add control right-aligned on the row below (both rows reserved, so nothing jumps) */
+@container (max-width: 300px) {
+	.qs-card-foot { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 44px 44px; justify-items: start; row-gap: 0; min-height: 0; padding-top: 6px; }
+	.qs-card-foot .qs-step { grid-row: 2; justify-self: end; }
+}
 
 /* floating quote bar */
 .qs-qbar { position: sticky; bottom: 20px; z-index: 4; display: flex; justify-content: center; padding: 0 20px; pointer-events: none; }
@@ -321,20 +327,13 @@ a.qs-addon-sign { text-decoration: none; }
 	.qs-promos:focus-visible { border-radius: 20px; }
 	.qs-promo-title { font-size: 20px; }
 
-	.qs-card { gap: 8px; }
-	.qs-tile { border-radius: 20px; padding: 16px; }
-	.qs-card-name::after { border-radius: 20px; }
-	.qs-card-info { display: block; padding: 0 2px; }
+	.qs-card { border-radius: 20px; }
+	.qs-card-info { padding: 12px; gap: 2px; }
 	.qs-card-cat, .qs-card-spec { display: none; }
 	.qs-card-name { display: block; font-size: 14px; }
-	.qs-card-price { display: block; font-size: 15px; margin-top: 4px; }
-	.qs-card-sub { display: block; font-size: 11px; margin-top: 1px; }
-	.qs-step { right: 8px; bottom: 8px; height: 44px; }
-	.qs-step-add { width: 44px; height: 44px; box-shadow: 0 4px 14px rgba(18,20,19,0.14); }
+	.qs-card-price { display: block; font-size: 15px; margin-top: 2px; }
 	.qs-step-add svg { width: 20px; height: 20px; }
-	.qs-card.is-qty .qs-step { left: 8px; justify-content: space-between; box-shadow: none; }
-	.qs-card.is-qty .qs-step-dec, .qs-card.is-qty .qs-step-add { width: 44px; height: 44px; font-size: 18px; }
-	.qs-card.is-qty .qs-step-qty { min-width: 0; font-size: 14px; }
+	.qs-card.is-qty .qs-step-dec, .qs-card.is-qty .qs-step-add { font-size: 18px; }
 
 	/* floating bar above the tab bar */
 	.qs-qbar { position: fixed; left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom)); padding: 0; margin: 0; }
