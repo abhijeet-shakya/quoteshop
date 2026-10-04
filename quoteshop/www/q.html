@@ -1,0 +1,170 @@
+{% extends "quoteshop/templates/qs_base.html" %}
+{% block header %}{% endblock %}
+{% block mobile_header %}{% endblock %}
+{% block quote_bar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block tabbar %}{% endblock %}
+
+{% block content %}
+<div class="qs-v" data-qs-view data-name="{{ name }}" data-token="{{ token }}" data-currency="{{ currency }}" data-shown="{{ shown }}" data-version="{{ view.version }}">
+	<header class="qs-v-head">
+		<div class="qs-p-wrap qs-v-headin">
+			<a href="/" class="qs-brand qs-p-d">
+				{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
+				{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
+				<span class="qs-brand-name">{{ qs.name|e }}</span>
+			</a>
+			<a class="qs-v-back qs-p-m" href="/account" aria-label="{{ _('Back to my account') }}">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+			</a>
+			{%- if lines %}
+			<div class="qs-v-mtitle qs-p-m">
+				<div class="qs-v-mname">{{ name }} · v{{ view.version }}</div>
+				<div class="qs-v-msub">{{ subtitle }}</div>
+			</div>
+			<span class="qs-v-status qs-v-tone-{{ status_tone }} qs-p-m" data-qs-status>{{ status_label }}</span>
+			{%- endif %}
+			<a class="qs-v-acct qs-p-d" href="/account">{{ _("My account") }}</a>
+		</div>
+	</header>
+
+	{%- if unavailable or outdated or not lines %}
+	<main id="qs-main" class="qs-p-wrap qs-v-msg">
+		{%- if outdated and outdated.status == "Expired" %}
+		<h1>{{ _("This price has expired") }}</h1>
+		<p>{{ _("Message us on WhatsApp and we'll send you an updated quote.") }}</p>
+		{%- if qs.whatsapp_url %}<a class="qs-p-ink qs-v-msg-btn" href="{{ qs.whatsapp_url|e }}?text={{ name|urlencode }}" target="_blank" rel="noopener">{{ _("Open WhatsApp") }}</a>{% endif %}
+		{%- elif outdated %}
+		<h1>{{ _("This quote has been updated") }}</h1>
+		<p>{{ _("There is a newer version of this quote (v{0}). Please open the latest link we sent you on WhatsApp.").format(outdated.current_version) }}</p>
+		{%- if outdated.url %}<a class="qs-p-ink qs-v-msg-btn" href="{{ outdated.url }}">{{ _("View latest quote") }}</a>
+		{%- elif qs.whatsapp_url %}<a class="qs-p-ink qs-v-msg-btn" href="{{ qs.whatsapp_url|e }}?text={{ name|urlencode }}" target="_blank" rel="noopener">{{ _("Open WhatsApp") }}</a>{% endif %}
+		{%- elif unavailable %}
+		<h1>{{ _("Quote not available") }}</h1>
+		<p>{{ _("This quote can't be shown right now. Please try again in a little while.") }}</p>
+		{%- else %}
+		<h1>{{ name }}</h1>
+		<p>{{ _("This quote has no items.") }}</p>
+		{%- endif %}
+	</main>
+	{%- else %}
+	<main id="qs-main" class="qs-p-wrap qs-v-main">
+		<aside class="qs-v-aside">
+			<div class="qs-v-titlerow qs-p-d">
+				<div>
+					<h1>{{ name }} · v{{ view.version }}</h1>
+					<div class="qs-v-sub">{{ subtitle }}</div>
+				</div>
+				<span class="qs-v-status qs-v-tone-{{ status_tone }}" data-qs-status>{{ status_label }}</span>
+			</div>
+
+			<section class="qs-v-sum" aria-label="{{ _('Summary') }}">
+				<div class="qs-v-sumtop">
+					<div>
+						<div class="qs-v-sumlbl">{{ _("Your price") }} · {{ lines|length }} {{ _("items") }} · {{ unit_text }} {{ _("pcs") }}</div>
+						<div class="qs-v-total">{{ offer_total }}</div>
+					</div>
+					{%- if saved %}
+					<div class="qs-v-save"><s>{{ list_total }}</s> <strong><span class="qs-p-d">· </span>{{ _("Save") }} {{ saved }}</strong></div>
+					{%- endif %}
+				</div>
+				<div class="qs-v-bar" role="img" aria-label="{{ _('{0} available, {1} partial, {2} not available').format(counts.ok, counts.partial, counts.none) }}">
+					<span class="qs-v-ok" style="width: {{ pct.ok }}"></span><span class="qs-v-part" style="width: {{ pct.partial }}"></span><span class="qs-v-no" style="width: {{ pct.none }}"></span>
+				</div>
+				<div class="qs-v-legend">
+					<span><i class="qs-v-dot qs-v-ok"></i>{{ counts.ok }} {{ _("available") }}</span>
+					<span><i class="qs-v-dot qs-v-part"></i>{{ counts.partial }} {{ _("partial") }}</span>
+					<span><i class="qs-v-dot qs-v-no"></i>{{ counts.none }} {{ _("not available") }}</span>
+				</div>
+			</section>
+
+			<div class="qs-v-actions" data-qs-actions>
+				{%- if not accepted %}
+				{%- if can_accept %}
+				<button type="button" class="qs-v-accept" data-qs-accept>{{ _("Accept v{0}").format(view.version) }}</button>
+				{%- endif %}
+				<div class="qs-v-more">
+					{%- if can_change %}
+					<button type="button" class="qs-p-pill qs-v-change" data-qs-change>{{ _("Change") }}</button>
+					{%- endif %}
+					<a class="qs-p-pill qs-v-dl" href="{{ pdf_url }}" download>{{ _("PDF") }}</a>
+					<a class="qs-p-pill qs-v-dl" href="{{ xlsx_url }}" download>{{ _("Excel") }}</a>
+				</div>
+				{%- if can_accept %}
+				<span class="qs-v-fine">{{ _("Accepting orders only the available quantities.") }}</span>
+				{%- endif %}
+				<p class="qs-v-err" data-qs-error role="alert" hidden></p>
+				{%- endif %}
+				<div class="qs-v-accepted" data-qs-accepted role="status"{% if not accepted %} hidden{% endif %}>
+					{%- if view.sales_order %}{{ _("Accepted · order {0}").format(view.sales_order) }}{% else %}{{ _("Accepted · order being created") }}{% endif -%}
+				</div>
+			</div>
+
+			{%- if history %}
+			<div class="qs-v-history">
+				<h2>{{ _("History") }}</h2>
+				{%- for h in history %}<div>{{ h }}</div>{% endfor %}
+			</div>
+			{%- endif %}
+		</aside>
+
+		<section class="qs-v-lines" aria-label="{{ _('Items') }}">
+			<div class="qs-v-tools">
+				<div class="qs-p-search qs-v-search">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+					<label for="qs-v-find" class="qs-p-sr">{{ _("Find in this quote") }}</label>
+					<input id="qs-v-find" type="search" placeholder="{{ _('Find in this quote') }}" data-qs-find>
+				</div>
+				<div class="qs-v-filters" role="group" aria-label="{{ _('Show') }}">
+					<button type="button" class="qs-p-chip" aria-pressed="true" data-qs-filter="all">{{ _("All") }} {{ lines|length }}</button>
+					<button type="button" class="qs-p-chip" aria-pressed="false" data-qs-filter="changes">{{ _("Changes") }} {{ changes }}</button>
+					<button type="button" class="qs-p-chip" aria-pressed="false" data-qs-filter="none">{{ _("Not available") }} {{ counts.none }}</button>
+				</div>
+			</div>
+
+			<p class="qs-v-nomatch" data-qs-nomatch hidden>{{ _("No items match.") }}</p>
+
+			{%- for g in groups %}
+			<section class="qs-v-group" data-qs-group data-open="{{ 1 if g.open else 0 }}">
+				<button type="button" class="qs-v-ghead" aria-expanded="{{ 'true' if g.open else 'false' }}" aria-controls="qs-v-g{{ loop.index }}">
+					<span class="qs-v-gname">{{ g.name }} <span>· <span data-qs-gcount>{{ g.lines|length }}</span><span class="qs-p-d"> {{ _("items") }}</span></span></span>
+					<span class="qs-v-gsum"><span data-qs-gsub>{{ g.subtotal }}</span><span class="qs-v-arrow" aria-hidden="true">{{ "−" if g.open else "+" }}</span></span>
+				</button>
+				<div class="qs-v-gbody" id="qs-v-g{{ loop.index }}"{% if not g.open %} hidden{% endif %}>
+					<div class="qs-v-scroll">
+						<table>
+							<thead>
+								<tr>
+									<th scope="col">{{ _("Item") }}</th>
+									<th scope="col">{{ _("Qty") }}</th>
+									<th scope="col" class="qs-v-r">{{ _("Listed") }}</th>
+									<th scope="col" class="qs-v-r">{{ _("Your price") }}</th>
+									<th scope="col" class="qs-v-r">{{ _("Total") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{%- for l in g.lines %}
+								<tr class="qs-v-row" data-st="{{ l.state }}"{% if l.changed %} data-chg="1"{% endif %} data-amount="{{ l.amount }}" data-find="{{ ((l.item_name or '') ~ ' ' ~ l.item_code)|lower }}"{% if loop.index > shown %} hidden{% endif %}>
+									<td class="qs-v-item">
+										<div class="qs-v-name">{{ l.item_name or l.item_code }}</div>
+										{%- if l.note %}<span class="qs-v-note qs-v-{{ l.tone }}">{{ l.note }}</span>{% endif %}
+									</td>
+									<td class="qs-v-qty">{{ l.qty_text }}</td>
+									<td class="qs-v-r qs-v-listed">{% if l.listed_text %}<s>{{ l.listed_text }}</s>{% endif %}</td>
+									<td class="qs-v-r qs-v-price">{{ l.price_text }}</td>
+									<td class="qs-v-r qs-v-total-cell">{{ l.total_text }}</td>
+								</tr>
+								{%- endfor %}
+							</tbody>
+						</table>
+					</div>
+					<button type="button" class="qs-v-all" data-qs-showall{% if g.lines|length <= shown %} hidden{% endif %}>{{ _("Show all") }} <span data-qs-gcount>{{ g.lines|length }}</span></button>
+				</div>
+			</section>
+			{%- endfor %}
+		</section>
+	</main>
+	<script type="application/json" data-qs-change-items>{{ change_items|tojson }}</script>
+	{%- endif %}
+</div>
+{% endblock %}

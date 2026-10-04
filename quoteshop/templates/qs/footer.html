@@ -1,0 +1,8 @@
+<footer class="qs-foot">
+	<div class="qs-foot-in">
+		<span>© {{ qs.name|e }}{% if qs.address %} · {{ qs.address|e }}{% endif %}</span>
+		{%- if qs.whatsapp_number or qs.email %}
+		<span>{% if qs.whatsapp_number %}WhatsApp {% if qs.whatsapp_url %}<a href="{{ qs.whatsapp_url|e }}" class="qs-foot-link">{{ qs.whatsapp_number|e }}</a>{% else %}{{ qs.whatsapp_number|e }}{% endif %}{% endif %}{% if qs.whatsapp_number and qs.email %} · {% endif %}{% if qs.email %}<a href="mailto:{{ qs.email|e }}" class="qs-foot-link">{{ qs.email|e }}</a>{% endif %}</span>
+		{%- endif %}
+	</div>
+</footer>

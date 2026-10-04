@@ -1,0 +1,70 @@
+{%- from "quoteshop/templates/qs/icons.html" import icon, img -%}
+
+{#- Quantity stepper: one [data-qs-add] button that adds the first piece, then becomes "+" of the stepper. -#}
+{%- macro stepper(p) -%}
+<div class="qs-step" data-qs-step>
+	<button type="button" class="qs-step-dec" data-qs-dec aria-label="Decrease quantity">−</button>
+	<span class="qs-step-qty" data-qs-qty aria-live="polite">0</span>
+	<button type="button" class="qs-step-add" data-qs-add aria-label="Add {{ p.item_name|e }} to quote"><span class="qs-step-plus-i">{{ icon("plus", 22, "2.4") }}</span><span class="qs-step-plus-t" aria-hidden="true">+</span></button>
+</div>
+{%- endmacro -%}
+
+{%- macro card(p, qs) -%}
+<article class="qs-card" data-qs-card data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty }}">
+	<div class="qs-tile">
+		{%- if p.image %}{{ img(p.image, "(max-width: 767px) 50vw, 300px") }}
+		{%- else %}<span class="qs-noimg">{{ icon("photo", 48, "1.5") }}</span>{% endif %}
+		{{ stepper(p) }}
+	</div>
+	<div class="qs-card-info">
+		<span class="qs-card-cat">{{ p.item_group|e }}</span>
+		<a href="/p/{{ p.route|e }}" class="qs-card-name">{{ p.item_name|e }}</a>
+		{%- if p.short_description %}<span class="qs-card-spec">{{ p.short_description|e }}</span>{% endif %}
+		{%- if p.price %}
+		<span class="qs-card-price">From {{ p.price|e }}</span>
+		<span class="qs-card-sub">{{ qs.price_suffix|e }} · lower for bulk</span>
+		{%- else %}
+		<span class="qs-card-price">Price on request</span>
+		<span class="qs-card-sub">Best price on WhatsApp</span>
+		{%- endif %}
+	</div>
+</article>
+{%- endmacro -%}
+
+{%- macro chip_row(categories, active_route=None) -%}
+<nav class="qs-chips" aria-label="Categories">
+	<a href="/" class="qs-chip" data-qs-chip{% if not active_route %} aria-current="page"{% endif %}>All</a>
+	{%- for c in categories %}
+	<a href="/c/{{ c.route|e }}" class="qs-chip" data-qs-chip{% if c.route == active_route %} aria-current="page"{% endif %}>{{ c.name|e }}</a>
+	{%- endfor %}
+</nav>
+{%- endmacro -%}
+
+{#- Heading + chips + grid (+ pager). `chips` may be False when the Categories section is rendered elsewhere. -#}
+{%- macro catalog(qs, data, heading, chips=True, grid=True, active_route=None, heading_tag="h2", head_cls="") -%}
+<section{% if grid %} id="catalog"{% endif %} class="qs-catalog">
+	{%- if grid %}
+	<div class="qs-cat-head {{ head_cls }}">
+		<{{ heading_tag }} class="qs-h2">{{ heading|e }}</{{ heading_tag }}>
+		<p class="qs-cat-sub">{{ data.total }} product{{ "" if data.total == 1 else "s" }} · {% if qs.show_prices %}starting prices shown · final best price on WhatsApp{% else %}order from 1 piece · prices sent on WhatsApp{% endif %}</p>
+	</div>
+	{%- endif %}
+	{%- if chips %}{{ chip_row(data.categories, active_route) }}{% endif %}
+	{%- if caller is defined %}{{ caller() }}{% endif %}
+	{%- if grid %}
+	{%- if not data["items"] %}
+	<div class="qs-empty">{% if qs.q %}No products match your search. Try a simpler word, or tell us what you need on WhatsApp.{% else %}No products here yet. Tell us what you need on WhatsApp.{% endif %}</div>
+	{%- else %}
+	<div class="qs-grid">
+		{%- for p in data["items"] %}{{ card(p, qs) }}{% endfor %}
+	</div>
+	{%- endif %}
+	{%- if data.prev_url or data.next_url %}
+	<nav class="qs-pager" aria-label="Pages">
+		{%- if data.prev_url %}<a class="qs-chip" rel="prev" href="{{ data.prev_url|e }}">Previous</a>{% endif %}
+		{%- if data.next_url %}<a class="qs-chip" rel="next" href="{{ data.next_url|e }}">Next</a>{% endif %}
+	</nav>
+	{%- endif %}
+	{%- endif %}
+</section>
+{%- endmacro -%}

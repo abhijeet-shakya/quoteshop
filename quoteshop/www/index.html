@@ -1,0 +1,71 @@
+{% extends "quoteshop/templates/qs_base.html" %}
+{%- from "quoteshop/templates/qs/icons.html" import icon -%}
+{%- from "quoteshop/templates/qs/card.html" import catalog -%}
+
+{% block content %}
+<main id="qs-main" class="qs-main qs-main-home">
+{%- for b in blocks %}
+{%- if b.kind == "bento" %}
+	<section class="qs-bento">
+		{%- if b.hero %}
+		<div class="qs-hero">
+			<div class="qs-hero-copy">
+				{%- if hp.hero_badge %}<span class="qs-hero-badge">{{ hp.hero_badge|e }}</span>{% endif %}
+				<h1 class="qs-hero-title">{{ hp.hero_title|e }}</h1>
+				{%- if hp.hero_subtitle %}<p class="qs-hero-sub">{{ hp.hero_subtitle|e }}</p>{% endif %}
+			</div>
+			{%- if hp.hero_primary_label or hp.hero_secondary_label or qs.whatsapp_url %}
+			<div class="qs-hero-btns">
+				{%- if hp.hero_primary_label %}<a href="{{ (hp.hero_primary_link or '#catalog')|e }}" class="qs-btn-light">{{ hp.hero_primary_label|e }}</a>{% endif %}
+				{%- if hp.hero_secondary_label and (hp.hero_secondary_link or qs.whatsapp_url) %}<a href="{{ (hp.hero_secondary_link or qs.whatsapp_url)|e }}" class="qs-btn-ghost">{{ hp.hero_secondary_label|e }}</a>{% endif %}
+			</div>
+			{%- endif %}
+			{%- if hp.hero_image %}
+			<img class="qs-hero-art qs-hero-img" src="{{ hp.hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0] }}" height="{{ hero_size[1] }}" fetchpriority="high" decoding="async">
+			{%- else %}
+			<svg class="qs-hero-art" viewBox="0 0 320 180" width="460" aria-hidden="true" focusable="false">
+				<rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
+				<rect x="22" y="22" width="276" height="136" rx="6" fill="var(--accent)"></rect>
+				<circle cx="24" cy="24" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="20" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="24" r="9" fill="#0A0A0A"></circle>
+				<circle cx="24" cy="156" r="9" fill="#0A0A0A"></circle><circle cx="160" cy="160" r="8" fill="#0A0A0A"></circle><circle cx="296" cy="156" r="9" fill="#0A0A0A"></circle>
+				<circle cx="210" cy="90" r="7" fill="#D64532"></circle><circle cx="222" cy="83" r="7" fill="#E3B23C"></circle><circle cx="222" cy="97" r="7" fill="#2F5FC4"></circle><circle cx="96" cy="90" r="7" fill="#F7F5EE"></circle>
+			</svg>
+			{%- endif %}
+		</div>
+		{%- endif %}
+		{%- if b.promos %}
+		<div class="qs-promos{% if not tiles|selectattr('show_on_desktop')|list %} qs-hide-d{% endif %}{% if not tiles|selectattr('show_on_mobile')|list %} qs-hide-m{% endif %}">
+			{%- for t in tiles %}
+			<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
+				{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
+				<span class="qs-promo-title">{{ t.title|e }}</span>
+			</a>
+			{%- endfor %}
+		</div>
+		{%- endif %}
+	</section>
+{%- elif b.kind == "trust" %}
+	<section class="qs-trust" aria-label="Why buy from us">
+		{%- for t in hp.trust_points if t.text %}
+		<span class="qs-trust-item"><span class="qs-dot" aria-hidden="true"></span>{{ t.text|e }}</span>
+		{%- endfor %}
+	</section>
+{%- elif b.kind == "how" %}
+	<section class="qs-how" aria-label="How it works">
+		{%- for step in hp.how_it_works %}
+		<div class="qs-how-step">
+			<span class="qs-how-num{% if loop.last %} qs-how-num-accent{% endif %}">{{ loop.index }}</span>
+			<div><div class="qs-how-title">{{ step.title|e }}</div>{% if step.text %}<div class="qs-how-text">{{ step.text|e }}</div>{% endif %}</div>
+		</div>
+		{%- endfor %}
+	</section>
+{%- elif b.kind == "catalog" %}
+	{%- call catalog(qs, data, "All products", chips=b.chips, grid=b.grid, head_cls="qs-hide-m") %}
+	{%- if b.grid and hp.show_mobile_strip and hp.mobile_strip_text %}
+	<a href="{{ (hp.mobile_strip_link or qs.whatsapp_url or '#catalog')|e }}" class="qs-strip qs-only-m"><span>{{ hp.mobile_strip_text|e }}</span>{{ icon("chevron", 18, "2.2") }}</a>
+	{%- endif %}
+	{%- endcall %}
+{%- endif %}
+{%- endfor %}
+</main>
+{% endblock %}

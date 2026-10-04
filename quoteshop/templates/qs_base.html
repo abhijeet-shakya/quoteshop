@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="{{ qs.lang|e }}" data-theme="{{ qs.theme }}" data-qs-default="{{ qs.default_theme|e }}" data-qs-switch="{{ qs.allow_switch }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ qs.title|e }}</title>
+<meta name="description" content="{{ qs.description|e }}">
+<link rel="canonical" href="{{ qs.canonical|e }}">
+{%- if qs.favicon %}
+<link rel="icon" href="{{ qs.favicon|e }}">
+{%- endif %}
+{% include "quoteshop/templates/qs/theme_script.html" %}
+<style>:root{--accent:{{ qs.accent }};--accent-soft:{{ qs.tints[0] }};--accent-ink:{{ qs.tints[1] }}}[data-theme="dark"]{--accent-soft:{{ qs.tints[2] }};--accent-ink:{{ qs.tints[3] }}}</style>
+{{ include_style("qs.bundle.css") }}
+<script>window.frappe = window.frappe || {};</script>
+<!-- csrf_token -->
+{{ include_script("qs.bundle.js")|replace("<script ", "<script defer ") }}
+{%- block head %}{% endblock %}
+</head>
+<body data-qs-page="{{ qs.page }}">
+<a class="qs-skip" href="#qs-main">Skip to content</a>
+{% block header %}{% include "quoteshop/templates/qs/header.html" %}{% endblock %}
+{% block mobile_header %}{% include "quoteshop/templates/qs/mobile_header.html" %}{% endblock %}
+{% block content %}{% endblock %}
+{% block quote_bar %}{% include "quoteshop/templates/qs/quote_bar.html" %}{% endblock %}
+{% block footer %}{% include "quoteshop/templates/qs/footer.html" %}{% endblock %}
+{% block tabbar %}{% include "quoteshop/templates/qs/tabbar.html" %}{% endblock %}
+</body>
+</html>

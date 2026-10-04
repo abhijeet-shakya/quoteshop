@@ -1,0 +1,26 @@
+{%- from "quoteshop/templates/qs/icons.html" import icon, theme_toggle -%}
+{%- macro brand(qs, cls="") -%}
+<a href="/" class="qs-brand {{ cls }}">
+	{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
+	{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
+	<span class="qs-brand-name">{{ qs.name|e }}</span>
+</a>
+{%- endmacro -%}
+<header class="qs-hdr qs-only-d">
+	<div class="qs-hdr-in">
+		{{ brand(qs) }}
+		<form class="qs-search" action="/search" method="get" role="search">
+			{{ icon("search", 18, color="#5E625F") }}
+			<label for="qs-q" class="qs-sr">Search products</label>
+			<input id="qs-q" class="qs-search-in" type="search" name="q" value="{{ qs.q|e }}" placeholder="{{ qs.search_placeholder|e }}" autocomplete="off">
+		</form>
+		<nav class="qs-nav" aria-label="Main">
+			{%- if qs.whatsapp_url %}
+			<a href="{{ qs.whatsapp_url|e }}" class="qs-icon-btn" aria-label="Chat on WhatsApp" target="_blank" rel="noopener">{{ icon("whatsapp") }}</a>
+			{%- endif %}
+			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
+			<a href="/account" class="qs-signin" data-qs-signin>Sign in</a>
+			<a href="/quote" class="qs-quote-pill">{{ qs.quote_label|e }}<span class="qs-badge" data-qs-quote-count>0</span></a>
+		</nav>
+	</div>
+</header>

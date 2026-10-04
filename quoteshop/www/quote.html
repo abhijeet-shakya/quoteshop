@@ -1,0 +1,199 @@
+{% extends "quoteshop/templates/qs_base.html" %}
+{% block header %}{% endblock %}
+{% block mobile_header %}{% endblock %}
+{% block quote_bar %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block tabbar %}{% endblock %}
+
+{% block content %}
+{%- set response = qs.response_time -%}
+<div class="qs-q" data-qs-quote
+	data-show-prices="{{ qs.show_prices }}"
+	data-otp="{{ 1 if form.otp_required else 0 }}"
+	data-pincode-required="{{ 1 if form.show_pincode and form.require_pincode else 0 }}">
+
+	<header class="qs-q-head">
+		<div class="qs-p-wrap qs-q-headin">
+			<a class="qs-q-back qs-p-m" href="/" aria-label="{{ _('Back to products') }}">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+			</a>
+			<a href="/" class="qs-brand qs-p-d">
+				{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
+				{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
+				<span class="qs-brand-name">{{ qs.name|e }}</span>
+			</a>
+			<span class="qs-q-title qs-p-m">{{ _("Your quote") }}</span>
+			<a class="qs-q-more" href="/">{{ _("Add more") }}</a>
+		</div>
+	</header>
+
+	<main id="qs-main" class="qs-p-wrap qs-q-main">
+		<div class="qs-q-form" data-qs-form-view>
+			<section class="qs-q-list" aria-labelledby="qs-q-h1">
+				<div class="qs-q-intro">
+					<h1 id="qs-q-h1"><span class="qs-p-d">{{ _("Your quote list") }}</span><span class="qs-p-m" data-qs-count-text></span></h1>
+					<p><span class="qs-p-d"><span data-qs-summary></span> {{ _("Type any quantity, from 1 piece upward.") }}</span><span class="qs-p-m" data-qs-units-text></span></p>
+				</div>
+
+				<div class="qs-q-change" data-qs-change-banner hidden>
+					<span data-qs-change-text></span>
+					<button type="button" class="qs-q-link" data-qs-change-cancel>{{ _("Cancel") }}</button>
+				</div>
+
+				<div class="qs-p-search qs-q-search" data-qs-list-search hidden>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+					<label for="qs-q-find" class="qs-p-sr">{{ _("Find in your list") }}</label>
+					<input id="qs-q-find" type="search" placeholder="{{ _('Find in your list') }}" data-qs-find>
+				</div>
+
+				<div class="qs-q-lines" data-qs-lines aria-live="polite"></div>
+				<p class="qs-q-nomatch" data-qs-nomatch hidden>{{ _("No items match.") }}</p>
+
+				<div class="qs-q-empty" data-qs-empty hidden>
+					<span class="qs-p-d">{{ _("Your quote list is empty.") }} <a href="/">{{ _("Browse products") }}</a> {{ _("and add anything, even a single piece.") }}</span>
+					<span class="qs-p-m">{{ _("Your quote is empty.") }} <a href="/">{{ _("Browse products") }}</a></span>
+				</div>
+
+				{%- if qs.show_prices %}
+				<p class="qs-q-hint"><span class="qs-p-d">{{ _("Starting prices are a guide. Your final price, including bulk rates, comes in your quote.") }}</span><span class="qs-p-m">{{ _("Starting prices are a guide. Your final price comes in your quote.") }}</span></p>
+				{%- endif %}
+
+				<details class="qs-q-paste" data-qs-paste>
+					<summary>{{ _("Paste or upload a list") }}</summary>
+					<div class="qs-q-paste-body">
+						<label for="qs-q-paste-text">{{ _("One product per line: code or exact name, then quantity") }}</label>
+						<textarea id="qs-q-paste-text" rows="4" placeholder="CUE-01, 10&#10;Pool Table Accessories Set; 2" data-qs-paste-text></textarea>
+						<div class="qs-q-paste-actions">
+							<label class="qs-q-file">
+								<input type="file" accept=".csv,.txt,text/csv,text/plain" data-qs-paste-file>
+								<span>{{ _("Upload CSV") }}</span>
+							</label>
+							<button type="button" class="qs-q-paste-add" data-qs-paste-add>{{ _("Add to list") }}</button>
+						</div>
+						<div class="qs-q-paste-result" data-qs-paste-result role="status"></div>
+					</div>
+				</details>
+
+				{%- if form.show_notes %}
+				<div class="qs-q-notes-slot" data-qs-notes-desk>
+					<div class="qs-q-field qs-q-notes" data-qs-notes
+						data-ph-d="{{ _('For example: custom size, cloth colour, logo on the table, delivery to 2nd floor') }}"
+						data-ph-m="{{ _('Custom size, cloth colour, logo, delivery floor…') }}">
+						<label for="qs-q-note"><span class="qs-p-d">{{ _("Anything else we should know? (optional)") }}</span><span class="qs-p-m">{{ _("Notes (optional)") }}</span></label>
+						<textarea id="qs-q-note" name="notes" rows="3" placeholder="{{ _('For example: custom size, cloth colour, logo on the table, delivery to 2nd floor') }}"></textarea>
+					</div>
+				</div>
+				{%- endif %}
+			</section>
+
+			<aside class="qs-q-aside" aria-labelledby="qs-q-h2" data-qs-details>
+				<div class="qs-q-aside-head">
+					<h2 id="qs-q-h2"><span class="qs-p-d">{{ _("Get your best price") }}</span><span class="qs-p-m">{{ _("Your details") }}</span></h2>
+					<p>
+						<span class="qs-p-d">{{ _("Tell us where to send it. No account or password needed") }}{% if response %}, {{ _("and we usually reply within {0}.").format(response) }}{% else %}.{% endif %}</span>
+						<span class="qs-p-m">{{ _("No account needed.") }}{% if response %} {{ _("We reply on WhatsApp within {0}.").format(response) }}{% endif %}</span>
+					</p>
+				</div>
+
+				{%- if buyer_types %}
+				<div class="qs-q-buyer" role="group" aria-labelledby="qs-q-buyer-l">
+					<span id="qs-q-buyer-l" class="qs-q-lbl"><span class="qs-p-d">{{ _("I'm buying for") }}</span><span class="qs-p-m">{{ _("Buying for") }}</span></span>
+					<div class="qs-q-chips{% if buyer_types|length == 4 %} qs-q-chips-4{% endif %}">
+						{%- for b in buyer_types %}
+						<button type="button" class="qs-p-chip" aria-pressed="false" data-qs-buyer="{{ b }}">{{ b }}</button>
+						{%- endfor %}
+					</div>
+				</div>
+				{%- endif %}
+
+				<div class="qs-q-field qs-q-f-name">
+					<label for="qs-q-name">{{ _("Name") }}</label>
+					<input id="qs-q-name" name="buyer_name" type="text" autocomplete="name" required>
+				</div>
+				<div class="qs-q-field qs-q-f-wa">
+					<label for="qs-q-wa">{{ _("WhatsApp number") }}</label>
+					<div class="qs-p-tel">
+						<span>+91</span>
+						<input id="qs-q-wa" name="mobile" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="98765 43210" required>
+					</div>
+				</div>
+				{%- if form.show_business_name %}
+				<div class="qs-q-field qs-q-f-biz">
+					<label for="qs-q-biz">{{ _("Business name (optional)") }}</label>
+					<input id="qs-q-biz" name="business_name" type="text" autocomplete="organization">
+				</div>
+				{%- endif %}
+
+				{%- if form.show_pincode or questions %}
+				<div class="qs-q-grid">
+					{%- if form.show_pincode %}
+					<div class="qs-q-field">
+						<label for="qs-q-pin"><span class="qs-p-d">{{ _("Delivery pincode") }}</span><span class="qs-p-m">{{ _("Pincode") }}</span>{% if not form.require_pincode %} {{ _("(optional)") }}{% endif %}</label>
+						<input id="qs-q-pin" name="pincode" type="text" inputmode="numeric" autocomplete="postal-code"{% if form.require_pincode %} required{% endif %}>
+					</div>
+					{%- endif %}
+					{%- for q in questions %}
+					<div class="qs-q-field{% if q.fieldtype == 'Small Text' %} qs-q-wide{% endif %}" data-qs-question="{{ q.label }}" data-type="{{ q.fieldtype }}"{% if q.required %} data-required="1"{% endif %}>
+						{%- if q.fieldtype == "Check" %}
+						<span class="qs-q-lbl" id="{{ q.id }}-l">{{ q.label }}</span>
+						<button type="button" class="qs-q-toggle" id="{{ q.id }}" aria-pressed="false" aria-labelledby="{{ q.id }}-l {{ q.id }}" data-yes="{{ _('Yes') }}" data-no="{{ _('No') }}">{{ _("No") }}</button>
+						{%- else %}
+						<label for="{{ q.id }}">{{ q.label }}{% if not q.required %} {{ _("(optional)") }}{% endif %}</label>
+						{%- if q.fieldtype == "Select" %}
+						<select id="{{ q.id }}"{% if q.required %} required{% endif %}>
+							<option value=""></option>
+							{%- for o in q.options %}<option>{{ o }}</option>{% endfor %}
+						</select>
+						{%- elif q.fieldtype == "Small Text" %}
+						<textarea id="{{ q.id }}" rows="2"{% if q.required %} required{% endif %}></textarea>
+						{%- else %}
+						<input id="{{ q.id }}" type="{{ 'date' if q.fieldtype == 'Date' else 'text' }}"{% if q.required %} required{% endif %}>
+						{%- endif %}
+						{%- endif %}
+					</div>
+					{%- endfor %}
+				</div>
+				{%- endif %}
+
+				<div class="qs-q-notes-slot" data-qs-notes-mob></div>
+
+				<div class="qs-q-field qs-q-otp" data-qs-otp hidden>
+					<label for="qs-q-otp">{{ _("Code sent on WhatsApp to") }} <span data-qs-otp-to></span></label>
+					<input id="qs-q-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+					<button type="button" class="qs-q-link" data-qs-otp-resend>{{ _("Resend code") }}</button>
+				</div>
+
+				<p class="qs-q-err" data-qs-error role="alert" hidden></p>
+
+				<div class="qs-q-send">
+					{%- if must_login %}
+					<a class="qs-p-ink qs-q-send-btn" href="/account?next=/quote">{{ _("Sign in to send") }}</a>
+					{%- else %}
+					<button type="button" class="qs-p-ink qs-q-send-btn" data-qs-send
+						data-label-send="{{ _('Send request') }}" data-label-verify="{{ _('Verify and send') }}" data-label-change="{{ _('Send changes') }}"><span data-qs-send-label>{{ _("Send request") }}</span><span class="qs-p-m" data-qs-send-count></span></button>
+					{%- endif %}
+					{%- if form.otp_required %}
+					<p class="qs-q-fine">{{ _("We'll confirm your number with a one-time WhatsApp code.") }}</p>
+					{%- endif %}
+				</div>
+			</aside>
+		</div>
+
+		<section class="qs-q-done" data-qs-done hidden aria-labelledby="qs-q-done-h">
+			<span class="qs-q-tick">
+				<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+			</span>
+			<h1 id="qs-q-done-h" tabindex="-1">{{ _("Request received") }}</h1>
+			<p>{{ _("Reference") }} <strong data-qs-ref></strong> · <span data-qs-done-summary></span>.
+				{%- if response %} {{ _("Our team will WhatsApp you the best price within {0}.").format(response) }}{% else %} {{ _("Our team will WhatsApp you the best price.") }}{% endif %}
+				{{ _("You can reply there with any changes.") }}</p>
+			<div class="qs-q-done-actions">
+				{%- if qs.whatsapp_url %}
+				<a class="qs-q-wa" href="{{ qs.whatsapp_url|e }}" data-qs-wa-link target="_blank" rel="noopener">{{ _("Open WhatsApp") }}</a>
+				{%- endif %}
+				<a class="qs-q-again" href="/">{{ _("Browse products") }}</a>
+			</div>
+		</section>
+	</main>
+</div>
+{% endblock %}

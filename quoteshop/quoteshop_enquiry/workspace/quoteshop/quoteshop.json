@@ -1,0 +1,339 @@
+{
+ "app": "quoteshop",
+ "charts": [
+  {
+   "chart_name": "QS Enquiry Status",
+   "label": "Enquiries by status"
+  },
+  {
+   "chart_name": "QS Discount by Salesperson",
+   "label": "Discount % by salesperson"
+  },
+  {
+   "chart_name": "QS Won Value",
+   "label": "Won value (weekly)"
+  }
+ ],
+ "content": "[{\"id\": \"qs00000000\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Enquiries</b></span>\", \"col\": 12}}, {\"id\": \"qs00000001\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"QS New Requests\", \"col\": 4}}, {\"id\": \"qs00000002\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"QS Changes Requested\", \"col\": 4}}, {\"id\": \"qs00000003\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"QS Waiting for Buyer\", \"col\": 4}}, {\"id\": \"qs00000004\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"QS Accepted This Month\", \"col\": 4}}, {\"id\": \"qs00000005\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"QS Lost This Month\", \"col\": 4}}, {\"id\": \"qs00000006\", \"type\": \"chart\", \"data\": {\"chart_name\": \"QS Enquiry Status\", \"col\": 6}}, {\"id\": \"qs00000007\", \"type\": \"chart\", \"data\": {\"chart_name\": \"QS Discount by Salesperson\", \"col\": 6}}, {\"id\": \"qs00000008\", \"type\": \"chart\", \"data\": {\"chart_name\": \"QS Won Value\", \"col\": 12}}, {\"id\": \"qs00000009\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"qs00000010\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Enquiry Pipeline\", \"col\": 3}}, {\"id\": \"qs00000011\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Needs pricing\", \"col\": 3}}, {\"id\": \"qs00000012\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Expiring in 3 days\", \"col\": 3}}, {\"id\": \"qs00000013\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Items on website\", \"col\": 3}}, {\"id\": \"qs00000014\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Store settings\", \"col\": 3}}, {\"id\": \"qs00000015\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Homepage settings\", \"col\": 3}}, {\"id\": \"qs00000016\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Enquiry settings\", \"col\": 3}}, {\"id\": \"qs00000017\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Reports &amp; masters</b></span>\", \"col\": 12}}, {\"id\": \"qs00000018\", \"type\": \"card\", \"data\": {\"card_name\": \"Enquiries\", \"col\": 4}}, {\"id\": \"qs00000019\", \"type\": \"card\", \"data\": {\"card_name\": \"Catalog\", \"col\": 4}}, {\"id\": \"qs00000020\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}, {\"id\": \"qs00000021\", \"type\": \"card\", \"data\": {\"card_name\": \"Settings\", \"col\": 4}}]",
+ "creation": "2026-10-04 16:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "store",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "QuoteShop",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Enquiries",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QS Enquiry",
+   "link_count": 0,
+   "link_to": "QS Enquiry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CRM Deal",
+   "link_count": 0,
+   "link_to": "CRM Deal",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Order",
+   "link_count": 0,
+   "link_to": "Sales Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Customer",
+   "link_count": 0,
+   "link_to": "Customer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Catalog",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item Group",
+   "link_count": 0,
+   "link_to": "Item Group",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item Price",
+   "link_count": 0,
+   "link_to": "Item Price",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 5,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Listed vs Sold by Item",
+   "link_count": 0,
+   "link_to": "Listed vs Sold by Item",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "QS Enquiry",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Discount by Salesperson",
+   "link_count": 0,
+   "link_to": "Discount by Salesperson",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "QS Enquiry",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Discount by Buyer Type",
+   "link_count": 0,
+   "link_to": "Discount by Buyer Type",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "QS Enquiry",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Won vs Lost",
+   "link_count": 0,
+   "link_to": "Won vs Lost",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "QS Enquiry",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Most-requested Not Available",
+   "link_count": 0,
+   "link_to": "Most-requested Not Available",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "QS Enquiry",
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QS Store Settings",
+   "link_count": 0,
+   "link_to": "QS Store Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QS Homepage Settings",
+   "link_count": 0,
+   "link_to": "QS Homepage Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "QS Enquiry Settings",
+   "link_count": 0,
+   "link_to": "QS Enquiry Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-04 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Enquiry",
+ "name": "QuoteShop",
+ "number_cards": [
+  {
+   "label": "New requests",
+   "number_card_name": "QS New Requests"
+  },
+  {
+   "label": "Changes requested",
+   "number_card_name": "QS Changes Requested"
+  },
+  {
+   "label": "Waiting for buyer",
+   "number_card_name": "QS Waiting for Buyer"
+  },
+  {
+   "label": "Accepted this month",
+   "number_card_name": "QS Accepted This Month"
+  },
+  {
+   "label": "Lost this month",
+   "number_card_name": "QS Lost This Month"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 30.0,
+ "shortcuts": [
+  {
+   "color": "",
+   "doc_view": "Kanban",
+   "format": "",
+   "kanban_board": "Enquiry Pipeline",
+   "label": "Enquiry Pipeline",
+   "link_to": "QS Enquiry",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} to price",
+   "kanban_board": "",
+   "label": "Needs pricing",
+   "link_to": "QS Enquiry",
+   "stats_filter": "[[\"QS Enquiry\",\"status\",\"in\",[\"Requested\",\"Changes Requested\"],false],[\"QS Enquiry\",\"assigned_to\",\"=\",frappe.session.user,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "{} expiring",
+   "kanban_board": "",
+   "label": "Expiring in 3 days",
+   "link_to": "QS Enquiry",
+   "stats_filter": "[[\"QS Enquiry\",\"status\",\"=\",\"Price Sent\",false],[\"QS Enquiry\",\"valid_till\",\"between\",[frappe.datetime.get_today(),frappe.datetime.add_days(frappe.datetime.get_today(),3)],false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "",
+   "doc_view": "List",
+   "format": "{} published",
+   "kanban_board": "",
+   "label": "Items on website",
+   "link_to": "Item",
+   "stats_filter": "[[\"Item\",\"qs_published\",\"=\",1,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "",
+   "doc_view": "",
+   "format": "",
+   "kanban_board": "",
+   "label": "Store settings",
+   "link_to": "QS Store Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "",
+   "doc_view": "",
+   "format": "",
+   "kanban_board": "",
+   "label": "Homepage settings",
+   "link_to": "QS Homepage Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "",
+   "doc_view": "",
+   "format": "",
+   "kanban_board": "",
+   "label": "Enquiry settings",
+   "link_to": "QS Enquiry Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  }
+ ],
+ "title": "QuoteShop",
+ "type": "Workspace"
+}

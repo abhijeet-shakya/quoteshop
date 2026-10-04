@@ -1,0 +1,8 @@
+{% extends "quoteshop/templates/qs_base.html" %}
+{%- from "quoteshop/templates/qs/card.html" import catalog -%}
+
+{% block content %}
+<main id="qs-main" class="qs-main">
+	{{ catalog(qs, data, heading, active_route="-" if qs.q else None, heading_tag="h1") }}
+</main>
+{% endblock %}

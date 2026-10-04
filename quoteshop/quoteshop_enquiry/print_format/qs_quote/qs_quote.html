@@ -1,0 +1,115 @@
+{#- QS Quote: one table, lines grouped by item group; header row repeats on every page.
+    Autoescape is off in print formats: escape every buyer/free-text value (wkhtmltopdf renders HTML). -#}
+<style>
+	.qs-quote { font-size: 9pt; }
+	.qs-quote h2 { margin: 0 0 4px; }
+	.qs-quote .qs-meta td { padding: 1px 12px 1px 0; vertical-align: top; }
+	.qs-quote table.qs-lines { width: 100%; border-collapse: collapse; margin-top: 12px; }
+	.qs-quote .qs-lines thead { display: table-header-group; }
+	.qs-quote .qs-lines tr { page-break-inside: avoid; }
+	.qs-quote .qs-lines th, .qs-quote .qs-lines td { padding: 4px 6px; border-bottom: 1px solid #d1d8dd; vertical-align: top; }
+	.qs-quote .qs-lines th { text-align: left; border-bottom-width: 2px; }
+	.qs-quote .qs-group td { font-weight: bold; background: #f4f5f6; }
+	.qs-quote .num { text-align: right; white-space: nowrap; }
+	.qs-quote .muted { color: #6c7680; }
+	.qs-quote .na { color: #cb2929; }
+	.qs-quote .partial { color: #c06f12; }
+	.qs-quote table.qs-totals { margin: 12px 0 0 auto; page-break-inside: avoid; }
+	.qs-quote .qs-totals td { padding: 2px 6px; }
+	.qs-quote .qs-totals .grand td { font-size: 11pt; font-weight: bold; border-top: 2px solid #d1d8dd; }
+</style>
+
+{%- set lines = doc.items | rejectattr("change_flag", "equalto", "Removed") | list -%}
+{%- set codes = lines | map(attribute="item_code") | list -%}
+{%- set group_of = {} -%}
+{%- if codes -%}
+	{%- for it in frappe.get_all("Item", filters={"name": ["in", codes]}, fields=["name", "item_group"]) -%}
+		{%- set _ = group_of.update({it.name: it.item_group}) -%}
+	{%- endfor -%}
+{%- endif -%}
+{%- set rows = [] -%}
+{%- for d in lines -%}
+	{%- set _ = rows.append({"group": group_of.get(d.item_code) or _("Other"), "d": d}) -%}
+{%- endfor -%}
+{%- set show_savings = doc.total_saved > 0 and frappe.db.get_single_value("QS Store Settings", "show_savings_to_buyer") -%}
+
+<div class="qs-quote">
+	<h2>{{ _("Quotation") }}</h2>
+	<table class="qs-meta">
+		<tr>
+			<td>
+				<b>{{ doc.buyer_name | e }}</b>
+				{%- if doc.business_name %}<br>{{ doc.business_name | e }}{% endif %}
+				{%- if doc.mobile %}<br>{{ doc.mobile | e }}{% endif %}
+			</td>
+			<td>
+				{{ _("Ref") }}: <b>{{ doc.name }}</b>{% if doc.current_version %} · v{{ doc.current_version }}{% endif %}
+				{%- if doc.valid_till %}<br>{{ _("Valid till") }}: <b>{{ doc.get_formatted("valid_till") }}</b>{% endif %}
+				<br>{{ _("Lines: {0} · Pcs: {1}").format(doc.line_count, doc.get_formatted("unit_count")) }}
+			</td>
+		</tr>
+	</table>
+
+	<table class="qs-lines">
+		<thead>
+			<tr>
+				<th style="width: 4%">#</th>
+				<th>{{ _("Item") }}</th>
+				<th class="num">{{ _("Qty") }}</th>
+				<th class="num">{{ _("Listed") }}</th>
+				<th class="num">{{ _("Your rate") }}</th>
+				<th class="num">{{ _("Amount") }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{%- set n = namespace(i=0) -%}
+		{%- for group in rows | groupby("group") %}
+			<tr class="qs-group"><td colspan="6">{{ group.grouper | e }}</td></tr>
+			{%- for r in group.list %}
+			{%- set d = r.d -%}
+			{%- set n.i = n.i + 1 -%}
+			{%- set na = d.availability == "Not Available" -%}
+			<tr>
+				<td class="muted">{{ n.i }}</td>
+				<td>
+					{{ (d.item_name or d.item_code) | e }}
+					{%- if d.availability and d.availability != "Available" %}
+					<br><span class="{{ 'na' if na else 'partial' if d.availability == 'Partial' else 'muted' }}">{{ _(d.availability) }}
+						{%- if d.alternative_item %}: {{ d.alternative_item | e }}{% endif %}
+						{%- if d.lead_time_days %} · {{ _("{0} days").format(d.lead_time_days) }}{% endif %}
+						{%- if d.availability_note %} · {{ d.availability_note | e }}{% endif %}</span>
+					{%- elif d.availability_note %}
+					<br><span class="muted">{{ d.availability_note | e }}</span>
+					{%- endif %}
+				</td>
+				<td class="num">
+					{%- if d.offered_qty != d.requested_qty %}<span class="muted">{{ d.get_formatted("requested_qty") }} →</span> {% endif -%}
+					{{ d.get_formatted("offered_qty") }}
+				</td>
+				<td class="num muted">
+					{%- if d.listed_rate and d.offered_rate < d.listed_rate %}<s>{{ d.get_formatted("listed_rate", doc) }}</s>
+					{%- elif d.listed_rate %}{{ d.get_formatted("listed_rate", doc) }}{% endif -%}
+				</td>
+				<td class="num">{% if not na %}{{ d.get_formatted("offered_rate", doc) }}{% endif %}</td>
+				<td class="num">{% if na %}<span class="na">{{ _("Not available") }}</span>{% else %}{{ d.get_formatted("amount", doc) }}{% endif %}</td>
+			</tr>
+			{%- endfor %}
+		{%- endfor %}
+		</tbody>
+	</table>
+
+	<table class="qs-totals">
+		{%- if doc.total_listed != doc.total_offered %}
+		<tr><td class="muted">{{ _("Listed total") }}</td><td class="num muted"><s>{{ doc.get_formatted("total_listed") }}</s></td></tr>
+		{%- endif %}
+		<tr class="grand"><td>{{ _("Your price") }}</td><td class="num">{{ doc.get_formatted("total_offered") }}</td></tr>
+		{%- if show_savings %}
+		<tr><td>{{ _("You save") }}</td><td class="num">{{ doc.get_formatted("total_saved") }} ({{ doc.get_formatted("saved_pct") }})</td></tr>
+		{%- endif %}
+	</table>
+
+	<p class="muted" style="margin-top: 12px">
+		{{ _("Available {0} · Partial {1} · Not available {2}").format(doc.available_count, doc.partial_count, doc.not_available_count) }}
+		{%- if doc.valid_till %}<br>{{ _("Prices are valid till {0}.").format(doc.get_formatted("valid_till")) }}{% endif %}
+	</p>
+</div>

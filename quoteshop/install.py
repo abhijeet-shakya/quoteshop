@@ -27,6 +27,12 @@ def after_install() -> None:
 	# The Property Setter (custom/contact.json) keeps search_index in meta; syncing it does not alter the table.
 	frappe.db.add_index("Contact", ["mobile_no"])
 
+	# A fresh install marks patches as done without running them.
+	from quoteshop.patches.v1_0 import seed_crm_statuses, seed_desk
+
+	seed_crm_statuses.execute()
+	seed_desk.execute()
+
 
 def make_starting_price_list(company: str | None) -> None:
 	if frappe.db.exists("Price List", PRICE_LIST):
