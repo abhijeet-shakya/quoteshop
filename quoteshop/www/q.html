@@ -1,4 +1,5 @@
 {% extends "quoteshop/templates/qs_base.html" %}
+{%- from "quoteshop/templates/qs/icons.html" import theme_toggle -%}
 {% block header %}{% endblock %}
 {% block mobile_header %}{% endblock %}
 {% block quote_bar %}{% endblock %}
@@ -24,6 +25,7 @@
 			</div>
 			<span class="qs-v-status qs-v-tone-{{ status_tone|e }} qs-p-m" data-qs-status>{{ status_label|e }}</span>
 			{%- endif %}
+			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
 			<a class="qs-v-acct qs-p-d" href="/account">{{ _("My account")|e }}</a>
 		</div>
 	</header>

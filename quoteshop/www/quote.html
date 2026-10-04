@@ -1,4 +1,5 @@
 {% extends "quoteshop/templates/qs_base.html" %}
+{%- from "quoteshop/templates/qs/icons.html" import theme_toggle -%}
 {% block header %}{% endblock %}
 {% block mobile_header %}{% endblock %}
 {% block quote_bar %}{% endblock %}
@@ -23,6 +24,7 @@
 				<span class="qs-brand-name">{{ qs.name|e }}</span>
 			</a>
 			<span class="qs-q-title qs-p-m">{{ _("Your quote")|e }}</span>
+			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
 			<a class="qs-q-more" href="/">{{ _("Add more")|e }}</a>
 		</div>
 	</header>

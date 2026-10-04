@@ -1,10 +1,11 @@
 {% extends "quoteshop/templates/qs_base.html" %}
-{%- from "quoteshop/templates/qs/icons.html" import icon, img -%}
+{%- from "quoteshop/templates/qs/icons.html" import icon, img, theme_toggle -%}
 
 {% block mobile_header %}
 <header class="qs-ihdr qs-only-m">
 	<a href="{{ (group_url or '/')|e }}" class="qs-round qs-round-plain" aria-label="{{ _('Back')|e }}">{{ icon("back", 22) }}</a>
 	<span class="qs-ihdr-title">{{ p.item_group|e }}</span>
+	{{ theme_toggle(qs, "qs-round qs-round-plain") }}
 	<a href="/quote" class="qs-round qs-round-plain qs-ihdr-quote" aria-label="{{ _('Quote list')|e }}">{{ icon("quote", 22) }}<span class="qs-ihdr-badge" data-qs-quote-count>0</span></a>
 </header>
 {% endblock %}

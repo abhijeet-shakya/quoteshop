@@ -1,4 +1,5 @@
 {% extends "quoteshop/templates/qs_base.html" %}
+{%- from "quoteshop/templates/qs/icons.html" import theme_toggle -%}
 {% block mobile_header %}{% endblock %}
 {% block quote_bar %}{% endblock %}
 {% block footer %}{% endblock %}
@@ -14,8 +15,17 @@
 		<nav class="qs-a-nav" aria-label="{{ _('Main')|e }}">
 			<a href="/search">{{ _("Browse")|e }}</a>
 			<a href="/quote" class="qs-a-quote">{{ qs.quote_label|e }}</a>
+			{{ theme_toggle(qs, "qs-icon-btn qs-theme-btn") }}
 		</nav>
 	</div>
+</header>
+<header class="qs-ihdr qs-only-m">
+	<a href="/" class="qs-brand">
+		{%- if qs.logo %}<img class="qs-logo qs-logo-img" data-qs-logo src="{{ qs.logo|e }}" alt="{{ qs.name|e }}" width="38" height="38" loading="eager">
+		{%- else %}<span class="qs-logo" aria-hidden="true">{{ qs.short_name|e }}</span>{% endif %}
+		<span class="qs-brand-name">{{ qs.name|e }}</span>
+	</a>
+	{{ theme_toggle(qs, "qs-round qs-round-plain") }}
 </header>
 {% endblock %}
 
