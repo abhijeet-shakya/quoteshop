@@ -217,6 +217,35 @@ class TestQSEnquiry(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
 
+	def test_same_item_in_two_colours_is_two_lines(self):
+		"""CONTRACTS §11: a line is (item_code, colour); only the same pair twice is a duplicate."""
+		doc = make_enquiry([line(A, 1, 10, colour="Red"), line(A, 2, 10, colour="Blue"), line(A, 3, 10)])
+		self.assertEqual(
+			[(r.item_code, r.colour or "", r.requested_qty) for r in doc.items][1:],
+			[(A, "Blue", 2), (A, "", 3)],
+		)
+		self.assertTotals(doc, line_count=3, total_listed=60.0)
+		doc.append("items", line(A, 4, 10, colour="Green"))
+		doc.save(ignore_permissions=True)  # a third colour is still fine
+		self.assertEqual(len(doc.items), 4)
+
+	def test_duplicate_item_and_colour_rejected(self):
+		with self.assertRaisesRegex(frappe.ValidationError, "already in this enquiry"):
+			make_enquiry([line(A, 1, 10, colour="Red"), line(A, 2, 10, colour="Red")])
+		doc = make_enquiry([line(A, 1, 10, colour="Red")])
+		doc.append("items", line(A, 2, 10, colour="Red"))
+		with self.assertRaises(frappe.ValidationError):
+			doc.save(ignore_permissions=True)
+
+	def test_no_colour_none_and_empty_are_the_same_line(self):
+		for second in ({}, {"colour": ""}, {"colour": None}):
+			with self.subTest(second=second), self.assertRaises(frappe.ValidationError):
+				make_enquiry([line(A, 1, 10), line(A, 2, 10, **second)])
+
+	def test_colour_is_compared_exactly(self):
+		doc = make_enquiry([line(A, 1, 10, colour="Red"), line(A, 2, 10, colour="red")])
+		self.assertEqual(len(doc.items), 2)
+
 	def test_status_change_only_through_quoteshop_actions(self):
 		"""CONTRACTS §10: a plain save / client set_value (Kanban drag) cannot move the status."""
 		from frappe.client import set_value

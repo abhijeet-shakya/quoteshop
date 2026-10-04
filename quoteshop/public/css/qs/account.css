@@ -49,6 +49,7 @@
 .qs-a-toggle { height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
 .qs-a-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .qs-a-line .qs-a-strong { font-weight: 700; }
+.qs-a-colour { font-weight: 500; color: var(--muted); }
 .qs-a-line strong { color: var(--text); }
 .qs-a-btns { display: flex; gap: 10px; padding-top: 14px; }
 .qs-a-btns > * { height: 44px; padding: 0 20px; border-radius: 999px; font-size: 14px; box-sizing: border-box; }

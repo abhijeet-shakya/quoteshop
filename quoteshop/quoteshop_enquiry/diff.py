@@ -1,14 +1,22 @@
 from frappe.utils import flt
 
 
+def line_key(row) -> str:
+	"""Identity of a quote line: item code + colour ("" when none). `row` is a dict or a doc row."""
+	return f"{row.get('item_code')}\x1f{row.get('colour') or ''}"
+
+
 def diff_lines(
 	previous: list[dict], current: list[dict], *, rate_precision: int = 2, qty_precision: int = 3
 ) -> dict[str, str]:
-	before = {row.get("item_code"): row for row in previous}
+	"""{line_key: change flag} between two versions' lines (dicts or doc rows).
+
+	A colour change is a Removed line plus an Added line."""
+	before = {line_key(row): row for row in previous}
 	flags = dict.fromkeys(before, "Removed")
 	for row in current:
-		code = row.get("item_code")
-		flags[code] = _change_flag(before.get(code), row, rate_precision, qty_precision)
+		key = line_key(row)
+		flags[key] = _change_flag(before.get(key), row, rate_precision, qty_precision)
 	return flags
 
 

@@ -11,6 +11,7 @@ from quoteshop.quoteshop_enquiry.api import parse_quote_paste
 from quoteshop.quoteshop_enquiry.tests.factories import (
 	EnquiryTestCase,
 	call_api,
+	make_colours,
 	make_published_item,
 	make_user,
 	make_website_user,
@@ -114,6 +115,107 @@ class TestGetQuoteItems(QuoteAPITestCase):
 			call_api(GET_ITEMS, item_codes=[], ip="10.5.0.1")
 		with self.assertRaises(frappe.RateLimitExceededError):
 			call_api(GET_ITEMS, item_codes=[], ip="10.5.0.1")
+
+
+class TestGetQuoteItemsColours(QuoteAPITestCase):
+	"""CONTRACTS §11: entries are codes or {item_code, colour?}; one card per (item, colour) with colour + swatch."""
+
+	def setUp(self):
+		super().setUp()
+		make_colours(A, ("Red", "#ff0000"), ("Blue", "#0000FF"))
+
+	def pairs(self, cards):
+		return [(c["item_code"], c["colour"], c["swatch"]) for c in cards]
+
+	def test_plain_strings_still_accepted_with_empty_colour(self):
+		cards = call_api(GET_ITEMS, item_codes=[A, B])
+		self.assertEqual(self.pairs(cards), [(A, "", ""), (B, "", "")])
+
+	def test_dicts_and_strings_mixed(self):
+		cards = call_api(GET_ITEMS, item_codes=[{"item_code": A, "colour": "Blue"}, B, {"item_code": C}])
+		self.assertEqual(self.pairs(cards), [(A, "Blue", "#0000FF"), (B, "", ""), (C, "", "")])
+
+	def test_one_card_per_colour_keeping_order(self):
+		cards = call_api(
+			GET_ITEMS,
+			item_codes=[
+				{"item_code": A, "colour": "Blue"},
+				{"item_code": A, "colour": "Red"},
+				{"item_code": A, "colour": "Blue"},
+				{"item_code": A},
+			],
+		)
+		self.assertEqual(self.pairs(cards), [(A, "Blue", "#0000FF"), (A, "Red", "#FF0000"), (A, "", "")])
+		self.assertEqual(cards[0]["item_name"], cards[1]["item_name"])  # same card fields otherwise
+
+	def test_json_string_input(self):
+		cards = call_api(GET_ITEMS, item_codes=frappe.as_json([{"item_code": A, "colour": "Red"}, B]))
+		self.assertEqual(self.pairs(cards), [(A, "Red", "#FF0000"), (B, "", "")])
+
+	def test_none_colour_is_empty(self):
+		cards = call_api(
+			GET_ITEMS, item_codes=[{"item_code": A, "colour": None}, {"item_code": A, "colour": ""}]
+		)
+		self.assertEqual(self.pairs(cards), [(A, "", "")])
+
+	def test_stale_colour_resolves_to_empty_without_error(self):
+		"""A colour removed (or never valid) is a display problem: no throw, colour "" instead."""
+		for colour in ("Green", "red", "Red "):
+			with self.subTest(colour=colour):
+				cards = call_api(GET_ITEMS, item_codes=[{"item_code": A, "colour": colour}])
+				self.assertEqual(self.pairs(cards), [(A, "", "")])
+		cards = call_api(GET_ITEMS, item_codes=[{"item_code": B, "colour": "Red"}])  # item has no colours
+		self.assertEqual(self.pairs(cards), [(B, "", "")])
+
+	def test_stale_colour_merges_with_no_colour(self):
+		cards = call_api(
+			GET_ITEMS,
+			item_codes=[
+				{"item_code": A, "colour": "Green"},
+				{"item_code": A},
+				{"item_code": A, "colour": "Red"},
+			],
+		)
+		self.assertEqual(self.pairs(cards), [(A, "", ""), (A, "Red", "#FF0000")])
+
+	def test_colour_removed_from_item_after_added(self):
+		make_colours(A, "Blue")
+		cards = call_api(
+			GET_ITEMS, item_codes=[{"item_code": A, "colour": "Red"}, {"item_code": A, "colour": "Blue"}]
+		)
+		self.assertEqual(self.pairs(cards), [(A, "", ""), (A, "Blue", "#AABBCC")])
+
+	def test_unpublished_item_dropped_whatever_the_colour(self):
+		cards = call_api(
+			GET_ITEMS, item_codes=[{"item_code": HIDDEN, "colour": "Red"}, {"item_code": A, "colour": "Red"}]
+		)
+		self.assertEqual([c["item_code"] for c in cards], [A])
+
+	def test_every_role(self):
+		for user in self.users():
+			with self.subTest(user=user):
+				cards = call_api(GET_ITEMS, user=user, item_codes=[{"item_code": A, "colour": "Red"}])
+				self.assertEqual(self.pairs(cards), [(A, "Red", "#FF0000")])
+
+	def test_malformed_entries_rejected(self):
+		for entries in (
+			[{"colour": "Red"}],
+			[{"item_code": 5}],
+			[{"item_code": A, "colour": 5}],
+			[{"item_code": A, "colour": ["Red"]}],
+			[None],
+			[[A, "Red"]],
+		):
+			with self.subTest(entries=entries), self.assertRaises(frappe.ValidationError):
+				call_api(GET_ITEMS, item_codes=frappe.as_json(entries))  # JSON string: past the type check
+		with self.assertRaises(frappe.FrappeTypeError):  # as a real list, frappe's type check refuses them
+			call_api(GET_ITEMS, item_codes=[None])
+
+	def test_max_500_entries_counts_dicts(self):
+		entry = {"item_code": A, "colour": "Red"}
+		self.assertEqual(len(call_api(GET_ITEMS, item_codes=[entry] * 500)), 1)
+		with self.assertRaises(frappe.ValidationError):
+			call_api(GET_ITEMS, item_codes=[entry] * 501)
 
 
 class TestParseQuotePaste(QuoteAPITestCase):

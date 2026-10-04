@@ -102,7 +102,9 @@ def get_context(context: dict) -> dict:
 			)
 			for h in view.history
 		],
-		change_items=[{"item_code": l.item_code, "qty": flt(l.requested_qty)} for l in lines],
+		change_items=[
+			{"item_code": l.item_code, "qty": flt(l.requested_qty), "colour": l.colour or ""} for l in lines
+		],
 		pdf_url=download_url(name, token, "pdf"),
 		xlsx_url=download_url(name, token, "xlsx"),
 	)

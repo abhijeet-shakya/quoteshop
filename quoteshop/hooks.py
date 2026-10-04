@@ -7,6 +7,7 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "crm", "frappe_whatsapp", "erp_custom"]
 
+before_install = "quoteshop.install.before_install"
 after_install = "quoteshop.install.after_install"
 
 permission_query_conditions = {
@@ -27,7 +28,10 @@ website_route_rules = [
 
 doc_events = {
 	"Item": {
-		"validate": "quoteshop.quoteshop_catalog.routes.set_route",
+		"validate": [
+			"quoteshop.quoteshop_catalog.routes.set_route",
+			"quoteshop.quoteshop_catalog.colours.validate_item_colours",
+		],
 		"on_update": [
 			"quoteshop.quoteshop_catalog.cache.on_catalog_change",
 			"quoteshop.quoteshop_catalog.images.queue_photo_sizes",

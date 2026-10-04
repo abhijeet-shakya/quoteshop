@@ -108,6 +108,7 @@ ITEM = [  # A1, Storefront tab between Pricing and Connections (CONTRACTS §9.3)
 			("Starting price ↓qs_published", [["qs_starting_price_html HTML"]]),
 			("Content ↓qs_published", [["qs_short_description Small Text"]]),
 			("Photos ↓qs_published", [["qs_photos Table:QS Item Photo"]]),
+			("Colours ↓qs_published", [["qs_colours Table:QS Item Colour"]]),
 			("Specifications coll", [["qs_specs Table:QS Item Spec"]]),
 			("Related items coll", [["qs_related Table MultiSelect:QS Related Item"]]),
 		],
@@ -418,7 +419,12 @@ ENQUIRY_ITEM = [  # B4 row form (child table: no Tab Break, so Desk's "Details")
 			(
 				"Item",
 				[
-					["item_code Link:Item reqd", "item_name Data ro ⇐item_code.item_name", "uom Link:UOM"],
+					[
+						"item_code Link:Item reqd",
+						"item_name Data ro ⇐item_code.item_name",
+						"uom Link:UOM",
+						"colour Data ro",
+					],
 					[
 						"requested_qty Float reqd",
 						"offered_qty Float",
@@ -496,13 +502,22 @@ class TestLayout(IntegrationTestCase):
 		)
 
 	def test_item_child_tables(self):
-		for doctype in ("QS Item Photo", "QS Item Spec", "QS Related Item"):
+		for doctype in ("QS Item Photo", "QS Item Colour", "QS Item Spec", "QS Related Item"):
 			self.assertDocType(doctype, module="QuoteShop Catalog", istable=1)
 		self.assertEqual(
 			fields_of("QS Item Photo"),
-			["image Attach Image reqd", "alt_text Data", "thumb Data ro", "medium Data ro", "large Data ro"],
+			[
+				"image Attach Image reqd",
+				"alt_text Data",
+				"colour Select",  # options are filled per Item by item.js, so none on the DocType
+				"thumb Data ro",
+				"medium Data ro",
+				"large Data ro",
+			],
 		)
-		self.assertEqual(list_view("QS Item Photo"), ["image", "alt_text"])
+		self.assertEqual(list_view("QS Item Photo"), ["image", "alt_text", "colour"])
+		self.assertEqual(fields_of("QS Item Colour"), ["label Data reqd", "swatch Color reqd"])
+		self.assertEqual(list_view("QS Item Colour"), ["label", "swatch"])
 		self.assertEqual(fields_of("QS Item Spec"), ["label Data reqd", "value Data reqd"])
 		self.assertEqual(list_view("QS Item Spec"), ["label", "value"])
 		self.assertEqual(fields_of("QS Related Item"), ["item Link:Item reqd"])
@@ -519,11 +534,13 @@ class TestLayout(IntegrationTestCase):
 	def test_sales_order_item_layout(self):
 		names = [df.fieldname for df in frappe.get_meta("Sales Order Item").fields]
 		at = names.index("qty")
-		self.assertEqual(names[at : at + 3], ["qty", "qs_requested_qty", "stock_uom"])
+		self.assertEqual(names[at : at + 4], ["qty", "qs_requested_qty", "qs_colour", "stock_uom"])
 		self.assertEqual(
-			[f for f in fields_of("Sales Order Item") if f.startswith("qs_")], ["qs_requested_qty Float ro"]
+			[f for f in fields_of("Sales Order Item") if f.startswith("qs_")],
+			["qs_requested_qty Float ro", "qs_colour Data ro ↓qs_colour"],
 		)
-		self.assertNotIn("qs_requested_qty", list_view("Sales Order Item"))  # row form only
+		for name in ("qs_requested_qty", "qs_colour"):
+			self.assertNotIn(name, list_view("Sales Order Item"))  # row form only
 
 	def test_crm_deal_layout(self):
 		self.assertEqual(tab_labels("CRM Deal")[-2:], ["Lost Details", "Storefront"])

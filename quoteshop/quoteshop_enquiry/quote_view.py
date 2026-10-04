@@ -13,6 +13,7 @@ from quoteshop.quoteshop_enquiry.tokens import is_valid_token
 VIEW_LINE_FIELDS = (
 	"item_code",
 	"item_name",
+	"colour",
 	"uom",
 	"requested_qty",
 	"offered_qty",
@@ -45,7 +46,10 @@ def quote_view(name: str, token: str | None = None) -> dict:
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=20, seconds=3600)
 def request_changes(name: str, token: str | None, items: list | str) -> dict:
-	"""Buyer changes quantities / removes / adds published items (never prices) → new Buyer version."""
+	"""Buyer changes quantities / colours / removes / adds published items (never prices) → new Buyer version.
+
+	`items` = [{item_code, qty, colour?}]; a line is an (item_code, colour) pair, so a colour switch is a
+	Removed line plus an Added line."""
 	from quoteshop.quoteshop_enquiry.api import build_lines, parse_json_arg
 
 	doc, row, current = resolve(name, token, for_update=True)
@@ -57,12 +61,13 @@ def request_changes(name: str, token: str | None, items: list | str) -> dict:
 
 	versions.set_items_from_version(doc, row)
 	quoted = {
-		line.item_code: {f: line.get(f) for f in versions.LINE_FIELDS} | {"change_flag": ""}
+		(line.item_code, line.colour or ""): {f: line.get(f) for f in versions.LINE_FIELDS}
+		| {"change_flag": ""}
 		for line in doc.items
 	}
 	lines = build_lines(items, existing=quoted)
-	wanted = {line["item_code"] for line in lines}
-	lines += [{**line, "change_flag": "Removed"} for code, line in quoted.items() if code not in wanted]
+	wanted = {(line["item_code"], line.get("colour") or "") for line in lines}
+	lines += [{**line, "change_flag": "Removed"} for key, line in quoted.items() if key not in wanted]
 	doc.set("items", lines)
 	doc.status = "Changes Requested"
 	doc.flags.qs_status_change = True
@@ -148,23 +153,29 @@ def view_data(doc: Document, row: Document) -> dict:
 		if codes
 		else {}
 	)
-	thumbs = {}
+	thumbs = {}  # (item, photo colour) -> first thumb; colour "" = general photos
 	for photo in (
 		frappe.get_all(
 			"QS Item Photo",
 			filters={"parenttype": "Item", "parentfield": "qs_photos", "parent": ("in", list(codes))},
-			fields=["parent", "thumb", "image"],
+			fields=["parent", "thumb", "image", "colour"],
 			order_by="idx asc",
 		)
 		if codes
 		else []
 	):
-		thumbs.setdefault(photo.parent, photo.thumb or photo.image)
+		thumbs.setdefault((photo.parent, photo.colour or ""), photo.thumb or photo.image)
+		thumbs.setdefault((photo.parent, None), photo.thumb or photo.image)  # any photo, last resort
 	for line, source in zip(lines, data["lines"], strict=True):
 		item = items.get(line["item_code"]) or {}
 		line["item_group"] = item.get("item_group")
 		line["route"] = item.get("qs_route") if item.get("qs_published") else None
-		line["image"] = thumbs.get(line["item_code"])
+		code = line["item_code"]
+		line["image"] = (
+			thumbs.get((code, line["colour"] or ""))  # the line's colour, else general, else any photo
+			or thumbs.get((code, ""))
+			or thumbs.get((code, None))
+		)
 		if line["alternative_item"]:
 			line["alternative_item_name"] = (items.get(line["alternative_item"]) or {}).get("item_name")
 		if show_savings:
@@ -234,6 +245,7 @@ def render_xlsx(doc, row) -> bytes:
 		[
 			_("Item code"),
 			_("Item"),
+			_("Colour"),
 			_("UOM"),
 			_("Requested qty"),
 			_("Offered qty"),
@@ -250,6 +262,7 @@ def render_xlsx(doc, row) -> bytes:
 			[
 				line["item_code"],
 				line.get("item_name"),
+				line.get("colour"),
 				line.get("uom"),
 				line.get("requested_qty"),
 				line.get("offered_qty"),
@@ -263,6 +276,7 @@ def render_xlsx(doc, row) -> bytes:
 		[
 			"",
 			_("Total"),
+			"",
 			"",
 			"",
 			data["totals"].get("unit_count"),

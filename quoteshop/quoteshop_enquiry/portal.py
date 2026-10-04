@@ -6,7 +6,7 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import flt
 
 from quoteshop.quoteshop_enquiry import otp
-from quoteshop.quoteshop_enquiry.api import find_or_create_contact
+from quoteshop.quoteshop_enquiry.api import colour_swatches, find_or_create_contact
 
 BUYER_DOMAIN = "@buyers.invalid"  # users QuoteShop creates for OTP login
 REQUEST_FIELDS = [
@@ -112,12 +112,14 @@ def get_account_data() -> dict:
 				"rate",
 				"amount",
 				"qs_requested_qty",
+				"qs_colour",
 			],
 			order_by="idx asc",
 		)
 		if orders
 		else []
 	):
+		line["colour"] = line.pop("qs_colour") or ""
 		lines_by_order.setdefault(line.pop("parent"), []).append(line)
 
 	total_listed = total_final = 0.0
@@ -148,25 +150,37 @@ def get_account_data() -> dict:
 
 @frappe.whitelist(methods=["POST"])
 def reorder(sales_order: str) -> dict:
-	"""Items of one of the buyer's own orders that are still published, for the quote list."""
+	"""Lines of one of the buyer's own orders that are still published, for the quote list.
+
+	A line keeps its colour only while the item still has that colour, else the colour is ""."""
 	customers = _customers(_buyer_contact())
 	if not frappe.db.exists("Sales Order", {"name": sales_order, "customer": ("in", customers or [""])}):
 		frappe.throw(_("Order not found."), frappe.PermissionError)
-	qty: dict[str, float] = {}
+	qty: dict[tuple[str, str], float] = {}
 	for line in frappe.get_all(
 		"Sales Order Item",
 		filters={"parenttype": "Sales Order", "parent": sales_order},
-		fields=["item_code", "qty"],
+		fields=["item_code", "qty", "qs_colour"],
 	):
-		qty[line.item_code] = qty.get(line.item_code, 0) + flt(line.qty)
+		key = (line.item_code, line.qs_colour or "")
+		qty[key] = qty.get(key, 0) + flt(line.qty)
+	codes = list({code for code, _colour in qty})
 	published = set(
 		frappe.get_all(
 			"Item",
-			filters={"name": ("in", list(qty) or [""]), "qs_published": 1, "disabled": 0, "has_variants": 0},
+			filters={"name": ("in", codes or [""]), "qs_published": 1, "disabled": 0, "has_variants": 0},
 			pluck="name",
 		)
 	)
-	return {"items": [{"item_code": code, "qty": q} for code, q in qty.items() if code in published]}
+	colours = colour_swatches(codes)
+	merged: dict[tuple[str, str], float] = {}
+	for (code, colour), q in qty.items():
+		if code in published:
+			key = (code, colour if colour in colours.get(code, {}) else "")
+			merged[key] = merged.get(key, 0) + q
+	return {
+		"items": [{"item_code": code, "qty": q, "colour": colour} for (code, colour), q in merged.items()]
+	}
 
 
 def _buyer_contact() -> str:

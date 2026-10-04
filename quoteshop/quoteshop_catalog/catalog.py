@@ -15,6 +15,8 @@ from quoteshop.quoteshop_catalog.cache import PREFIX
 TTL = 86400
 SIZES = ("thumb", "medium", "large")
 MAX_QUERY = 100
+MAX_CODES = 500
+MAX_COLOURS = 12
 VISIBLE = "qs_published = 1 and disabled = 0 and has_variants = 0"
 
 # One statement: the page of items (with the full count via a window function) joined to the starting
@@ -23,7 +25,11 @@ CARDS_SQL = """
 select i.name, i.item_name, i.qs_route, i.item_group, g.qs_route as group_route,
 	i.qs_short_description, i.qs_min_qty, i.qs_hide_price, i.qs_lead_time, i.stock_uom, i.description,
 	i.total, ip.price_list_rate, coalesce(ip.currency, pl.currency) as currency,
-	p.image, p.thumb, p.medium, p.large, p.alt_text
+	p.image, p.thumb, p.medium, p.large, p.alt_text,
+	exists(
+		select 1 from `tabQS Item Colour` c
+		where c.parent = i.name and c.parenttype = 'Item' and c.parentfield = 'qs_colours'
+	) as has_colours
 from (
 	select name, item_name, qs_route, item_group, qs_short_description, qs_min_qty, qs_hide_price,
 		qs_lead_time, stock_uom, description, qs_display_order, count(*) over () as total
@@ -76,6 +82,30 @@ def get_categories() -> list[dict]:
 	return categories()
 
 
+@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
+@rate_limit(limit=600, seconds=3600)
+def get_colours(item_codes: list[str] | str) -> dict[str, list[dict]]:
+	"""{item_code: [{label, swatch}]} for the published items among `item_codes` (max 500), one query;
+	/quote uses it for the colour choice of lines whose card has `has_colours`."""
+	codes = frappe.parse_json(item_codes) if isinstance(item_codes, str) else item_codes
+	if not isinstance(codes, list) or len(codes) > MAX_CODES or not all(isinstance(c, str) for c in codes):
+		frappe.throw(_("item_codes must be a list of at most {0} item codes.").format(MAX_CODES))
+	result: dict[str, list[dict]] = {}
+	if not codes:
+		return result
+	rows = frappe.db.sql(
+		f"""select parent, label, swatch from `tabQS Item Colour`
+		where parenttype = 'Item' and parentfield = 'qs_colours'
+			and parent in (select name from `tabItem` where {VISIBLE} and name in %(codes)s)
+		order by parent, idx""",
+		{"codes": tuple(codes)},
+		as_dict=True,
+	)
+	for row in rows:
+		result.setdefault(row.parent, []).append({"label": row.label, "swatch": row.swatch})
+	return result
+
+
 def products(category: str | None = None, q: str | None = None, page: int | str = 1) -> dict:
 	"""list_products without the rate limit (for page renders)."""
 	q = (q or "").strip()[:MAX_QUERY]
@@ -117,12 +147,50 @@ def _list_products(category: str | None, q: str, page: int) -> dict:
 	else:
 		total = 0
 	return {
-		"items": [_card(row, settings) for row in rows],
+		"items": _with_colours([_card(row, settings) for row in rows]),
 		"total": total,
 		"page": page,
 		"page_size": page_size,
 		"has_more": offset + len(rows) < total,
 	}
+
+
+def _with_colours(cards: list[dict]) -> list[dict]:
+	"""Listing cards of items with colours get `colours: [{label, swatch, image}]` (max 12, in order); image =
+	the first photo tagged with that colour, else None (the card keeps the general image). One batched query."""
+	codes = [c["item_code"] for c in cards if c["has_colours"]]
+	if not codes:
+		return cards
+	rows = frappe.db.sql(
+		"""
+		select c.parent, c.label, c.swatch, p.image, p.thumb, p.medium, p.large, p.alt_text
+		from `tabQS Item Colour` c
+		left join `tabQS Item Photo` p on p.name = (
+			select y.name from `tabQS Item Photo` y
+			where y.parent = c.parent and y.parenttype = 'Item' and y.parentfield = 'qs_photos'
+				and y.colour = c.label and ifnull(y.image, '') != ''
+			order by y.idx
+			limit 1
+		)
+		where c.parenttype = 'Item' and c.parentfield = 'qs_colours' and c.parent in %(codes)s
+		order by c.parent, c.idx
+		""",
+		{"codes": tuple(codes)},
+		as_dict=True,
+	)
+	by_item: dict[str, list[dict]] = {}
+	names = {c["item_code"]: c["item_name"] for c in cards}
+	for row in rows:
+		items = by_item.setdefault(row.parent, [])
+		if len(items) < MAX_COLOURS:
+			items.append(
+				{
+					"label": row.label,
+					"swatch": row.swatch,
+					"image": _photo(row, names[row.parent]) if row.image else None,
+				}
+			)
+	return [{**c, "colours": by_item[c["item_code"]]} if c["item_code"] in by_item else c for c in cards]
 
 
 def product(route: str) -> dict:
@@ -138,9 +206,12 @@ def _get_product(route: str) -> dict:
 	row = rows[0]
 	child = "where parent = %s and parenttype = 'Item' and parentfield = %s order by idx"
 	photos = frappe.db.sql(
-		f"select image, thumb, medium, large, alt_text from `tabQS Item Photo` {child}",
+		f"select image, thumb, medium, large, alt_text, colour from `tabQS Item Photo` {child}",
 		(row.name, "qs_photos"),
 		as_dict=True,
+	)
+	colours = frappe.db.sql(
+		f"select label, swatch from `tabQS Item Colour` {child}", (row.name, "qs_colours"), as_dict=True
 	)
 	specs = frappe.db.sql(
 		f"select label, value from `tabQS Item Spec` {child}", (row.name, "qs_specs"), as_dict=True
@@ -154,7 +225,11 @@ def _get_product(route: str) -> dict:
 	return {
 		**_card(row, settings),
 		"description": row.description,
-		"photos": [_photo(photo, row.item_name) for photo in photos if photo.image],
+		# colour "" = general photo (always shown); otherwise shown first for that colour (CONTRACTS §11)
+		"colours": [{"label": c.label, "swatch": c.swatch} for c in colours],
+		"photos": [
+			{**_photo(photo, row.item_name), "colour": photo.colour or ""} for photo in photos if photo.image
+		],
 		"specs": [{"label": spec.label, "value": spec.value} for spec in specs],
 		"related": [_card(r, settings) for r in related],
 		"lead_time": cint(row.qs_lead_time),
@@ -266,6 +341,7 @@ def _card(row, settings) -> dict:
 		"image": _photo(row, row.item_name) if row.image else None,
 		"starting_price": flt(row.price_list_rate) if show_price else None,
 		"currency": row.currency,
+		"has_colours": bool(row.get("has_colours")),
 	}
 
 

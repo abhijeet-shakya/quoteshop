@@ -120,3 +120,11 @@ QS Social Link (label, url) · QS Homepage Section · QS Promo Tile · QS Trust 
 - QS Enquiry list columns: buyer_name, business_name, buyer_type, total_offered, assigned_to, valid_till (+ modified); standard filters: status, buyer_type, assigned_to.
 - Status colours: Draft gray · Requested blue · Price Sent orange · Changes Requested yellow · Accepted green · Lost red · Expired darkgrey. Availability pills: Available green · Partial orange · Made to Order blue · Not Available red · Alternative purple. Version by: Buyer cyan · Sales blue.
 - Saved filters, Kanban, workspace, number cards, charts, primary buttons: phase 5.
+
+---
+## Delta 2026-10-05 – colour options (approved: "implement A")
+- **Item → Storefront tab**: new section **Colours** (`qs_colours_section`, after Photos, before Specifications; depends_on `eval:doc.qs_published`): `qs_colours` Tbl **QS Item Colour** (grid: label, swatch). Specifications section re-chained after it.
+- **QS Item Colour** (QuoteShop Catalog, child): `label` Data reqd · `swatch` Color reqd.
+- **QS Item Photo**: `colour` Select (optional) after `alt_text`; grid image, alt_text, colour.
+- **QS Enquiry Item**: `colour` Data ro after `uom` (Item section, column 1).
+- **Sales Order Item**: `qs_colour` Data ro after `qs_requested_qty`, depends_on `eval:doc.qs_colour`.

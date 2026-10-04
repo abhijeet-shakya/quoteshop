@@ -15,6 +15,7 @@ from quoteshop.quoteshop_enquiry.tests.factories import (
 	make_homepage_settings,
 	make_item_price,
 	make_photo,
+	make_price_list,
 	make_published_item,
 	make_store_settings,
 )
@@ -121,6 +122,11 @@ class Storefront(CatalogTestCase):
 	def setUpClass(cls):
 		super().setUpClass()
 		cls.addClassCleanup(cls._remove_photo_files)  # runs before the class rollback
+		# ERPNext copies an Item's standard_rate into the Selling Settings price list; on a bare site that is the
+		# starting-price list itself (the only one), which would make the "foreign" 7777 the newest starting price.
+		frappe.db.set_single_value(
+			"Selling Settings", "selling_price_list", make_price_list("_QS Test Other List")
+		)
 		make_store_settings(business_name="Acme Billiards", brand_color="#1F4E79")
 		make_homepage_settings(
 			hero_title="Cues, Tables and Chalk",

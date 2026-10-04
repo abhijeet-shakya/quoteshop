@@ -9,10 +9,13 @@ from frappe.utils import add_days, getdate
 from quoteshop.quoteshop_enquiry import orders, versions
 from quoteshop.quoteshop_enquiry.tests.factories import (
 	accept_and_order,
+	make_colours,
 	make_customer_group,
 	make_enquiry_settings,
+	make_item,
 	make_item_price,
 	make_order_settings,
+	make_published_item,
 	make_quote,
 	make_user,
 	send_quote,
@@ -369,3 +372,99 @@ class TestOrderFixes(OrderTestCase):
 		send_quote(doc.name)
 		with self.assertRaises(frappe.ValidationError):
 			orders.retry_order(doc.name)
+
+
+class TestColourOrders(OrderTestCase):
+	"""CONTRACTS §11: one Sales Order line per (item, colour) with qs_colour and "<br>Colour: X" in the description."""
+
+	A, B, C, D = "_QS-OC-A", "_QS-OC-B", "_QS-OC-C", "_QS-OC-D"
+	ALT, ALT_PLAIN = "_QS-OC-ALT", "_QS-OC-ALT-PLAIN"
+	TRICKY = "Black & Gold"  # no "<": Frappe leaves it alone, so only our escape_html shows
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		make_published_item(cls.A, rate=100, description="<div>Shaft A</div>")
+		make_colours(cls.A, "Red", "Blue", cls.TRICKY)
+		make_published_item(cls.B, rate=50)
+		make_published_item(cls.C, rate=100)
+		make_colours(cls.C, "Red")
+		make_published_item(cls.D, rate=100)
+		make_colours(cls.D, "Blue")
+		make_item(cls.ALT, item_name="_QS Alt Colour Item")
+		make_colours(cls.ALT, "Red", "Green")
+		make_item(cls.ALT_PLAIN, item_name="_QS Alt Plain Item")
+
+	def order(self, mobile, lines, alternatives=()):
+		"""Quote with `lines`; `alternatives` = [(item_code, colour, alternative_item)] turned into Alternative lines."""
+		doc = make_quote(lines, mobile=mobile)
+		for code, colour, alternative in alternatives:
+			row = next(r for r in doc.items if (r.item_code, r.colour or "") == (code, colour))
+			versions.set_availability(doc.name, [row.name], "Alternative")
+			frappe.db.set_value("QS Enquiry Item", row.name, "alternative_item", alternative)
+		so = frappe.get_doc("Sales Order", accept_and_order(doc.name, send_quote(doc.name).token))
+		return doc, so
+
+	def test_one_line_per_item_and_colour(self):
+		_doc, so = self.order(
+			"+919800000121",
+			[
+				line(self.A, 2, 100, colour="Red"),
+				line(self.A, 3, 100, colour="Blue"),
+				line(self.B, 1, 50),
+			],
+		)
+		self.assertEqual(
+			[(r.item_code, r.qs_colour or "", r.qty, r.qs_requested_qty) for r in so.items],
+			[(self.A, "Red", 2, 2), (self.A, "Blue", 3, 3), (self.B, "", 1, 1)],
+		)
+
+	def test_description_gets_colour_line_escaped(self):
+		_doc, so = self.order(
+			"+919800000122",
+			[
+				line(self.A, 1, 100, colour="Red"),
+				line(self.A, 1, 100, colour=self.TRICKY),
+				line(self.B, 1, 50),
+			],
+		)
+		red, tricky, plain = so.items
+		self.assertTrue(red.description.endswith("<br>Colour: Red"), red.description)
+		self.assertIn("Shaft A", red.description)  # the Item description is kept, not replaced
+		self.assertTrue(tricky.description.endswith("<br>Colour: Black &amp; Gold"), tricky.description)
+		self.assertEqual(tricky.qs_colour, self.TRICKY)  # the field keeps the label as is
+		self.assertNotIn("Colour", plain.description or "")  # no colour: ERPNext's own description
+		self.assertEqual(plain.qs_colour or "", "")
+
+	def test_markup_in_colour_is_escaped_in_description(self):
+		_doc, so = self.order("+919800000126", [line(self.B, 1, 50, colour="<b>Bold</b>")])
+		(row,) = so.items
+		self.assertTrue(row.description.endswith("<br>Colour: &lt;b&gt;Bold&lt;/b&gt;"), row.description)
+
+	def test_alternative_keeps_colour_only_when_it_has_that_label(self):
+		_doc, so = self.order(
+			"+919800000123",
+			[line(self.C, 1, 100, colour="Red"), line(self.D, 2, 100, colour="Blue")],
+			alternatives=[(self.C, "Red", self.ALT), (self.D, "Blue", self.ALT)],
+		)
+		kept, dropped = so.items
+		self.assertEqual((kept.item_code, kept.qs_colour), (self.ALT, "Red"))  # ALT has Red
+		self.assertIn("Colour: Red", kept.description)
+		self.assertEqual((dropped.item_code, dropped.qs_colour or ""), (self.ALT, ""))  # ALT has no Blue
+		self.assertNotIn("Colour", dropped.description or "")
+
+	def test_alternative_without_any_colours_drops_colour(self):
+		_doc, so = self.order(
+			"+919800000124",
+			[line(self.C, 1, 100, colour="Red")],
+			alternatives=[(self.C, "Red", self.ALT_PLAIN)],
+		)
+		(row,) = so.items
+		self.assertEqual((row.item_code, row.qs_colour or ""), (self.ALT_PLAIN, ""))
+		self.assertNotIn("Colour", row.description or "")
+
+	def test_totals_unchanged_by_colour(self):
+		doc, so = self.order(
+			"+919800000125", [line(self.A, 2, 100, colour="Red"), line(self.A, 3, 100, colour="Blue")]
+		)
+		self.assertEqual((so.net_total, doc.total_offered), (500.0, 500.0))

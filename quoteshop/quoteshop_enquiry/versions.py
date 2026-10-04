@@ -8,13 +8,14 @@ from frappe import _
 from frappe.utils import add_days, cint, flt, get_datetime, get_url, now_datetime, nowdate
 
 from quoteshop.quoteshop_enquiry import crm, whatsapp
-from quoteshop.quoteshop_enquiry.diff import diff_lines
+from quoteshop.quoteshop_enquiry.diff import diff_lines, line_key
 from quoteshop.quoteshop_enquiry.tokens import new_token
 
 EDITABLE_STATUSES = ("Requested", "Changes Requested", "Price Sent", "Expired")
 LINE_FIELDS = (
 	"item_code",
 	"item_name",
+	"colour",
 	"uom",
 	"requested_qty",
 	"offered_qty",
@@ -188,11 +189,11 @@ def create_version(doc, by: str) -> str:
 		frappe.throw(_("Version must be by Buyer or Sales."))
 	previous = latest_version(doc)
 	prev_lines = snapshot(previous)["lines"] if previous else []
-	prev_removed = {line["item_code"] for line in prev_lines if line.get("change_flag") == "Removed"}
+	prev_removed = {line_key(line) for line in prev_lines if line.get("change_flag") == "Removed"}
 
 	# a line shows as Removed in one version only, then drops out
 	doc.set(
-		"items", [r for r in doc.items if not (r.change_flag == "Removed" and r.item_code in prev_removed)]
+		"items", [r for r in doc.items if not (r.change_flag == "Removed" and line_key(r) in prev_removed)]
 	)
 	active = [r for r in doc.items if r.change_flag != "Removed"]
 	flags = (
@@ -206,7 +207,7 @@ def create_version(doc, by: str) -> str:
 		else {}
 	)
 	for row in active:
-		row.change_flag = flags.get(row.item_code, "")
+		row.change_flag = flags.get(line_key(row), "")
 
 	days = cint(frappe.get_cached_doc("QS Enquiry Settings").quote_validity_days) or 15
 	doc.valid_till = add_days(nowdate(), days)

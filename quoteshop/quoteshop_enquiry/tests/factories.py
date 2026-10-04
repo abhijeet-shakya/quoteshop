@@ -18,7 +18,28 @@ TERRITORY = "_QS Test Territory"
 DEFAULT_MOBILE = "+919800000001"
 
 
+def ensure_site_fixtures():
+	"""What the ERPNext setup wizard normally creates and a freshly installed site lacks: the tree roots,
+	the "Nos" UOM and the "Transit" Warehouse Type (a Company makes a "Goods In Transit" warehouse)."""
+	for doctype, name_field, root in (
+		("Customer Group", "customer_group_name", "All Customer Groups"),
+		("Territory", "territory_name", "All Territories"),
+		("Item Group", "item_group_name", "All Item Groups"),
+	):
+		if not frappe.db.exists(doctype, root):
+			frappe.get_doc({"doctype": doctype, name_field: root, "is_group": 1}).insert(
+				ignore_permissions=True
+			)
+	for doctype, values in (
+		("UOM", {"uom_name": "Nos"}),
+		("Warehouse Type", {"name": "Transit"}),
+	):
+		if not frappe.db.exists(doctype, next(iter(values.values()))):
+			frappe.get_doc({"doctype": doctype, **values}).insert(ignore_permissions=True)
+
+
 def make_company(name=COMPANY, abbr="_QST", currency="INR", country="India"):
+	ensure_site_fixtures()
 	if not frappe.db.exists("Company", name):
 		frappe.get_doc(
 			{
@@ -67,6 +88,7 @@ def make_fiscal_year(date="2026-06-15"):
 
 
 def _make_tree_node(doctype, name_field, name, parent_field, parent):
+	ensure_site_fixtures()
 	if not frappe.db.exists(doctype, name):
 		frappe.get_doc({"doctype": doctype, name_field: name, parent_field: parent, "is_group": 0}).insert(
 			ignore_permissions=True
@@ -104,6 +126,10 @@ def make_price_list(name=STARTING_PRICE_LIST, currency="INR"):
 
 def make_item(item_code, rate=None, price_list=STARTING_PRICE_LIST, **fields):
 	"""Item (non-stock by default); with `rate`, also an Item Price in `price_list`."""
+	ensure_site_fixtures()
+	uom = fields.get("stock_uom", "Nos")
+	if not frappe.db.exists("UOM", uom):
+		frappe.get_doc({"doctype": "UOM", "uom_name": uom}).insert(ignore_permissions=True)
 	if not frappe.db.exists("Item", item_code):
 		frappe.get_doc(
 			{
@@ -237,6 +263,22 @@ def make_published_item(item_code, rate=None, group=None, published=1, **fields)
 	make_item(item_code, qs_published=published, item_group=group, **fields)
 	if rate is not None:
 		make_item_price(item_code, rate)
+	return item_code
+
+
+def make_colours(item_code, *colours):
+	"""Set the Item's colour options (CONTRACTS §11) through a normal save, so the validator runs.
+
+	Each colour is a label or a (label, swatch) pair; the swatch defaults to #AABBCC. Returns `item_code`."""
+	doc = frappe.get_doc("Item", item_code)
+	doc.set(
+		"qs_colours",
+		[
+			{"label": c, "swatch": "#AABBCC"} if isinstance(c, str) else {"label": c[0], "swatch": c[1]}
+			for c in colours
+		],
+	)
+	doc.save(ignore_permissions=True)
 	return item_code
 
 

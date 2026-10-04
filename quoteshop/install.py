@@ -12,6 +12,11 @@ CATALOG_PERMS = {
 }
 
 
+def before_install() -> None:
+	# Frappe initialises every Single (QS Store Settings links to this list by default) before after_install.
+	make_starting_price_list(frappe.db.get_single_value("Global Defaults", "default_company"))
+
+
 def after_install() -> None:
 	company = frappe.db.get_single_value("Global Defaults", "default_company")
 	make_starting_price_list(company)
@@ -44,6 +49,7 @@ def make_starting_price_list(company: str | None) -> None:
 	if frappe.db.exists("Price List", PRICE_LIST):
 		return
 	currency = (company and frappe.db.get_value("Company", company, "default_currency")) or "INR"
+	had_default = frappe.db.get_single_value("Selling Settings", "selling_price_list")
 	frappe.get_doc(
 		{
 			"doctype": "Price List",
@@ -53,6 +59,9 @@ def make_starting_price_list(company: str | None) -> None:
 			"enabled": 1,
 		}
 	).insert(ignore_permissions=True)
+	# ERPNext makes the first selling Price List the site default; this one is not the business default.
+	if not had_default and frappe.db.get_single_value("Selling Settings", "selling_price_list") == PRICE_LIST:
+		frappe.db.set_single_value("Selling Settings", "selling_price_list", None)
 
 
 def make_catalog_manager() -> None:

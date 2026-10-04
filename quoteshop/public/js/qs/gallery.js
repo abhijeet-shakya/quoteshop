@@ -1,16 +1,20 @@
 // Product page photo gallery (Item.dc.html / MobileItem.dc.html): rail or swipe track + full-screen viewer.
-// All markup and strings come from www/p.html; this only moves state around.
+// All markup and strings come from www/p.html; this only moves state around. Every photo is in the page
+// (data-colour, "" = general); the current colour decides which are shown and in what order (CONTRACTS §11).
 const RAIL = 6; // desktop rail length; photo RAIL (and later) hide behind the "+N" tile
 const mobile = matchMedia("(max-width: 767px)");
 
 export function initGallery() {
 	const root = document.querySelector("[data-qs-gallery]");
 	const viewer = document.querySelector("[data-qs-viewer]");
-	const slides = root ? [...root.querySelectorAll("[data-qs-slide]")] : [];
-	const n = slides.length;
-	if (!n) return;
+	const all = root ? [...root.querySelectorAll("[data-qs-slide]")] : []; // all[k] = photo k in stored order
+	if (!all.length) return;
+	let order = all.map((s, k) => k).filter((k) => !all[k].hidden); // shown photos: positions -> keys
+	let slides = order.map((k) => all[k]);
+	let n = slides.length;
 
 	const $ = (sel) => viewer.querySelector(sel);
+	const rows = [...document.querySelectorAll("[data-qs-gallery] .qs-thumbs, [data-qs-gallery] .qs-gstrip, [data-qs-viewer] .qs-v-strip")];
 	const thumbs = [...document.querySelectorAll("[data-qs-gallery] [data-qs-thumb], [data-qs-viewer] [data-qs-thumb]")];
 	const more = root.querySelector("[data-qs-more]");
 	const vimg = $("[data-qs-vimg]");
@@ -40,19 +44,52 @@ export function initGallery() {
 
 	const render = () => {
 		root.querySelector("[data-qs-track]").style.transform = `translateX(${-idx * 100}%)`;
-		slides.forEach((s, i) => {
-			s.inert = i !== idx;
-			// slides start lazy; load the ones the visitor can reach next
-			if (Math.abs(i - idx) <= 1) s.querySelector("img").loading = "eager";
-		});
+		all.forEach((s) => (s.inert = s !== slides[idx]));
+		// slides start lazy; load the ones the visitor can reach next
+		slides.forEach((s, i) => Math.abs(i - idx) <= 1 && (s.querySelector("img").loading = "eager"));
 		document.querySelectorAll("[data-qs-n]").forEach((el) => (el.textContent = idx + 1));
 		document.querySelectorAll("[data-qs-label]").forEach((el) => (el.textContent = slides[idx].dataset.label));
-		thumbs.forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.qsThumb) === idx));
+		thumbs.forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.qsThumb) === order[idx]));
 		if (more) more.classList.toggle("is-on", idx >= RAIL);
 		if (!viewer.hidden) vimg.src = slides[idx].dataset.large;
 		vimg.alt = slides[idx].dataset.label;
 		thumbs.filter((b) => b.getAttribute("aria-pressed") === "true" && b.offsetParent).forEach(centre);
 	};
+
+	// show photos `keys` (in that order): re-order slides and thumbnails, rail = first RAIL, counters follow
+	const setOrder = (keys) => {
+		order = keys;
+		slides = keys.map((k) => all[k]);
+		n = keys.length;
+		idx = 0;
+		setZoom(false);
+		const full = [...keys, ...all.map((s, k) => k).filter((k) => !keys.includes(k))];
+		root.querySelector("[data-qs-track]").append(...full.map((k) => all[k]));
+		all.forEach((s, k) => (s.hidden = !keys.includes(k)));
+		rows.forEach((row) => {
+			const byKey = new Map([...row.querySelectorAll("[data-qs-thumb]")].map((b) => [Number(b.dataset.qsThumb), b]));
+			const rail = row.classList.contains("qs-thumbs");
+			row.append(...full.map((k) => byKey.get(k)));
+			if (rail && more) row.append(more);
+			byKey.forEach((b, k) => (b.hidden = !keys.includes(k) || (rail && keys.indexOf(k) >= RAIL)));
+		});
+		if (more) {
+			more.hidden = n <= RAIL;
+			if (n > RAIL) {
+				more.querySelector("img").src = slides[RAIL].dataset.thumb;
+				more.querySelector("span").textContent = `+${n - RAIL}`;
+			}
+		}
+		document.querySelectorAll("[data-qs-total]").forEach((el) => (el.textContent = n));
+		document.querySelectorAll("[data-qs-multi]").forEach((el) => (el.hidden = n < 2));
+		render();
+	};
+	window.addEventListener("qs:colour", (e) => {
+		const c = e.detail.colour;
+		const keys = all.map((s, k) => k);
+		const list = c ? [...keys.filter((k) => all[k].dataset.colour === c), ...keys.filter((k) => !all[k].dataset.colour)] : keys;
+		setOrder(list.length ? list : keys);
+	});
 
 	const go = (i) => {
 		const next = mobile.matches ? Math.max(0, Math.min(n - 1, i)) : (i + n) % n; // swipe stops at the ends, arrows wrap
@@ -110,7 +147,7 @@ export function initGallery() {
 		} else if (t.hasAttribute("data-qs-more")) {
 			idx = RAIL;
 			open(t);
-		} else if (t.hasAttribute("data-qs-thumb")) go(Number(t.dataset.qsThumb));
+		} else if (t.hasAttribute("data-qs-thumb")) go(order.indexOf(Number(t.dataset.qsThumb)));
 		else if (t.hasAttribute("data-qs-prev")) go(idx - 1);
 		else if (t.hasAttribute("data-qs-next")) go(idx + 1);
 	});
@@ -137,7 +174,7 @@ export function initGallery() {
 		if (t.hasAttribute("data-qs-close")) close();
 		else if (t.hasAttribute("data-qs-prev")) go(idx - 1);
 		else if (t.hasAttribute("data-qs-next")) go(idx + 1);
-		else if (t.hasAttribute("data-qs-thumb")) go(Number(t.dataset.qsThumb));
+		else if (t.hasAttribute("data-qs-thumb")) go(order.indexOf(Number(t.dataset.qsThumb)));
 		else if (t.hasAttribute("data-qs-zoom") && (!mobile.matches || e.detail === 0)) toggleZoom(); // phones: double-tap (detail 0 = keyboard / assistive tech)
 	});
 	const toggleZoom = () => {

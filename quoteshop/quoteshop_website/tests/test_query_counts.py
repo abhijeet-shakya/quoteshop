@@ -5,7 +5,7 @@ Fixture: 24 published items (2 photos, 1 price each) in two groups, products_per
 (frappe.get_cached_doc) stay cached in both: they are only invalidated by a settings save, not by catalog writes.
 
 Proposed page budgets (test-lead, not yet in CONTRACTS): cold <= 12, warm <= 6 for `/` and `/c/<route>`.
-Cold = list_products (<= 5) + get_categories (<= 2) + framework/route resolution (<= 5).
+Cold = list_products (<= 6) + get_categories (<= 2) + framework/route resolution (<= 5).
 Warm = catalog (<= 1 + <= 1) + framework (<= 4).
 """
 
@@ -27,7 +27,7 @@ from quoteshop.quoteshop_enquiry.tests.factories import (
 )
 from quoteshop.quoteshop_website.tests.helpers import render
 
-LIST_COLD, LIST_WARM = 5, 1
+LIST_COLD, LIST_WARM = 6, 1  # 1 cards query + 1 colours/photos query on pages with colour items
 PRODUCT_COLD, PRODUCT_WARM = 8, 1
 PAGE_COLD, PAGE_WARM = 12, 6
 
@@ -81,7 +81,7 @@ class TestQueryCounts(CatalogTestCase):
 	# --- service (NFR-01, NFR-02) ---------------------------------------------------------------
 
 	def test_list_products_24(self):
-		"""NFR-01: <= 5 cold, <= 1 warm"""
+		"""NFR-01: <= 6 cold (CONTRACTS §11: +1 batched colours query), <= 1 warm"""
 		with self.assertQueryCount(LIST_COLD):
 			cold = list_products()
 		self.assertEqual((len(cold["items"]), cold["total"], cold["has_more"]), (24, 24, False))
@@ -146,3 +146,46 @@ class TestQueryCounts(CatalogTestCase):
 
 	def test_search_page(self):
 		self.assert_page_budget("/search", {"q": "query"}, cards=24)
+
+	# --- with colours (CONTRACTS §11): one extra batched query, not one per card -----------------
+
+	def add_colours(self):
+		"""3 colours on each of the 24 items (Red has the item's first photo), cold caches; rolled back with the test."""
+		for i in range(1, 25):
+			code = f"_QS-QC{i:02}"
+			for n, label in enumerate(("Red", "Blue", "Green"), 1):
+				frappe.get_doc(
+					{
+						"doctype": "QS Item Colour",
+						"parent": code,
+						"parenttype": "Item",
+						"parentfield": "qs_colours",
+						"idx": n,
+						"label": label,
+						"swatch": "#112233",
+					}
+				).insert(ignore_permissions=True)
+			frappe.db.set_value("QS Item Photo", {"parent": code, "idx": 1}, "colour", "Red")
+		self.clear_catalog()
+
+	def test_list_products_24_with_colours(self):
+		self.add_colours()
+		list_products()  # framework warm-up
+		self.clear_catalog()
+		with self.assertQueryCount(LIST_COLD):
+			cold = list_products()
+		self.assertEqual(len(cold["items"]), 24)
+		for card in cold["items"]:
+			self.assertEqual([c["label"] for c in card["colours"]], ["Red", "Blue", "Green"])
+			self.assertIsNotNone(card["colours"][0]["image"])  # Red has the tagged photo
+			self.assertIsNone(card["colours"][1]["image"])
+		with self.assertQueryCount(LIST_WARM):
+			self.assertEqual(list_products(), cold)
+
+	def test_home_page_with_colours(self):
+		self.add_colours()
+		self.assert_page_budget("/", cards=24, text="Query Count Hero")
+
+	def test_category_page_with_colours(self):
+		self.add_colours()
+		self.assert_page_budget(f"/c/{self.category_route}", cards=12)

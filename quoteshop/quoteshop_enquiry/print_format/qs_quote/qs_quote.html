@@ -76,6 +76,9 @@
 				<td class="muted">{{ n.i }}</td>
 				<td>
 					{{ (d.item_name or d.item_code) | e }}
+					{%- if d.colour %}
+					<br><span class="muted">{{ _("Colour") }}: {{ d.colour | e }}</span>
+					{%- endif %}
 					{%- if d.availability and d.availability != "Available" %}
 					<br><span class="{{ 'na' if na else 'partial' if d.availability == 'Partial' else 'muted' }}">{{ _(d.availability) }}
 						{%- if d.alternative_item %}: {{ d.alternative_item | e }}{% endif %}

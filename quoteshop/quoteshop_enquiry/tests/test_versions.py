@@ -289,6 +289,46 @@ class TestCreateVersion(PricingTestCase):
 		v1 = min(doc.versions, key=lambda v: v.version)
 		self.assertTrue(all(not ln["change_flag"] for ln in json.loads(v1.snapshot)["lines"]))
 
+	def test_change_flags_are_per_item_and_colour(self):
+		doc = make_quote(
+			[
+				line("_QS-V-X1", 2, 100, colour="Red"),
+				line("_QS-V-X1", 3, 100, colour="Blue"),
+				line("_QS-V-X1", 1, 100),
+				line("_QS-V-X2", 1, 20),
+			]
+		)
+		with self.freeze_time(DAY):
+			send_quote(doc.name)
+		doc.reload()
+		self.assertTrue(all(not r.change_flag for r in doc.items))
+		for row in doc.items:
+			if row.colour == "Blue":
+				row.offered_rate = 90
+			elif row.item_code == "_QS-V-X1" and not row.colour:
+				row.offered_qty = 5
+		doc.save()
+		with self.freeze_time("2026-06-14 09:00:00"):
+			send_quote(doc.name)
+		doc.reload()
+		self.assertEqual(
+			{(r.item_code, r.colour or ""): r.change_flag for r in doc.items},
+			{
+				("_QS-V-X1", "Red"): "",
+				("_QS-V-X1", "Blue"): "Price changed",
+				("_QS-V-X1", ""): "Qty changed",
+				("_QS-V-X2", ""): "",
+			},
+		)
+		v1, v2 = sorted(doc.versions, key=lambda v: v.version)
+		self.assertEqual(
+			[ln["colour"] or "" for ln in json.loads(v1.snapshot)["lines"]], ["Red", "Blue", "", ""]
+		)  # snapshot rows carry colour
+		self.assertEqual(
+			{ln["change_flag"] for ln in json.loads(v2.snapshot)["lines"]},
+			{"", "Price changed", "Qty changed"},
+		)
+
 	def test_token_rotation_old_invalid(self):
 		doc, v1, v2 = self.two_versions()
 		self.assertNotEqual(v1.token, v2.token)

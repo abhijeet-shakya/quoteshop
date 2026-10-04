@@ -88,6 +88,12 @@ class TestAfterInstall(IntegrationTestCase):
 			after_install()
 		self.assertEqual(frappe.db.get_value("Price List", PRICE_LIST, "currency"), "USD")
 
+	def test_price_list_does_not_become_the_site_default(self):
+		"""ERPNext makes the first selling Price List the default; QuoteShop's must not take over."""
+		with self.change_settings("Selling Settings", selling_price_list=""):
+			after_install()
+			self.assertFalse(frappe.db.get_single_value("Selling Settings", "selling_price_list"))
+
 	# Role and permissions (LAYOUT_MAP §C)
 
 	def test_catalog_manager_role(self):

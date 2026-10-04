@@ -59,6 +59,16 @@
 .qs-q-note { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .qs-q-price { color: var(--text); font-weight: 700; }
 .qs-q-sep::before { content: " · "; }
+.qs-q-col { font-weight: 500; color: var(--muted); }
+.qs-q-col-none { color: var(--warn-fg, var(--muted)); }
+.qs-q-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 999px; box-shadow: 0 0 0 1px var(--border); vertical-align: baseline; }
+.qs-q-sws { display: flex; flex-wrap: wrap; align-items: center; margin: 2px 0 -4px -8px; }
+.qs-q-sw { position: relative; width: 44px; height: 44px; }
+.qs-q-sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.qs-q-sw label { position: absolute; inset: 8px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--panel); outline: 1.5px solid var(--border); background: var(--sw, var(--muted)); pointer-events: none; }
+.qs-q-sw input:checked + label { outline: 2px solid var(--sel-bg); }
+.qs-q-sw input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qs-q-choose { margin-left: 8px; font-size: 13px; color: var(--muted); }
 .qs-q-step { height: 48px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; box-sizing: border-box; }
 .qs-q-step button { width: 46px; height: 46px; border: 0; background: transparent; font: inherit; font-size: 20px; cursor: pointer; color: var(--text); border-radius: 999px; }
 .qs-q-step input { width: 64px; height: 44px; border: 0; background: transparent !important; text-align: center; font: inherit; font-weight: 800; font-size: 15px; -moz-appearance: textfield; }
@@ -171,3 +181,18 @@
 	.qs-q-done p { font-size: 15px; }
 	.qs-q-done-actions { width: 100%; flex-direction: column; margin-top: 10px; }
 }
+
+/* loading skeleton rows (public/js/qs/quote.js): same classes and sizes as real rows, shimmer only without reduced motion */
+.qs-q-skel { pointer-events: none; }
+.qs-sk { display: inline-block; max-width: 100%; border-radius: 8px; color: transparent; background: var(--tile-2); }
+.qs-q-thumb.qs-sk { border-radius: 16px; }
+.qs-q-skel .qs-q-step { width: 158px; border-color: transparent; }
+.qs-q-skel .qs-q-name .qs-sk, .qs-q-skel .qs-q-note .qs-sk { border-radius: 0; box-shadow: inset 0 4px 0 var(--panel), inset 0 -4px 0 var(--panel); }
+.qs-q-skel .qs-sk-2 { display: none; }
+.qs-sk-dot { position: absolute; inset: 8px; border-radius: 999px; }
+@media (prefers-reduced-motion: no-preference) {
+	.qs-sk { background: linear-gradient(90deg, var(--tile-2) 25%, var(--tile) 50%, var(--tile-2) 75%) 0 0 / 200% 100%; animation: qs-shimmer 1.3s linear infinite; }
+}
+@keyframes qs-shimmer { to { background-position: -200% 0; } }
+/* phone: names usually wrap to two lines */
+@media (max-width: 767px) { .qs-q-skel .qs-q-name .qs-sk { display: block; } }

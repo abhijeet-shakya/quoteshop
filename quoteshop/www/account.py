@@ -88,6 +88,7 @@ def order_view(o, show_savings):
 		lines=[
 			frappe._dict(
 				name=l.item_name or l.item_code,
+				colour=l.get("colour") or "",
 				qty=f"{flt(l.qty):g}",
 				listed=money(l.listed_rate, cur) if show_savings and flt(l.listed_rate) else "",
 				sold=money(l.rate, cur),

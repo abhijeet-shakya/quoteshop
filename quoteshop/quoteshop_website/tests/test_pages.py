@@ -9,9 +9,11 @@ Fixture (helpers.Storefront): 5 published items (1 no price, 1 qs_hide_price), 1
 import json
 import re
 import unittest
+from typing import ClassVar
 
 import frappe
 
+from quoteshop.quoteshop_enquiry.tests.factories import make_photo
 from quoteshop.quoteshop_website.tests.helpers import (
 	THEME_TOGGLE,
 	Storefront,
@@ -584,3 +586,102 @@ class TestSecurityRegressions(Storefront):
 		frappe.local.request_ip = "10.0.0.10"
 		self.assertEqual(render(f"/q/{quote}", {"t": token}).status, 200)
 		self.assertEqual(frappe.cache.get_keys("rl:"), [])
+
+
+class TestColourCards(Storefront):
+	"""CONTRACTS §11: listing cards of items with colours render a colour radiogroup (server side only)."""
+
+	RED_SIZES: ClassVar[dict] = {  # the photo tagged "Red"
+		"thumb": "/files/red-400.webp",
+		"medium": "/files/red-1000.webp",
+		"large": "/files/red-1800.webp",
+	}
+	LABELS: ClassVar[tuple] = (
+		"Red",
+		'Rose & "Gold"',
+		"Blue",
+		"Green",
+		"Teal",
+		"Plum",
+	)  # 6: 4 visible desktop, +2 more
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		item = frappe.get_doc("Item", "_QS-CUE-1")
+		item.set(
+			"qs_colours",
+			[{"label": label, "swatch": f"#{n}{n}{n}{n}{n}{n}"} for n, label in enumerate(cls.LABELS, 1)],
+		)
+		item.save(ignore_permissions=True)
+		make_photo("_QS-CUE-1", 10, 10, stem="_qs_pg_cue_red", colour="Red", **cls.RED_SIZES)
+		frappe.cache.delete_keys("qs:catalog:")
+		frappe.cache.delete_keys("website_page::")
+
+	def card(self, page, code="_QS-CUE-1"):
+		(card,) = page.soup.select(f'[data-qs-card][data-item="{code}"]')
+		return card
+
+	def listing_pages(self):
+		return {"home": render("/"), "category": render(self.category_path("_QS Cues"))}
+
+	def test_radiogroup_with_one_input_per_visible_colour(self):
+		for name, page in self.listing_pages().items():
+			with self.subTest(page=name):
+				card = self.card(page)
+				(group,) = card.select("[role=radiogroup]")
+				self.assertEqual(group["aria-label"], "Colour")
+				inputs = group.select("input[type=radio]")
+				self.assertEqual([i["value"] for i in inputs], list(self.LABELS[:4]))
+				self.assertEqual([i.has_attr("checked") for i in inputs], [True, False, False, False])
+				self.assertEqual(len({i["name"] for i in inputs}), 1)  # one group
+				for i in inputs:  # every input has a label with the colour name for screen readers
+					label = group.select_one(f'label[for="{i["id"]}"]')
+					self.assertEqual(label.get_text(strip=True), i["value"])
+				self.assertEqual(card["data-colour"], "Red")
+
+	def test_more_colours_link_to_the_product_page(self):
+		card = self.card(render("/"))
+		more = card.select(".qs-cs-more")
+		self.assertEqual(
+			sorted(a.get_text(strip=True) for a in more), ["+2", "+3"]
+		)  # desktop 4 shown, mobile 3
+		for link in more:
+			self.assertEqual(link["href"], self.product_path("_QS-CUE-1"))
+
+	def test_swatch_colours_are_inline_custom_property(self):
+		card = self.card(render("/"))
+		swatches = [label["style"] for label in card.select(".qs-cs label")]
+		self.assertEqual(swatches, [f"--sw: #{n}{n}{n}{n}{n}{n}" for n in range(1, 5)])
+
+	def test_tagged_photo_carried_for_in_place_swap(self):
+		inputs = self.card(render("/")).select(".qs-cs input")
+		self.assertEqual(inputs[0]["data-src"], self.RED_SIZES["thumb"])  # Red has a tagged photo
+		self.assertTrue(all(not i.has_attr("data-src") for i in inputs[1:]))
+
+	def test_labels_escaped_and_no_inline_handlers(self):
+		for name, page in self.listing_pages().items():
+			with self.subTest(page=name):
+				self.assertNotIn('Rose & "Gold"', page.html)  # never raw
+				card = self.card(page)
+				self.assertIn("Rose &amp; ", str(card))
+				for tag in card.find_all(True):
+					self.assertEqual([a for a in tag.attrs if a.lower().startswith("on")], [], tag.name)
+				self.assertNotIn("javascript:", str(card).lower())
+
+	def test_items_without_colours_keep_the_plain_stepper(self):
+		card = self.card(render("/"), "_QS-CASE-1")
+		self.assertFalse(card.select("[role=radiogroup]"))
+		self.assertTrue(card.select("[data-qs-add]"))
+		self.assertFalse(card.has_attr("data-colour"))
+
+	def test_colour_cards_have_a_stepper_not_a_link(self):
+		card = self.card(render("/"))
+		self.assertTrue(card.select("[data-qs-add]"))  # "+" adds the selected colour (JS)
+
+	def test_card_group_ids_unique_per_card(self):
+		page = render("/")
+		names = [i["name"] for i in page.soup.select(".qs-cs input[type=radio]")]
+		self.assertEqual(len(set(names)), 1)  # only the one colour item on the page
+		ids = [i["id"] for i in page.soup.select(".qs-cs input[type=radio]")]
+		self.assertEqual(len(ids), len(set(ids)))

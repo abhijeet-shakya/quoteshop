@@ -6,6 +6,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt
 
+from quoteshop.quoteshop_enquiry.diff import line_key
+
 COUNTED_AVAILABILITY = ("Available", "Partial", "Not Available")
 PRICED_STATUSES = ("Price Sent", "Accepted")
 
@@ -82,13 +84,14 @@ class QSEnquiry(Document):
 		priced = self.status in PRICED_STATUSES
 
 		for row in self.items:
-			if row.item_code in seen:
+			if line_key(row) in seen:  # the same item in another colour is a separate line
 				frappe.throw(
 					_("Row #{0}: Item {1} is already in this enquiry.").format(
-						row.idx, frappe.bold(row.item_code)
+						row.idx,
+						frappe.bold(f"{row.item_code} · {row.colour}" if row.colour else row.item_code),
 					)
 				)
-			seen.add(row.item_code)
+			seen.add(line_key(row))
 
 			row.offered_qty = flt(row.requested_qty if row.offered_qty is None else row.offered_qty)
 			row.offered_rate = flt(row.listed_rate if row.offered_rate is None else row.offered_rate)

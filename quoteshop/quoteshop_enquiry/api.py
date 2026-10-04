@@ -21,11 +21,34 @@ PASTE_SEPARATORS = re.compile(r"[\t,; ]+")
 
 @frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
 @rate_limit(limit=600, seconds=3600)
-def get_quote_items(item_codes: list[str] | str) -> list[dict]:
-	"""Cards (CONTRACTS §7.1) for the published items among `item_codes`, in the given order."""
-	codes = _string_list(item_codes, "item_codes")
+def get_quote_items(item_codes: list[str | dict] | str) -> list[dict]:
+	"""Cards (CONTRACTS §7.1) for the published items among `item_codes`, in the given order.
+
+	Entries are item codes or `{item_code, colour?}`; one card per (item, colour), each with `colour`
+	("" when none) and `swatch` ("#RRGGBB" of that colour, "" when none). A colour that is not one of
+	the item's colours (e.g. removed since it was added) resolves to colour "" instead of failing."""
+	entries = parse_json_arg(item_codes)
+	if not isinstance(entries, list) or len(entries) > MAX_LINES:
+		frappe.throw(_("item_codes must be a list of at most {0} items.").format(MAX_LINES))
+	keys = []
+	for entry in entries:
+		if isinstance(entry, str):
+			entry = {"item_code": entry}
+		if not isinstance(entry, dict) or not isinstance(entry.get("item_code"), str):
+			frappe.throw(_("item_codes must be a list of item codes."))
+		keys.append((entry["item_code"], _colour_arg(entry.get("colour"))))
+	codes = list({code for code, _colour in keys})
 	cards = {card["item_code"]: card for card in get_cards(codes)}
-	return [cards[code] for code in dict.fromkeys(codes) if code in cards]
+	colours = colour_swatches(codes)
+	result = {}
+	for code, colour in keys:
+		if code in cards:
+			colour = colour if colour in colours.get(code, {}) else ""  # display path: drop a stale colour
+			result.setdefault(
+				(code, colour),
+				{**cards[code], "colour": colour, "swatch": colours.get(code, {}).get(colour, "")},
+			)
+	return list(result.values())
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -149,31 +172,34 @@ def is_mobile_verified(mobile: str, otp_token: str | None) -> bool:
 
 
 def build_lines(items, existing: dict | None = None) -> list[dict]:
-	"""Validated QS Enquiry Item rows for [{item_code, qty}] (duplicates merged, listed_rate snapshot).
+	"""Validated QS Enquiry Item rows for [{item_code, qty, colour?}] (duplicates merged, listed_rate snapshot).
 
-	`existing` (item_code -> row dict) keeps already-quoted rows and only updates their quantity."""
+	A line is an (item_code, colour) pair; colour must be one of the item's colour labels or empty.
+	`existing` ((item_code, colour) -> row dict) keeps already-quoted rows and only updates their quantity."""
 	if not isinstance(items, list) or not items:
 		frappe.throw(_("Add at least one item."))
 	if len(items) > MAX_LINES:
 		frappe.throw(_("A quote can have at most {0} items.").format(MAX_LINES))
-	qty_by_code: dict[str, float] = {}
+	qty_by_key: dict[tuple[str, str], float] = {}
 	for row in items:
-		if not isinstance(row, dict) or set(row) - {"item_code", "qty"}:
-			frappe.throw(_("Each item may only have an item code and a quantity."))
+		if not isinstance(row, dict) or set(row) - {"item_code", "qty", "colour"}:
+			frappe.throw(_("Each item may only have an item code, a quantity and a colour."))
 		code = row.get("item_code")
 		if not isinstance(code, str) or not code:
 			frappe.throw(_("Item code is required."))
-		qty = qty_by_code.get(code, 0) + flt(row.get("qty"))
+		key = (code, _colour_arg(row.get("colour")))
+		qty = qty_by_key.get(key, 0) + flt(row.get("qty"))
 		if not math.isfinite(qty) or qty > MAX_QTY:
 			frappe.throw(_("Quantity for {0} must be a number up to {1}.").format(code, MAX_QTY))
-		qty_by_code[code] = qty
+		qty_by_key[key] = qty
+	codes = list({code for code, _colour in qty_by_key})
 
 	existing = existing or {}
 	items_meta = {
 		item.name: item
 		for item in frappe.get_all(
 			"Item",
-			filters={"name": ("in", list(qty_by_code))},
+			filters={"name": ("in", codes)},
 			fields=[
 				"name",
 				"item_name",
@@ -188,8 +214,8 @@ def build_lines(items, existing: dict | None = None) -> list[dict]:
 	# already-quoted lines stay even if the item was unpublished since; new lines must be published
 	missing = [
 		code
-		for code in qty_by_code
-		if code not in existing
+		for code, colour in qty_by_key
+		if (code, colour) not in existing
 		and not (
 			(item := items_meta.get(code))
 			and item.qs_published
@@ -198,25 +224,32 @@ def build_lines(items, existing: dict | None = None) -> list[dict]:
 		)
 	]
 	if missing:
-		frappe.throw(_("These items are not available: {0}").format(", ".join(missing[:20])))
-	prices = starting_prices([code for code in qty_by_code if code not in existing])
+		frappe.throw(_("These items are not available: {0}").format(", ".join(dict.fromkeys(missing[:20]))))
+	new_codes = [code for code, colour in qty_by_key if (code, colour) not in existing]
+	colours = colour_swatches(new_codes)
+	for code, colour in qty_by_key:
+		if (code, colour) not in existing and colour and colour not in colours.get(code, {}):
+			frappe.throw(_("{0} is not available in {1}.").format(items_meta[code].item_name, colour))
+	prices = starting_prices(new_codes)
 
 	lines = []
-	for code, qty in qty_by_code.items():
-		if code in existing and qty == flt(existing[code]["requested_qty"]):
-			lines.append(existing[code])  # unchanged: keeps the salesperson's offered qty (e.g. partial)
+	for (code, colour), qty in qty_by_key.items():
+		key = (code, colour)
+		if key in existing and qty == flt(existing[key]["requested_qty"]):
+			lines.append(existing[key])  # unchanged: keeps the salesperson's offered qty (e.g. partial)
 			continue
 		item = items_meta.get(code)
 		minimum = _min_qty(item.qs_min_qty if item else 1)
 		if qty < minimum:
 			frappe.throw(_("Minimum quantity for {0} is {1}.").format(code, minimum))
-		if code in existing:
-			lines.append({**existing[code], "requested_qty": qty, "offered_qty": qty})
+		if key in existing:
+			lines.append({**existing[key], "requested_qty": qty, "offered_qty": qty})
 			continue
 		lines.append(
 			{
 				"item_code": code,
 				"item_name": item.item_name,
+				"colour": colour,
 				"uom": item.stock_uom,
 				"requested_qty": qty,
 				"offered_qty": qty,
@@ -225,6 +258,21 @@ def build_lines(items, existing: dict | None = None) -> list[dict]:
 			}
 		)
 	return lines
+
+
+def colour_swatches(item_codes: list[str]) -> dict[str, dict[str, str]]:
+	"""{item_code: {colour label: swatch}} from the items' QS Item Colour rows — one query."""
+	result: dict[str, dict[str, str]] = {}
+	if not item_codes:
+		return result
+	for row in frappe.get_all(
+		"QS Item Colour",
+		filters={"parenttype": "Item", "parentfield": "qs_colours", "parent": ("in", item_codes)},
+		fields=["parent", "label", "swatch"],
+		order_by="idx asc",
+	):
+		result.setdefault(row.parent, {})[row.label] = row.swatch
+	return result
 
 
 def find_or_create_contact(
@@ -357,13 +405,10 @@ def parse_json_arg(value):
 		frappe.throw(_("Invalid JSON."))
 
 
-def _string_list(value, label: str) -> list[str]:
-	value = parse_json_arg(value)
-	if not isinstance(value, list) or not all(isinstance(code, str) for code in value):
-		frappe.throw(_("{0} must be a list of item codes.").format(label))
-	if len(value) > MAX_LINES:
-		frappe.throw(_("At most {0} items.").format(MAX_LINES))
-	return value
+def _colour_arg(value) -> str:
+	if value is not None and not isinstance(value, str):
+		frappe.throw(_("Invalid colour."))
+	return value or ""
 
 
 def _text(value, max_length: int) -> str | None:

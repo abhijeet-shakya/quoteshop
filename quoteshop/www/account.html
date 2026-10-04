@@ -132,7 +132,7 @@
 								<tr id="qs-a-o{{ loop.index|e }}" class="qs-a-detail"{% if not loop.first %} hidden{% endif %}>
 									<td colspan="{{ (5 + (1 if show_listed else 0) + (1 if show_savings else 0))|e }}">
 										{%- for l in o.lines %}
-										<div class="qs-a-line"><span class="qs-a-strong">{{ l.name|e }}</span><span class="qs-a-muted">{{ l.qty|e }} × {% if l.listed %}<s>{{ l.listed|e }}</s> → {% endif %}<strong>{{ l.sold|e }}</strong> {{ _("each")|e }}</span></div>
+										<div class="qs-a-line"><span class="qs-a-strong">{{ l.name|e }}{% if l.colour %} <span class="qs-a-colour">· {{ l.colour|e }}</span>{% endif %}</span><span class="qs-a-muted">{{ l.qty|e }} × {% if l.listed %}<s>{{ l.listed|e }}</s> → {% endif %}<strong>{{ l.sold|e }}</strong> {{ _("each")|e }}</span></div>
 										{%- endfor %}
 										<div class="qs-a-btns">
 											<button type="button" class="qs-p-ink qs-a-reorder" data-qs-reorder="{{ o.name|e }}">{{ _("Reorder")|e }}</button>
@@ -160,7 +160,7 @@
 						<div class="qs-a-obody" id="qs-a-mo{{ loop.index|e }}"{% if not loop.first %} hidden{% endif %}>
 							{%- for l in o.lines %}
 							<div class="qs-a-mline">
-								<div class="qs-a-strong">{{ l.name|e }}</div>
+								<div class="qs-a-strong">{{ l.name|e }}{% if l.colour %} <span class="qs-a-colour">· {{ l.colour|e }}</span>{% endif %}</div>
 								<div class="qs-a-row qs-a-muted"><span>{% if l.listed %}{{ l.qty|e }} × <s>{{ l.listed|e }}</s>{% else %}{{ l.qty|e }} {{ _("pcs")|e }}{% endif %}</span><span class="qs-a-each">{{ l.sold|e }} {{ _("each")|e }}</span></div>
 							</div>
 							{%- endfor %}

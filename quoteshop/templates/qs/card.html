@@ -9,17 +9,36 @@
 </div>
 {%- endmacro -%}
 
-{%- macro card(p, qs) -%}
-<article class="qs-card" data-qs-card data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty|e }}">
+{#- Colour choice on the card: radio group of up to 4 swatches (3 on phones), "+N" link to the product page for more.
+    Each colour that has its own photo carries it in data-* so the tile image can swap without a request. -#}
+{%- macro swatches(p, uid) -%}
+{%- set cols = p.colours[:4] -%}
+<div class="qs-cs" role="radiogroup" aria-label="{{ _('Colour')|e }}" data-qs-colours>
+	{%- for c in cols %}
+	{%- set im = c.image -%}
+	<span class="qs-cs-i{% if loop.index == 4 %} qs-only-d{% endif %}"><input type="radio" name="qs-cc-{{ uid|e }}" id="qs-cc-{{ uid|e }}-{{ loop.index|e }}" value="{{ c.label|e }}"{% if loop.first %} checked{% endif %}
+		{%- if im %} data-src="{{ im.thumb|e }}" data-srcset="{{ im.thumb|replace(' ', '%20')|e }} 400w, {{ im.medium|replace(' ', '%20')|e }} 1000w, {{ im.large|replace(' ', '%20')|e }} 1800w" data-alt="{{ im.alt|e }}"{% endif %}><label for="qs-cc-{{ uid|e }}-{{ loop.index|e }}" style="--sw: {{ c.swatch|e }}"><span class="qs-p-sr">{{ c.label|e }}</span></label></span>
+	{%- endfor %}
+	{%- if p.colours|length > 4 %}<a class="qs-cs-more qs-only-d" href="/p/{{ p.route|e }}" aria-label="{{ _('More colours of {0}').format(p.item_name)|e }}">+{{ (p.colours|length - 4)|e }}</a>{% endif %}
+	{%- if p.colours|length > 3 %}<a class="qs-cs-more qs-only-m" href="/p/{{ p.route|e }}" aria-label="{{ _('More colours of {0}').format(p.item_name)|e }}">+{{ (p.colours|length - 3)|e }}</a>{% endif %}
+</div>
+{%- endmacro -%}
+
+{%- macro card(p, qs, idx=0) -%}
+<article class="qs-card" data-qs-card data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty|e }}"{% if p.colours %} data-colour="{{ p.colours[0].label|e }}"{% endif %}>
 	<div class="qs-tile">
 		{%- if p.image %}{{ img(p.image, "(max-width: 767px) 50vw, 300px") }}
 		{%- else %}<span class="qs-noimg">{{ icon("photo", 48, "1.5") }}</span>{% endif %}
-		{{ stepper(p) }}
+		{%- if p.has_colours and not p.colours %}
+		{#- no colour data on this card: choose the colour on the product page -#}
+		<div class="qs-step"><a class="qs-step-add" href="/p/{{ p.route|e }}" aria-label="{{ _('Choose a colour for {0}').format(p.item_name)|e }}">{{ icon("plus", 22, "2.4") }}</a></div>
+		{%- else %}{{ stepper(p) }}{% endif %}
 	</div>
 	<div class="qs-card-info">
 		<span class="qs-card-cat">{{ p.item_group|e }}</span>
 		<a href="/p/{{ p.route|e }}" class="qs-card-name">{{ p.item_name|e }}</a>
 		{%- if p.short_description %}<span class="qs-card-spec">{{ p.short_description|e }}</span>{% endif %}
+		{%- if p.colours %}{{ swatches(p, (p.route ~ "-" ~ idx)) }}{% endif %}
 		{%- if p.price %}
 		<span class="qs-card-price">{{ _("From {0}").format(p.price)|e }}</span>
 		<span class="qs-card-sub">{{ qs.price_suffix|e }} · {{ _("lower for bulk")|e }}</span>
@@ -56,7 +75,7 @@
 	<div class="qs-empty">{% if qs.q %}{{ _("No products match your search. Try a simpler word, or tell us what you need on WhatsApp.")|e }}{% else %}{{ _("No products here yet. Tell us what you need on WhatsApp.")|e }}{% endif %}</div>
 	{%- else %}
 	<div class="qs-grid">
-		{%- for p in data["items"] %}{{ card(p, qs) }}{% endfor %}
+		{%- for p in data["items"] %}{{ card(p, qs, loop.index) }}{% endfor %}
 	</div>
 	{%- endif %}
 	{%- if data.prev_url or data.next_url %}

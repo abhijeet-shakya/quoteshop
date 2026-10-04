@@ -1,8 +1,9 @@
 {% extends "quoteshop/templates/qs_base.html" %}
 {%- from "quoteshop/templates/qs/icons.html" import icon, img, theme_toggle -%}
 
-{%- macro thumb(ph, i, size, current, cls="qs-thumb") -%}
-<button type="button" class="{{ cls|e }}" data-qs-thumb="{{ i|e }}" aria-label="{{ _('Show {0}').format(ph.label)|e }}" aria-pressed="{{ 'true' if current else 'false' }}">
+{#- ph.key = the photo's index in the stored order (gallery.js orders by it); ph.hide = shown for another colour only; pos = place in the current order -#}
+{%- macro thumb(ph, pos, size, cls="qs-thumb", rail=False) -%}
+<button type="button" class="{{ cls|e }}" data-qs-thumb="{{ ph.key|e }}" aria-label="{{ _('Show {0}').format(ph.label)|e }}" aria-pressed="{{ 'true' if pos == 0 else 'false' }}"{% if ph.hide or (rail and pos >= 6) %} hidden{% endif %}>
 	<img src="{{ ph.thumb|e }}" alt="" width="{{ size|e }}" height="{{ size|e }}" loading="lazy" decoding="async">
 </button>
 {%- endmacro -%}
@@ -20,49 +21,48 @@
 
 {% block content %}
 {%- set photos = p.photos -%}
-{%- set n = photos|length -%}
+{%- set n = p.shown|length -%}
+{%- set total = photos|length -%}
 {%- set tier_d, tier_m = (_("Bulk / dealer rate applies"), _("Bulk rate")) if p.min_qty >= tier3 else ((_("Multi-piece rate applies"), _("Multi-piece rate")) if p.min_qty >= tier2 else (_("Single piece"), _("Single piece"))) -%}
-<main id="qs-main" class="qs-pmain" data-qs-product data-item="{{ p.item_code|e }}" data-min="{{ p.min_qty|e }}" data-t2="{{ tier2|e }}" data-t3="{{ tier3|e }}">
+<main id="qs-main" class="qs-pmain" data-qs-product data-item="{{ p.item_code|e }}" data-colour="{{ p.colour|e }}" data-min="{{ p.min_qty|e }}" data-t2="{{ tier2|e }}" data-t3="{{ tier3|e }}">
 	<nav aria-label="{{ _('Breadcrumb')|e }}" class="qs-crumbs qs-only-d">
 		<a href="/">{{ _("Home")|e }}</a><span aria-hidden="true">/</span>{% if group_url %}<a href="{{ group_url|e }}">{{ p.item_group|e }}</a>{% else %}<span>{{ p.item_group|e }}</span>{% endif %}
 	</nav>
 
 	<section class="qs-pd">
 		<div class="qs-gal" data-qs-gallery>
-			{%- if n > 1 %}
-			<div class="qs-thumbs qs-only-d">
-				{%- for ph in photos[:6] %}
-				{{ thumb(ph, loop.index0, 72, loop.first) }}
+			{%- if total > 1 %}
+			<div class="qs-thumbs qs-only-d" data-qs-multi{% if n < 2 %} hidden{% endif %}>
+				{%- for ph in photos %}
+				{{ thumb(ph, loop.index0, 72, rail=True) }}
 				{%- endfor %}
-				{%- if n > 6 %}
-				<button type="button" class="qs-thumb qs-thumb-more" data-qs-more aria-label="{{ _('Show all {0} photos').format(n)|e }}">
-					<img src="{{ photos[6].thumb|e }}" alt="" width="72" height="72" loading="lazy" decoding="async"><span>+{{ (n - 6)|e }}</span>
+				<button type="button" class="qs-thumb qs-thumb-more" data-qs-more aria-label="{{ _('Show all photos')|e }}"{% if n <= 6 %} hidden{% endif %}>
+					<img src="{{ (photos[6] if n > 6 else photos[0]).thumb|e }}" alt="" width="72" height="72" loading="lazy" decoding="async"><span>+{{ (n - 6)|e if n > 6 else "" }}</span>
 				</button>
-				{%- endif %}
 			</div>
 			{%- endif %}
 			<div class="qs-stage">
 				{%- if photos %}
 				<div class="qs-track" data-qs-track>
 					{%- for ph in photos %}
-					<button type="button" class="qs-slide" data-qs-slide data-large="{{ ph.large|e }}" data-label="{{ ph.label|e }}" aria-label="{{ _('Open {0} full screen').format(ph.label)|e }}"{% if not loop.first %} inert{% endif %}>
+					<button type="button" class="qs-slide" data-qs-slide data-colour="{{ ph.colour|e }}" data-thumb="{{ ph.thumb|e }}" data-large="{{ ph.large|e }}" data-label="{{ ph.label|e }}" aria-label="{{ _('Open {0} full screen').format(ph.label)|e }}"{% if not loop.first %} inert{% endif %}{% if ph.hide %} hidden{% endif %}>
 						{{- img(ph, "(max-width: 767px) 100vw, 560px", 1000, 1000, priority=loop.first, cls="qs-stage-img") -}}
 					</button>
 					{%- endfor %}
 				</div>
-				{%- if n > 1 %}
-				<span class="qs-pill qs-stage-n"><span><span data-qs-n>1</span> / {{ n|e }}</span></span>
-				<span class="qs-pill qs-stage-label"><span class="qs-pill-t" data-qs-label>{{ photos[0].label|e }}</span></span>
+				{%- if total > 1 %}
+				<span class="qs-pill qs-stage-n" data-qs-multi{% if n < 2 %} hidden{% endif %}><span><span data-qs-n>1</span> / <span data-qs-total>{{ n|e }}</span></span></span>
+				<span class="qs-pill qs-stage-label" data-qs-multi{% if n < 2 %} hidden{% endif %}><span class="qs-pill-t" data-qs-label>{{ photos[0].label|e }}</span></span>
 				<span class="qs-pill qs-stage-hint qs-only-d">{{ icon("zoom", 14, "2.2") }}{{ _("Click to zoom")|e }}</span>
-				<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-prev aria-label="{{ _('Previous photo')|e }}">{{ icon("back", 20, "2.2") }}</button>
-				<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-next aria-label="{{ _('Next photo')|e }}">{{ icon("chevron", 20, "2.2") }}</button>
+				<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-multi data-qs-prev aria-label="{{ _('Previous photo')|e }}"{% if n < 2 %} hidden{% endif %}>{{ icon("back", 20, "2.2") }}</button>
+				<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-multi data-qs-next aria-label="{{ _('Next photo')|e }}"{% if n < 2 %} hidden{% endif %}>{{ icon("chevron", 20, "2.2") }}</button>
 				{%- endif %}
 				{%- else %}<span class="qs-noimg">{{ icon("photo", 72, "1.5") }}</span>{% endif %}
 			</div>
-			{%- if n > 1 %}
-			<div class="qs-gstrip qs-only-m">
+			{%- if total > 1 %}
+			<div class="qs-gstrip qs-only-m" data-qs-multi{% if n < 2 %} hidden{% endif %}>
 				{%- for ph in photos %}
-				{{ thumb(ph, loop.index0, 60, loop.first) }}
+				{{ thumb(ph, loop.index0, 60) }}
 				{%- endfor %}
 			</div>
 			{%- endif %}
@@ -85,6 +85,17 @@
 				<span class="qs-pprice-sub">{{ _("We send the best price on WhatsApp")|e }}</span>
 				{%- endif %}
 			</div>
+
+			{%- if p.colours %}
+			<div class="qs-pcol" role="radiogroup" aria-labelledby="qs-col-label" data-qs-colours>
+				<div class="qs-label" id="qs-col-label">{{ _("Colour")|e }} <span class="qs-label-note">· <span data-qs-colour-name>{{ p.colour|e }}</span></span></div>
+				<div class="qs-swatches">
+					{%- for c in p.colours %}
+					<span class="qs-sw"><input type="radio" name="colour" id="qs-col-{{ loop.index|e }}" value="{{ c.label|e }}"{% if c.label == p.colour %} checked{% endif %}><label for="qs-col-{{ loop.index|e }}" style="--sw: {{ c.swatch|e }}"><span class="qs-p-sr">{{ c.label|e }}</span></label></span>
+					{%- endfor %}
+				</div>
+			</div>
+			{%- endif %}
 
 			<div class="qs-pqty">
 				<div class="qs-label" id="qs-qty-label">{{ _("Quantity")|e }}<span class="qs-only-d qs-label-note"> · {{ (_("starts at {0} piece") if p.min_qty == 1 else _("starts at {0} pieces")).format(p.min_qty)|e }}</span></div>
@@ -121,8 +132,13 @@
 			<div class="qs-addons">
 				{%- for r in p.related %}
 				{%- set note = [r.short_description, _("from {0}").format(r.price) if r.price else None]|select|join(" · ") %}
+				{%- if r.has_colours %}
+				<div class="qs-addon">
+					<a href="/p/{{ r.route|e }}" class="qs-addon-sign" aria-label="{{ _('Choose a colour for {0}').format(r.item_name)|e }}"><span aria-hidden="true">+</span></a>
+				{%- else %}
 				<div class="qs-addon" data-qs-addon data-item="{{ r.item_code|e }}" data-min="{{ r.min_qty|e }}">
 					<button type="button" class="qs-addon-sign" aria-pressed="false" aria-label="{{ _('Add {0} to quote').format(r.item_name)|e }}"><span data-qs-sign aria-hidden="true">+</span></button>
+				{%- endif %}
 					<span class="qs-addon-text"><a href="/p/{{ r.route|e }}" class="qs-addon-name">{{ r.item_name|e }}</a>{% if note %}<span class="qs-addon-note">{{ note|e }}</span>{% endif %}</span>
 				</div>
 				{%- endfor %}
@@ -135,7 +151,7 @@
 {%- if photos %}
 <div class="qs-viewer" data-qs-viewer role="dialog" aria-modal="true" aria-label="{{ _('Product photos')|e }}" hidden>
 	<div class="qs-v-top">
-		{%- if n > 1 %}<span class="qs-v-count"><span data-qs-n>1</span> / {{ n|e }}<span class="qs-only-d"> · <span data-qs-label>{{ photos[0].label|e }}</span></span></span>{% else %}<span></span>{% endif %}
+		{%- if total > 1 %}<span class="qs-v-count" data-qs-multi{% if n < 2 %} hidden{% endif %}><span data-qs-n>1</span> / <span data-qs-total>{{ n|e }}</span><span class="qs-only-d"> · <span data-qs-label>{{ photos[0].label|e }}</span></span></span>{% else %}<span></span>{% endif %}
 		<span class="qs-v-hint qs-only-d" data-qs-zoomhint data-zoomed="{{ _('Click to zoom out')|e }}" data-idle="{{ _('Click photo to zoom · full-size image')|e }}">{{ _("Click photo to zoom · full-size image")|e }}</span>
 		<button type="button" class="qs-v-btn qs-v-close" data-qs-close aria-label="{{ _('Close')|e }}">{{ icon("close", 18, "2.2") }}</button>
 		<span class="qs-v-spacer qs-only-m"></span>
@@ -144,17 +160,17 @@
 		<button type="button" class="qs-v-zoom" data-qs-zoom aria-label="{{ _('Zoom photo')|e }}" aria-pressed="false">
 			<img class="qs-v-img" data-qs-vimg src="{{ photos[0].large|e }}" alt="{{ photos[0].alt|e }}" width="1800" height="1800" loading="lazy" decoding="async" draggable="false">
 		</button>
-		{%- if n > 1 %}
-		<button type="button" class="qs-v-btn qs-v-arrow qs-v-prev qs-only-d" data-qs-prev aria-label="{{ _('Previous photo')|e }}">{{ icon("back", 20, "2.2") }}</button>
-		<button type="button" class="qs-v-btn qs-v-arrow qs-v-next qs-only-d" data-qs-next aria-label="{{ _('Next photo')|e }}">{{ icon("chevron", 20, "2.2") }}</button>
+		{%- if total > 1 %}
+		<button type="button" class="qs-v-btn qs-v-arrow qs-v-prev qs-only-d" data-qs-multi data-qs-prev aria-label="{{ _('Previous photo')|e }}"{% if n < 2 %} hidden{% endif %}>{{ icon("back", 20, "2.2") }}</button>
+		<button type="button" class="qs-v-btn qs-v-arrow qs-v-next qs-only-d" data-qs-multi data-qs-next aria-label="{{ _('Next photo')|e }}"{% if n < 2 %} hidden{% endif %}>{{ icon("chevron", 20, "2.2") }}</button>
 		{%- endif %}
 		<span class="qs-v-tip qs-only-m" data-qs-tip>{{ _("Double-tap to zoom · swipe down to close")|e }}</span>
 	</div>
-	{%- if n > 1 %}
-	<div class="qs-v-label qs-only-m" data-qs-label>{{ photos[0].label|e }}</div>
-	<div class="qs-v-strip">
+	{%- if total > 1 %}
+	<div class="qs-v-label qs-only-m" data-qs-multi data-qs-label{% if n < 2 %} hidden{% endif %}>{{ photos[0].label|e }}</div>
+	<div class="qs-v-strip" data-qs-multi{% if n < 2 %} hidden{% endif %}>
 		{%- for ph in photos %}
-		{{ thumb(ph, loop.index0, 64, loop.first, "qs-v-thumb") }}
+		{{ thumb(ph, loop.index0, 64, "qs-v-thumb") }}
 		{%- endfor %}
 	</div>
 	{%- endif %}

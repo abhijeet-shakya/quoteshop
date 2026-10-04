@@ -96,6 +96,22 @@ class TestQuotePrint(IntegrationTestCase):
 		self.assertNotIn("_QS-PR-7", text(out))
 		self.assertIn("Not available", text(out))
 
+	def test_colour_shown_under_the_item_name(self):
+		doc = make_quote(
+			[
+				line("_QS-PR-C1", 1, 10, colour="Red"),
+				line("_QS-PR-C1", 2, 10, colour="<b>Blue</b>"),
+				line("_QS-PR-C2", 1, 10),
+			]
+		)
+		out = html(doc.name)
+		red, blue, plain = item_rows(out)
+		self.assertIn("Colour: Red", text(str(red)))
+		self.assertIn("Colour: <b>Blue</b>", text(str(blue)))  # shown as text, not markup
+		self.assertNotIn("<b>Blue</b>", out)
+		self.assertIn("&lt;b&gt;Blue&lt;/b&gt;", out)
+		self.assertNotIn("Colour", text(str(plain)))
+
 	def test_pdf_one_and_hundred_lines(self):
 		for lines in ([line("_QS-PR-P1", 1, 10)], [line(f"_QS-PR-P{i:03d}", 1, 10) for i in range(100)]):
 			doc = make_quote(lines)

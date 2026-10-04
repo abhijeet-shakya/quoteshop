@@ -9,6 +9,7 @@
   "item_code",
   "item_name",
   "uom",
+  "colour",
   "item_col_2",
   "requested_qty",
   "offered_qty",
@@ -51,6 +52,12 @@
    "fieldtype": "Link",
    "label": "UOM",
    "options": "UOM"
+  },
+  {
+   "fieldname": "colour",
+   "fieldtype": "Data",
+   "label": "Colour",
+   "read_only": 1
   },
   {
    "fieldname": "item_col_2",

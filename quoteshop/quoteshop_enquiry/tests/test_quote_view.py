@@ -13,8 +13,10 @@ from quoteshop.quoteshop_enquiry.tests.factories import (
 	DEFAULT_MOBILE,
 	WA_POST,
 	link_wa_templates,
+	make_colours,
 	make_enquiry_settings,
 	make_order_settings,
+	make_photo,
 	make_published_item,
 	make_quote,
 	send_quote,
@@ -300,6 +302,215 @@ class TestAcceptWhatsApp(QuoteViewTestCase):
 		self.assertEqual((params["version"], params["current_version"]), ("1", "2"))
 
 
+CQ_A, CQ_B = "_QS-CQ-A", "_QS-CQ-B"
+
+
+class ColourQuoteTestCase(QuoteViewTestCase):
+	"""CQ_A comes in Red and Blue (Red has its own photo, plus a general one); CQ_B has no colours."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		make_published_item(CQ_A, rate=100)
+		make_published_item(CQ_B, rate=50)
+		make_colours(CQ_A, ("Red", "#ff0000"), ("Blue", "#0000ff"))
+		make_photo(CQ_A, 10, 10, stem="_qs_cq_general", thumb="/files/cq-general-400.webp")
+		make_photo(CQ_A, 10, 10, stem="_qs_cq_red", colour="Red", thumb="/files/cq-red-400.webp")
+
+	def sent_quote_with_colours(self):
+		doc = make_quote(
+			[
+				line(CQ_A, 3, 100, colour="Red"),
+				line(CQ_A, 2, 100, colour="Blue"),
+				line(CQ_B, 1, 60),  # 300 + 200 + 60
+			]
+		)
+		return doc, send_quote(doc.name).token
+
+	def change(self, doc, token, items):
+		return self.as_guest(quote_view.request_changes, doc.name, token, items)
+
+	def flags(self, doc):
+		doc.reload()
+		return {(r.item_code, r.colour or ""): (r.requested_qty, r.change_flag) for r in doc.items}
+
+
+class TestColourView(ColourQuoteTestCase):
+	def test_view_lines_carry_colour_and_matching_image(self):
+		doc, token = self.sent_quote_with_colours()
+		lines = self.as_guest(quote_view.get_quote_view, doc.name, token)["lines"]
+		self.assertEqual(
+			{(ln["item_code"], ln["colour"] or ""): ln["offered_qty"] for ln in lines},
+			{(CQ_A, "Red"): 3.0, (CQ_A, "Blue"): 2.0, (CQ_B, ""): 1.0},
+		)
+		images = {ln["colour"]: ln["image"] for ln in lines if ln["item_code"] == CQ_A}
+		self.assertEqual(images["Red"], "/files/cq-red-400.webp")  # the line's colour photo
+		self.assertEqual(images["Blue"], "/files/cq-general-400.webp")  # no Blue photo: the general one
+
+
+class TestColourDownload(ColourQuoteTestCase):
+	def download(self, name, token, fmt):
+		frappe.local.response = frappe._dict()
+		self.as_guest(quote_view.download_quote, name, token, fmt)
+		return frappe.local.response
+
+	def test_xlsx_has_colour_column(self):
+		from openpyxl import load_workbook
+
+		doc, token = self.sent_quote_with_colours()
+		rows = list(
+			load_workbook(io.BytesIO(self.download(doc.name, token, "xlsx").filecontent)).active.values
+		)
+		header = list(rows[0])
+		self.assertEqual(header[:4], ["Item code", "Item", "Colour", "UOM"])
+		colour = header.index("Colour")
+		self.assertEqual(
+			[(r[0], r[colour]) for r in rows[1:-1]], [(CQ_A, "Red"), (CQ_A, "Blue"), (CQ_B, None)]
+		)
+		self.assertEqual(rows[-1][header.index("Amount")], 560)
+
+
+class TestColourRequestChanges(ColourQuoteTestCase):
+	def test_switching_to_the_other_colour_merges_and_removes_the_first(self):
+		doc, token = self.sent_quote_with_colours()
+		self.change(
+			doc,
+			token,
+			[
+				{"item_code": CQ_A, "qty": 3, "colour": "Blue"},
+				{"item_code": CQ_A, "qty": 2, "colour": "Blue"},  # merged: 5 Blue, Red dropped
+				{"item_code": CQ_B, "qty": 1},
+			],
+		)
+		self.assertEqual(
+			self.flags(doc),
+			{
+				(CQ_A, "Red"): (3.0, "Removed"),
+				(CQ_A, "Blue"): (5.0, "Qty changed"),
+				(CQ_B, ""): (1.0, ""),
+			},
+		)
+
+	def test_swapping_quantities_between_colours_is_a_qty_change(self):
+		doc, token = self.sent_quote_with_colours()
+		self.change(
+			doc,
+			token,
+			[
+				{"item_code": CQ_A, "qty": 3, "colour": "Blue"},
+				{"item_code": CQ_A, "qty": 2, "colour": "Red"},
+				{"item_code": CQ_B, "qty": 1},
+			],
+		)
+		# Red 3 -> 2 and Blue 2 -> 3 are qty changes on the same lines, not a switch
+		self.assertEqual(
+			self.flags(doc),
+			{
+				(CQ_A, "Red"): (2.0, "Qty changed"),
+				(CQ_A, "Blue"): (3.0, "Qty changed"),
+				(CQ_B, ""): (1.0, ""),
+			},
+		)
+
+	def test_colour_switch_is_removed_plus_added_and_token_rotates(self):
+		make_colours(CQ_A, ("Red", "#ff0000"), ("Blue", "#0000ff"), ("Teal", "#008080"))
+		self.addCleanup(make_colours, CQ_A, ("Red", "#ff0000"), ("Blue", "#0000ff"))  # class data stays
+		doc, token = self.sent_quote_with_colours()
+		result = self.change(
+			doc,
+			token,
+			[
+				{"item_code": CQ_A, "qty": 3, "colour": "Teal"},
+				{"item_code": CQ_A, "qty": 2, "colour": "Blue"},
+				{"item_code": CQ_B, "qty": 1},
+			],
+		)
+		self.assertEqual(
+			self.flags(doc),
+			{
+				(CQ_A, "Red"): (3.0, "Removed"),
+				(CQ_A, "Teal"): (3.0, "Added"),
+				(CQ_A, "Blue"): (2.0, ""),
+				(CQ_B, ""): (1.0, ""),
+			},
+		)
+		rows = {(r.item_code, r.colour): r for r in doc.items}
+		self.assertEqual(rows[(CQ_A, "Teal")].listed_rate, 100.0)  # starting price snapshot
+		new_token = token_of(result["url"])
+		self.assertNotEqual(new_token, token)
+		self.assertTrue(self.as_guest(quote_view.get_quote_view, doc.name, token)["outdated"])
+		view = self.as_guest(quote_view.get_quote_view, doc.name, new_token)
+		self.assertEqual(view["version"], 2)
+		self.assertEqual(
+			{(ln["item_code"], ln["colour"] or ""): ln["change_flag"] for ln in view["lines"]},
+			{(CQ_A, "Red"): "Removed", (CQ_A, "Teal"): "Added", (CQ_A, "Blue"): "", (CQ_B, ""): ""},
+		)
+		(job,) = self.jobs("whatsapp.send_message")
+		self.assertEqual((job.kwargs["event"], job.kwargs["version"]), ("changes_requested", 2))
+
+	def test_no_colour_to_colour_switch(self):
+		doc, token = self.sent_quote_with_colours()
+		self.change(
+			doc,
+			token,
+			[
+				{"item_code": CQ_A, "qty": 3, "colour": "Red"},
+				{"item_code": CQ_A, "qty": 2},  # Blue dropped, "not chosen" added
+				{"item_code": CQ_B, "qty": 1},
+			],
+		)
+		self.assertEqual(
+			self.flags(doc),
+			{
+				(CQ_A, "Red"): (3.0, ""),
+				(CQ_A, "Blue"): (2.0, "Removed"),
+				(CQ_A, ""): (2.0, "Added"),
+				(CQ_B, ""): (1.0, ""),
+			},
+		)
+
+	def test_removed_colour_line_drops_out_of_the_next_version(self):
+		doc, token = self.sent_quote_with_colours()
+		self.change(
+			doc,
+			token,
+			[{"item_code": CQ_A, "qty": 3, "colour": "Red"}, {"item_code": CQ_B, "qty": 1}],
+		)
+		self.assertEqual(self.flags(doc)[(CQ_A, "Blue")], (2.0, "Removed"))
+		send_quote(doc.name)
+		self.assertEqual(self.flags(doc), {(CQ_A, "Red"): (3.0, ""), (CQ_B, ""): (1.0, "")})
+
+	def test_invalid_colour_rejected_strictly(self):
+		doc, token = self.sent_quote_with_colours()
+		for item in (
+			{"item_code": CQ_A, "qty": 1, "colour": "Green"},  # not one of the item's colours
+			{"item_code": CQ_A, "qty": 1, "colour": "red"},
+			{"item_code": CQ_B, "qty": 1, "colour": "Red"},  # item has no colours
+			{"item_code": CQ_A, "qty": 1, "colour": 7},
+			{"item_code": CQ_A, "qty": 1, "colour": "Blue", "rate": 1},
+			{"item_code": CQ_A, "qty": 1, "colour": "Blue", "offered_rate": 1},
+		):
+			with self.subTest(item=item), self.assertRaises(frappe.ValidationError):
+				self.change(doc, token, [{"item_code": CQ_A, "qty": 3, "colour": "Red"}, item])
+		doc.reload()
+		self.assertEqual((doc.status, doc.current_version), ("Price Sent", 1))
+
+	def test_json_string_items(self):
+		doc, token = self.sent_quote_with_colours()
+		self.change(
+			doc,
+			token,
+			frappe.as_json(
+				[
+					{"item_code": CQ_A, "qty": 3, "colour": "Red"},
+					{"item_code": CQ_A, "qty": 2, "colour": "Blue"},
+					{"item_code": CQ_B, "qty": 4},
+				]
+			),
+		)
+		self.assertEqual(self.flags(doc)[(CQ_B, "")], (4.0, "Qty changed"))
+
+
 class TestDownloadQuote(QuoteViewTestCase):
 	def download(self, name, token, fmt):
 		frappe.local.response = frappe._dict()
@@ -314,7 +525,9 @@ class TestDownloadQuote(QuoteViewTestCase):
 		self.assertEqual((response.type, response.filename), ("download", f"{doc.name}-v1.xlsx"))
 		rows = list(load_workbook(io.BytesIO(response.filecontent)).active.values)
 		self.assertEqual([r[0] for r in rows[1:-1]], ["_QS-Q-A", "_QS-Q-B"])
-		self.assertEqual(rows[-1][6], 400)
+		header = list(rows[0])
+		self.assertEqual(rows[-1][header.index("Amount")], 400)  # totals sit under their columns
+		self.assertEqual(rows[-1][header.index("Offered qty")], 5)
 
 	def test_pdf(self):
 		doc, token = self.sent_quote()

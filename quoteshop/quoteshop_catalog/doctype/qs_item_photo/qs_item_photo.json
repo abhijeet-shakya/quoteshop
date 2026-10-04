@@ -7,6 +7,7 @@
  "field_order": [
   "image",
   "alt_text",
+  "colour",
   "thumb",
   "medium",
   "large"
@@ -24,6 +25,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Alt text"
+  },
+  {
+   "fieldname": "colour",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Colour"
   },
   {
    "fieldname": "thumb",

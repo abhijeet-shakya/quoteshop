@@ -13,6 +13,7 @@ from quoteshop.quoteshop_enquiry.tests.factories import (
 	EnquiryTestCase,
 	call_api,
 	make_buyer_contact,
+	make_colours,
 	make_enquiry_settings,
 	make_item_price,
 	make_otp_token,
@@ -215,6 +216,109 @@ class TestItemValidation(SubmitTestCase):
 		self.assertEqual(
 			self.submit(items=[{"item_code": A, "qty": 100000}]).items[0].requested_qty, 100000.0
 		)
+
+
+class TestColourLines(SubmitTestCase):
+	"""CONTRACTS §11: a line is an (item_code, colour) pair; colour must be one of the item's labels or empty."""
+
+	def setUp(self):
+		super().setUp()
+		make_colours(A, "Red", ("Blue", "#0000ff"))
+
+	def lines(self, doc):
+		return [(r.item_code, r.colour or "", r.requested_qty) for r in doc.items]
+
+	def test_two_colours_of_one_item_are_two_lines(self):
+		doc = self.submit(
+			items=[{"item_code": A, "qty": 2, "colour": "Red"}, {"item_code": A, "qty": 3, "colour": "Blue"}]
+		)
+		self.assertEqual(self.lines(doc), [(A, "Red", 2.0), (A, "Blue", 3.0)])
+		self.assertEqual((doc.line_count, doc.total_listed), (2, 750.0))
+		self.assertEqual([r.listed_rate for r in doc.items], [150.0, 150.0])
+
+	def test_same_colour_merged(self):
+		doc = self.submit(
+			items=[
+				{"item_code": A, "qty": 2, "colour": "Red"},
+				{"item_code": A, "qty": 3, "colour": "Red"},
+				{"item_code": A, "qty": 1, "colour": "Blue"},
+			]
+		)
+		self.assertEqual(self.lines(doc), [(A, "Red", 5.0), (A, "Blue", 1.0)])
+
+	def test_no_colour_chosen_is_allowed_and_none_equals_empty(self):
+		doc = self.submit(
+			items=[
+				{"item_code": A, "qty": 1},
+				{"item_code": A, "qty": 1, "colour": ""},
+				{"item_code": A, "qty": 1, "colour": None},
+				{"item_code": A, "qty": 4, "colour": "Red"},
+			]
+		)
+		self.assertEqual(self.lines(doc), [(A, "", 3.0), (A, "Red", 4.0)])
+
+	def test_item_without_colours_has_empty_colour(self):
+		doc = self.submit(items=[{"item_code": B, "qty": 1}, {"item_code": B, "qty": 1, "colour": ""}])
+		self.assertEqual(self.lines(doc), [(B, "", 2.0)])
+
+	def test_invalid_colour_rejected(self):
+		for colour in ("Green", "red", "RED", " Red", "Red ", "#FF0000", 5, ["Red"], {"label": "Red"}):
+			with self.subTest(colour=colour):
+				self.assertRejected(items=[{"item_code": A, "qty": 1, "colour": colour}])
+
+	def test_one_invalid_colour_rejects_the_whole_quote(self):
+		self.assertRejected(
+			items=[{"item_code": A, "qty": 1, "colour": "Red"}, {"item_code": A, "qty": 1, "colour": "Green"}]
+		)
+
+	def test_colour_on_item_without_colours_rejected(self):
+		self.assertRejected(items=[{"item_code": B, "qty": 1, "colour": "Red"}])
+
+	def test_colour_removed_since_added_rejected(self):
+		make_colours(A, "Blue")  # Red was dropped after the buyer picked it
+		self.assertRejected(items=[{"item_code": A, "qty": 1, "colour": "Red"}])
+
+	def test_price_and_other_keys_rejected_with_colour(self):
+		for field in ("rate", "listed_rate", "offered_rate", "price", "amount", "swatch", "colours", "name"):
+			with self.subTest(field=field):
+				self.assertRejected(items=[{"item_code": A, "qty": 1, "colour": "Red", field: 1}])
+
+	def test_min_qty_applies_per_colour_line(self):
+		make_colours(C, "Red", "Blue")  # min qty 10
+		self.assertRejected(items=[{"item_code": C, "qty": 6, "colour": "Red"}])
+		self.assertRejected(  # colours are separate lines: 6 + 6 does not make 12 for one of them
+			items=[{"item_code": C, "qty": 6, "colour": "Red"}, {"item_code": C, "qty": 6, "colour": "Blue"}]
+		)
+		doc = self.submit(
+			items=[
+				{"item_code": C, "qty": 10, "colour": "Red"},
+				{"item_code": C, "qty": 10, "colour": "Blue"},
+			]
+		)
+		self.assertEqual(self.lines(doc), [(C, "Red", 10.0), (C, "Blue", 10.0)])
+
+	def test_submit_100_lines_with_colours_in_budget(self):
+		"""NFR-03: colours add no per-line reads (one colour query for all items)."""
+		items = []
+		for i in range(50):
+			code = make_published_item(f"_QS SC-{i:03d}", rate=10 + i)
+			for n, label in enumerate(("Red", "Blue"), 1):
+				frappe.get_doc(
+					{
+						"doctype": "QS Item Colour",
+						"parent": code,
+						"parenttype": "Item",
+						"parentfield": "qs_colours",
+						"idx": n,
+						"label": label,
+						"swatch": "#112233",
+					}
+				).insert(ignore_permissions=True)
+				items.append({"item_code": code, "qty": 1, "colour": label})
+		with self.assertQueryCount(85, query_type=("select",)):
+			doc = self.submit(items=items)
+		self.assertEqual(doc.line_count, 100)
+		self.assertEqual({r.colour for r in doc.items}, {"Red", "Blue"})
 
 
 class TestListedRateSnapshot(SubmitTestCase):

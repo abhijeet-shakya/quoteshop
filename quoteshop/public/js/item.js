@@ -5,6 +5,25 @@ frappe.ui.form.on("Item", {
 	qs_hide_price: qs_starting_price,
 });
 
+// Photos grid: the "Colour" dropdown offers the item's colour labels (blank = general photo).
+frappe.ui.form.on("Item", {
+	refresh: qs_photo_colour_options,
+	qs_colours_remove: qs_photo_colour_options,
+});
+frappe.ui.form.on("QS Item Colour", {
+	label: qs_photo_colour_options,
+});
+
+function qs_photo_colour_options(frm) {
+	const grid = frm.fields_dict.qs_photos && frm.fields_dict.qs_photos.grid;
+	if (!grid) return;
+	const labels = (frm.doc.qs_colours || []).map((r) => (r.label || "").trim()).filter(Boolean);
+	// a saved value stays selectable even if its colour was renamed/removed, so the form never silently blanks it
+	(frm.doc.qs_photos || []).forEach((p) => p.colour && !labels.includes(p.colour) && labels.push(p.colour));
+	grid.update_docfield_property("colour", "options", ["", ...labels].join("\n"));
+	grid.refresh();
+}
+
 async function qs_starting_price(frm) {
 	const field = frm.fields_dict.qs_starting_price_html;
 	if (!field || frm.is_new() || !frm.doc.qs_published) return;

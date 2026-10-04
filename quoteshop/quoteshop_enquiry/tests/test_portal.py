@@ -10,9 +10,11 @@ from quoteshop.quoteshop_enquiry import portal, quote_view, versions
 from quoteshop.quoteshop_enquiry.tests.factories import (
 	accept_and_order,
 	make_buyer_contact,
+	make_colours,
 	make_enquiry_settings,
 	make_order_settings,
 	make_otp_token,
+	make_published_item,
 	make_quote,
 	make_user,
 	send_quote,
@@ -219,9 +221,92 @@ class TestReorder(PortalTestCase):
 			items = portal.reorder(self.so)["items"]
 		self.assertEqual(
 			sorted(items, key=lambda i: i["item_code"]),
-			[{"item_code": "_QS-R-A", "qty": 6.0}, {"item_code": "_QS-R-B", "qty": 2.0}],
+			[
+				{"item_code": "_QS-R-A", "qty": 6.0, "colour": ""},
+				{"item_code": "_QS-R-B", "qty": 2.0, "colour": ""},
+			],
 		)
 
 	def test_unknown_order_denied(self):
 		with self.set_user(self.user), self.assertRaises(frappe.PermissionError):
 			portal.reorder("SAL-ORD-NOPE")
+
+
+class TestPortalColours(PortalTestCase):
+	"""CONTRACTS §11: account lines carry colour; reorder keeps it only while the item still has that colour."""
+
+	MOBILE = "+919800000231"
+	A, B = "_QS-PC-A", "_QS-PC-B"
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		for code in (cls.A, cls.B):
+			make_published_item(code, rate=10)
+		make_colours(cls.A, "Red", "Blue")
+		cls.enq, cls.so = cls.order_for(
+			cls.MOBILE,
+			[
+				line(cls.A, 6, 10, colour="Red"),
+				line(cls.A, 2, 10, colour="Blue"),
+				line(cls.A, 4, 10),  # colour not chosen
+				line(cls.B, 3, 10),
+			],
+		)
+		cls.user = login(cls.MOBILE)[1]
+
+	def setUp(self):
+		super().setUp()
+		make_colours(self.A, "Red", "Blue")  # class data is not rolled back between tests: restore
+
+	def reorder(self):
+		with self.set_user(self.user):
+			return portal.reorder(self.so)["items"]
+
+	def test_account_data_lines_carry_colour(self):
+		with self.set_user(self.user):
+			(order,) = portal.get_account_data()["orders"]
+		self.assertEqual(
+			[(ln.item_code, ln.colour, ln.qty) for ln in order.lines],
+			[(self.A, "Red", 6.0), (self.A, "Blue", 2.0), (self.A, "", 4.0), (self.B, "", 3.0)],
+		)
+
+	def test_account_page_shows_colour(self):
+		from quoteshop.quoteshop_website.tests.helpers import render
+
+		page = render("/account", user=self.user)
+		self.assertEqual(page.status, 200)
+		shown = {e.get_text(strip=True) for e in page.soup.select(".qs-a-colour")}
+		self.assertEqual(shown, {"· Red", "· Blue"})
+
+	def test_reorder_returns_colour_per_line(self):
+		self.assertEqual(
+			sorted(self.reorder(), key=lambda i: (i["item_code"], i["colour"])),
+			[
+				{"item_code": self.A, "qty": 4.0, "colour": ""},
+				{"item_code": self.A, "qty": 2.0, "colour": "Blue"},
+				{"item_code": self.A, "qty": 6.0, "colour": "Red"},
+				{"item_code": self.B, "qty": 3.0, "colour": ""},
+			],
+		)
+
+	def test_reorder_drops_a_colour_the_item_no_longer_has(self):
+		make_colours(self.A, "Red")  # Blue removed since the order
+		self.assertEqual(
+			sorted(self.reorder(), key=lambda i: (i["item_code"], i["colour"])),
+			[
+				{"item_code": self.A, "qty": 6.0, "colour": ""},  # 4 not chosen + 2 stale Blue, merged
+				{"item_code": self.A, "qty": 6.0, "colour": "Red"},
+				{"item_code": self.B, "qty": 3.0, "colour": ""},
+			],
+		)
+
+	def test_reorder_drops_all_colours_when_item_has_none_left(self):
+		make_colours(self.A)
+		self.assertEqual(
+			sorted(self.reorder(), key=lambda i: i["item_code"]),
+			[
+				{"item_code": self.A, "qty": 12.0, "colour": ""},
+				{"item_code": self.B, "qty": 3.0, "colour": ""},
+			],
+		)

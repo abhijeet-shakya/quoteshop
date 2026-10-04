@@ -71,6 +71,7 @@
 .qs-v-scroll th:last-child, .qs-v-scroll td:last-child { padding-right: 18px; }
 .qs-v-scroll .qs-v-r { text-align: right; }
 .qs-v-name { font-weight: 700; }
+.qs-v-colour { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; color: var(--muted); }
 .qs-v-note { display: inline-block; margin-top: 4px; padding: 3px 8px; border-radius: 8px; font-size: 12px; font-weight: 650; }
 .qs-v-warn { background: var(--warn-bg); color: var(--warn-fg); }
 .qs-v-bad { background: var(--bad-bg); color: var(--bad-fg); }
@@ -122,6 +123,8 @@
 	.qs-v-scroll .qs-v-row td { padding: 0; border: 0; font-size: 12px; }
 	.qs-v-item { display: contents; }
 	.qs-v-name { grid-area: name; font-size: 13px; line-height: 1.3; padding-right: 8px; }
+	.qs-v-colour { display: inline; margin: 0; font-size: inherit; }
+	.qs-v-colour::before { content: " \00b7  "; }
 	.qs-v-note { grid-area: note; justify-self: start; margin: 0; padding: 4px 8px; line-height: 1.35; }
 	.qs-v-scroll .qs-v-row .qs-v-total-cell { grid-area: total; font-size: 13px; font-weight: 800; }
 	.qs-v-scroll .qs-v-row .qs-v-qty { grid-area: qty; font-weight: 400; color: var(--muted); }

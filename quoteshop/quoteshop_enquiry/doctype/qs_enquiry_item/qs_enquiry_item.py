@@ -18,6 +18,7 @@ class QSEnquiryItem(Document):
 		availability: DF.Literal["Available", "Partial", "Made to Order", "Not Available", "Alternative"]
 		availability_note: DF.Data | None
 		change_flag: DF.Literal["", "Qty changed", "Price changed", "Removed", "Added", "Alternative"]
+		colour: DF.Data | None
 		item_code: DF.Link
 		item_name: DF.Data | None
 		lead_time_days: DF.Int

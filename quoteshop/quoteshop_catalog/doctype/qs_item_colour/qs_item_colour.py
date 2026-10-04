@@ -4,7 +4,7 @@
 from frappe.model.document import Document
 
 
-class QSItemPhoto(Document):
+class QSItemColour(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -13,15 +13,11 @@ class QSItemPhoto(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		alt_text: DF.Data | None
-		colour: DF.Literal
-		image: DF.AttachImage
-		large: DF.Data | None
-		medium: DF.Data | None
+		label: DF.Data
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		thumb: DF.Data | None
+		swatch: DF.Color
 	# end: auto-generated types
 
 	pass

@@ -1,10 +1,11 @@
-"""Phase 6: accept → Deal Won, Customer, ONE Sales Order (SPEC §4, CONTRACTS §2.6-2.7)."""
+"""Phase 6: accept → Deal Won, Customer, ONE Sales Order, a line per (item, colour) (CONTRACTS §2.6-2.7, §11)."""
 
 import frappe
 from frappe import _
 from frappe.utils import add_days, cint, escape_html, flt, now_datetime, nowdate
 
 from quoteshop.quoteshop_enquiry import crm, versions, whatsapp
+from quoteshop.quoteshop_enquiry.api import colour_swatches, customer_of_contact
 
 
 def accept(doc, version: int, via: str) -> bool:
@@ -131,8 +132,6 @@ def expire_quotes() -> None:
 
 
 def _customer(doc, store) -> str:
-	from quoteshop.quoteshop_enquiry.api import customer_of_contact
-
 	customer = doc.customer or customer_of_contact(doc.contact)
 	if customer:
 		if doc.assigned_to and not frappe.db.get_value("Customer", customer, "account_manager"):
@@ -178,14 +177,16 @@ def _sales_order(doc, row, customer: str, store):
 		frappe.throw(_("Accepted quote {0} has no lines to order.").format(doc.name))
 
 	# an Alternative line orders the offered alternative item at the quoted rate (listed_rate kept)
-	alternatives = {
+	codes = {_alternative(line) or line["item_code"] for line in lines}
+	items = {
 		item.name: item
 		for item in frappe.get_all(
 			"Item",
-			filters={"name": ("in", [_alternative(line) for line in lines if _alternative(line)] or [""])},
-			fields=["name", "item_name", "stock_uom"],
+			filters={"name": ("in", list(codes))},
+			fields=["name", "item_name", "stock_uom", "description"],
 		)
 	}
+	alternative_colours = colour_swatches([line["alternative_item"] for line in lines if _alternative(line)])
 	order = frappe.new_doc("Sales Order")
 	order.update(
 		{
@@ -202,21 +203,28 @@ def _sales_order(doc, row, customer: str, store):
 		}
 	)
 	for line in lines:
-		alt = alternatives.get(_alternative(line))
-		order.append(
-			"items",
-			{
-				"item_code": alt.name if alt else line["item_code"],
-				"item_name": alt.item_name if alt else line.get("item_name"),
-				"qty": flt(line["offered_qty"]),
-				"uom": alt.stock_uom if alt else line.get("uom"),
-				"price_list_rate": flt(line.get("listed_rate")),
-				"rate": flt(line["offered_rate"]),
-				"discount_percentage": 0,
-				"delivery_date": add_days(today, cint(line.get("lead_time_days"))),
-				"qs_requested_qty": flt(line.get("requested_qty")),
-			},
-		)
+		alt = items.get(_alternative(line))
+		ordered = alt or items.get(line["item_code"])
+		# the colour carries over to an alternative only when it also comes in that colour
+		colour = line.get("colour") or ""
+		if alt and colour not in alternative_colours.get(alt.name, {}):
+			colour = ""
+		row = {
+			"item_code": alt.name if alt else line["item_code"],
+			"item_name": alt.item_name if alt else line.get("item_name"),
+			"qty": flt(line["offered_qty"]),
+			"uom": alt.stock_uom if alt else line.get("uom"),
+			"price_list_rate": flt(line.get("listed_rate")),
+			"rate": flt(line["offered_rate"]),
+			"discount_percentage": 0,
+			"delivery_date": add_days(today, cint(line.get("lead_time_days"))),
+			"qs_requested_qty": flt(line.get("requested_qty")),
+			"qs_colour": colour,
+		}
+		if colour:  # setting the description stops ERPNext filling it from the Item, so keep that text
+			base = (ordered.description or ordered.item_name) if ordered else row["item_name"]
+			row["description"] = f"{base}<br>{_('Colour')}: {escape_html(colour)}"
+		order.append("items", row)
 	order.insert(ignore_permissions=True)
 	if store.auto_submit_sales_order:
 		order.submit()

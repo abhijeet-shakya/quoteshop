@@ -37,8 +37,9 @@ CARD_KEYS = {
 	"image",
 	"starting_price",
 	"currency",
+	"has_colours",
 }
-PRODUCT_EXTRA_KEYS = {"description", "photos", "specs", "related", "lead_time", "uom"}
+PRODUCT_EXTRA_KEYS = {"description", "colours", "photos", "specs", "related", "lead_time", "uom"}
 
 
 def days(n):
@@ -498,7 +499,10 @@ class TestCardAndProduct(CatalogTestCase):
 		(card,) = list_products()["items"]
 		self.assertEqual(card["image"], {**first, "alt": "Front view"})
 		product = get_product(route_of("Item", "_QS-PH"))
-		self.assertEqual(product["photos"], [{**first, "alt": "Front view"}, {**second, "alt": "Side view"}])
+		self.assertEqual(
+			product["photos"],
+			[{**first, "alt": "Front view", "colour": ""}, {**second, "alt": "Side view", "colour": ""}],
+		)
 		self.assertEqual(product["image"], card["image"])
 
 	def test_photo_without_sizes_falls_back_to_original(self):
@@ -549,6 +553,8 @@ class TestCardAndProduct(CatalogTestCase):
 		self.assertEqual(product["lead_time"], 7)
 		self.assertEqual(product["uom"], "Nos")
 		self.assertEqual(product["photos"], [])
+		self.assertEqual(product["colours"], [])
+		self.assertFalse(product["has_colours"])
 		self.assertEqual(product["related"], [])
 
 	def test_related_items_only_published(self):

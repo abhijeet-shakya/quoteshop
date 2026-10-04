@@ -143,9 +143,9 @@
 							</thead>
 							<tbody>
 								{%- for l in g.lines %}
-								<tr class="qs-v-row" data-st="{{ l.state|e }}"{% if l.changed %} data-chg="1"{% endif %} data-amount="{{ l.amount|e }}" data-find="{{ (((l.item_name or '') ~ ' ' ~ l.item_code)|lower)|e }}"{% if loop.index > shown %} hidden{% endif %}>
+								<tr class="qs-v-row" data-st="{{ l.state|e }}"{% if l.changed %} data-chg="1"{% endif %} data-amount="{{ l.amount|e }}" data-find="{{ (((l.item_name or '') ~ ' ' ~ l.item_code ~ ' ' ~ (l.colour or ''))|lower)|e }}"{% if loop.index > shown %} hidden{% endif %}>
 									<td class="qs-v-item">
-										<div class="qs-v-name">{{ (l.item_name or l.item_code)|e }}</div>
+										<div class="qs-v-name">{{ (l.item_name or l.item_code)|e }}{% if l.colour %}<span class="qs-v-colour">{{ l.colour|e }}</span>{% endif %}</div>
 										{%- if l.note %}<span class="qs-v-note qs-v-{{ l.tone|e }}">{{ l.note|e }}</span>{% endif %}
 									</td>
 									<td class="qs-v-qty">{{ l.qty_text|e }}</td>
