@@ -1,7 +1,7 @@
 [project]
 name = "quoteshop"
 authors = [
-    { name = "Abhijeet Shakya", email = "abhijeet.shakya@infinitelocus.com"}
+    { name = "Abhijeet Shakya", email = "abhi22jeetu@gmail.com"}
 ]
 description = "Configurable storefront with quote list, enquiries and CRM integration"
 requires-python = ">=3.14"

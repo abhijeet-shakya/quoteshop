@@ -2,7 +2,7 @@ app_name = "quoteshop"
 app_title = "QuoteShop"
 app_publisher = "Abhijeet Shakya"
 app_description = "Configurable storefront with quote list, enquiries and CRM integration"
-app_email = "abhijeet.shakya@infinitelocus.com"
+app_email = "abhi22jeetu@gmail.com"
 app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "crm", "frappe_whatsapp", "erp_custom"]
