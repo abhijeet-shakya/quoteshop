@@ -1,5 +1,6 @@
 // Catalog pages (/, /c, /search, /p): card quick-add steppers, header/floating quote counters, product page.
 import { __ } from "./i18n.js";
+import { initGallery } from "./gallery.js";
 import { count, qtyOf, setQty, units } from "./quote_store.js";
 
 const $$ = (sel, root = document) => root.querySelectorAll(sel);
@@ -28,6 +29,7 @@ export function initCounts() {
 export function init() {
 	initCards();
 	initProduct();
+	initGallery();
 }
 
 function initCards() {
@@ -85,19 +87,6 @@ function initProduct() {
 		});
 	};
 
-	const showPhoto = (i) => {
-		const src = root.querySelector(`.qs-thumb[data-qs-thumb="${i}"]`);
-		const stage = root.querySelector(".qs-stage-img");
-		if (!src || !stage) return;
-		stage.removeAttribute("fetchpriority");
-		stage.srcset = src.dataset.srcset || "";
-		stage.src = src.dataset.src;
-		stage.alt = src.dataset.alt;
-		$$("[data-qs-photo-n]", root).forEach((el) => (el.textContent = i + 1));
-		$$("[data-qs-photo-alt]", root).forEach((el) => (el.textContent = src.dataset.alt));
-		$$("[data-qs-thumb]", root).forEach((b) => b.setAttribute("aria-pressed", b.dataset.qsThumb === String(i)));
-	};
-
 	document.addEventListener("click", (e) => {
 		const t = e.target;
 		if (t.closest("[data-qs-pinc]")) qty += 1;
@@ -108,8 +97,7 @@ function initProduct() {
 			toast.hidden = false;
 			clearTimeout(toastTimer);
 			toastTimer = setTimeout(() => (toast.hidden = true), 6000);
-		} else if (t.closest("[data-qs-thumb]")) return showPhoto(Number(t.closest("[data-qs-thumb]").dataset.qsThumb));
-		else {
+		} else {
 			const addon = t.closest("[data-qs-addon]");
 			if (!addon || t.closest("a")) return;
 			const item = addon.dataset.item;

@@ -25,6 +25,19 @@ def get_context(context):
 	published = {c["route"] for c in catalog.categories()}
 	p = with_prices([product])[0]
 	p["related"] = with_prices(product["related"])
+	# Gallery label = the photo's own alt text; a photo that only inherited the item name (CONTRACTS §7.1b) is "Photo n".
+	# With several photos alt = label, so a screen reader tells them apart.
+	many = len(p["photos"]) > 1
+	p["photos"] = [
+		{
+			**ph,
+			"label": (
+				label := ph["alt"] if ph["alt"] and ph["alt"] != p["item_name"] else _("Photo {0}").format(i)
+			),
+			"alt": label if many else ph["alt"],
+		}
+		for i, ph in enumerate(p["photos"], 1)
+	]
 	text = strip_html_tags(p["description"] or "").strip()
 	# ERPNext copies item_name into an empty description: show the short description instead.
 	p["description_html"] = (

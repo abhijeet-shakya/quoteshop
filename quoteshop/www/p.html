@@ -1,6 +1,12 @@
 {% extends "quoteshop/templates/qs_base.html" %}
 {%- from "quoteshop/templates/qs/icons.html" import icon, img, theme_toggle -%}
 
+{%- macro thumb(ph, i, size, current, cls="qs-thumb") -%}
+<button type="button" class="{{ cls|e }}" data-qs-thumb="{{ i|e }}" aria-label="{{ _('Show {0}').format(ph.label)|e }}" aria-pressed="{{ 'true' if current else 'false' }}">
+	<img src="{{ ph.thumb|e }}" alt="" width="{{ size|e }}" height="{{ size|e }}" loading="lazy" decoding="async">
+</button>
+{%- endmacro -%}
+
 {% block mobile_header %}
 <header class="qs-ihdr qs-only-m">
 	<a href="{{ (group_url or '/')|e }}" class="qs-round qs-round-plain" aria-label="{{ _('Back')|e }}">{{ icon("back", 22) }}</a>
@@ -22,29 +28,44 @@
 	</nav>
 
 	<section class="qs-pd">
-		<div class="qs-gal">
+		<div class="qs-gal" data-qs-gallery>
 			{%- if n > 1 %}
 			<div class="qs-thumbs qs-only-d">
-				{%- for ph in photos %}
-				<button type="button" class="qs-thumb" data-qs-thumb="{{ loop.index0 }}" aria-label="{{ _('Show photo {0}').format(loop.index)|e }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"
-					data-src="{{ ph.medium|e }}" data-alt="{{ ph.alt|e }}"{% if ph.thumb != ph.large %} data-srcset="{{ ph.thumb|replace(' ', '%20')|e }} 400w, {{ ph.medium|replace(' ', '%20')|e }} 1000w, {{ ph.large|replace(' ', '%20')|e }} 1800w"{% endif %}>
-					<img src="{{ ph.thumb|e }}" alt="" role="presentation" width="72" height="72" loading="lazy" decoding="async">
-				</button>
+				{%- for ph in photos[:6] %}
+				{{ thumb(ph, loop.index0, 72, loop.first) }}
 				{%- endfor %}
+				{%- if n > 6 %}
+				<button type="button" class="qs-thumb qs-thumb-more" data-qs-more aria-label="{{ _('Show all {0} photos').format(n)|e }}">
+					<img src="{{ photos[6].thumb|e }}" alt="" width="72" height="72" loading="lazy" decoding="async"><span>+{{ (n - 6)|e }}</span>
+				</button>
+				{%- endif %}
 			</div>
 			{%- endif %}
 			<div class="qs-stage">
-				{%- if photos %}{{ img(photos[0], "(max-width: 767px) 100vw, 560px", 1000, 1000, priority=True, cls="qs-stage-img") }}
-				{%- else %}<span class="qs-noimg">{{ icon("photo", 72, "1.5") }}</span>{% endif %}
-				{%- if n > 1 %}
-				<span class="qs-stage-label"><span class="qs-only-d">{{ _("Photo")|e }} <span data-qs-photo-n>1</span></span><span class="qs-only-m"><span data-qs-photo-n>1</span> / {{ n|e }}</span> · <span data-qs-photo-alt>{{ photos[0].alt|e }}</span></span>
-				<div class="qs-dots qs-only-m">
+				{%- if photos %}
+				<div class="qs-track" data-qs-track>
 					{%- for ph in photos %}
-					<button type="button" class="qs-dot-btn" data-qs-thumb="{{ loop.index0 }}" aria-label="{{ _('Show photo {0}').format(loop.index)|e }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><span></span></button>
+					<button type="button" class="qs-slide" data-qs-slide data-large="{{ ph.large|e }}" data-label="{{ ph.label|e }}" aria-label="{{ _('Open {0} full screen').format(ph.label)|e }}"{% if not loop.first %} inert{% endif %}>
+						{{- img(ph, "(max-width: 767px) 100vw, 560px", 1000, 1000, priority=loop.first, cls="qs-stage-img") -}}
+					</button>
 					{%- endfor %}
 				</div>
+				{%- if n > 1 %}
+				<span class="qs-pill qs-stage-n"><span><span data-qs-n>1</span> / {{ n|e }}</span></span>
+				<span class="qs-pill qs-stage-label"><span class="qs-pill-t" data-qs-label>{{ photos[0].label|e }}</span></span>
+				<span class="qs-pill qs-stage-hint qs-only-d">{{ icon("zoom", 14, "2.2") }}{{ _("Click to zoom")|e }}</span>
+				<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-prev aria-label="{{ _('Previous photo')|e }}">{{ icon("back", 20, "2.2") }}</button>
+				<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-next aria-label="{{ _('Next photo')|e }}">{{ icon("chevron", 20, "2.2") }}</button>
 				{%- endif %}
+				{%- else %}<span class="qs-noimg">{{ icon("photo", 72, "1.5") }}</span>{% endif %}
 			</div>
+			{%- if n > 1 %}
+			<div class="qs-gstrip qs-only-m">
+				{%- for ph in photos %}
+				{{ thumb(ph, loop.index0, 60, loop.first) }}
+				{%- endfor %}
+			</div>
+			{%- endif %}
 		</div>
 
 		<div class="qs-pinfo">
@@ -111,6 +132,34 @@
 	</section>
 </main>
 
+{%- if photos %}
+<div class="qs-viewer" data-qs-viewer role="dialog" aria-modal="true" aria-label="{{ _('Product photos')|e }}" hidden>
+	<div class="qs-v-top">
+		{%- if n > 1 %}<span class="qs-v-count"><span data-qs-n>1</span> / {{ n|e }}<span class="qs-only-d"> · <span data-qs-label>{{ photos[0].label|e }}</span></span></span>{% else %}<span></span>{% endif %}
+		<span class="qs-v-hint qs-only-d" data-qs-zoomhint data-zoomed="{{ _('Click to zoom out')|e }}" data-idle="{{ _('Click photo to zoom · full-size image')|e }}">{{ _("Click photo to zoom · full-size image")|e }}</span>
+		<button type="button" class="qs-v-btn qs-v-close" data-qs-close aria-label="{{ _('Close')|e }}">{{ icon("close", 18, "2.2") }}</button>
+		<span class="qs-v-spacer qs-only-m"></span>
+	</div>
+	<div class="qs-v-main" data-qs-vmain>
+		<button type="button" class="qs-v-zoom" data-qs-zoom aria-label="{{ _('Zoom photo')|e }}" aria-pressed="false">
+			<img class="qs-v-img" data-qs-vimg src="{{ photos[0].large|e }}" alt="{{ photos[0].alt|e }}" width="1800" height="1800" loading="lazy" decoding="async" draggable="false">
+		</button>
+		{%- if n > 1 %}
+		<button type="button" class="qs-v-btn qs-v-arrow qs-v-prev qs-only-d" data-qs-prev aria-label="{{ _('Previous photo')|e }}">{{ icon("back", 20, "2.2") }}</button>
+		<button type="button" class="qs-v-btn qs-v-arrow qs-v-next qs-only-d" data-qs-next aria-label="{{ _('Next photo')|e }}">{{ icon("chevron", 20, "2.2") }}</button>
+		{%- endif %}
+		<span class="qs-v-tip qs-only-m" data-qs-tip>{{ _("Double-tap to zoom · swipe down to close")|e }}</span>
+	</div>
+	{%- if n > 1 %}
+	<div class="qs-v-label qs-only-m" data-qs-label>{{ photos[0].label|e }}</div>
+	<div class="qs-v-strip">
+		{%- for ph in photos %}
+		{{ thumb(ph, loop.index0, 64, loop.first, "qs-v-thumb") }}
+		{%- endfor %}
+	</div>
+	{%- endif %}
+</div>
+{%- endif %}
 <div class="qs-toast" data-qs-toast role="status" hidden>
 	<span class="qs-toast-text" data-qs-toast-text></span>
 	<a href="/quote" class="qs-toast-link">{{ _("View quote")|e }}</a>
