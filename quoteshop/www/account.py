@@ -26,7 +26,7 @@ def get_context(context):
 
 	try:
 		get_account_data = frappe.get_attr("quoteshop.quoteshop_enquiry.portal.get_account_data")
-	except (ImportError, AttributeError):
+	except ImportError, AttributeError:
 		get_account_data = None  # ponytail: backend phase 7 not deployed yet → empty account
 	data = frappe._dict(get_account_data() if get_account_data else {})
 	show_savings = cint(frappe.get_cached_doc("QS Store Settings").show_savings_to_buyer)

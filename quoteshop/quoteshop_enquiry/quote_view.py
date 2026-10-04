@@ -80,7 +80,7 @@ def accept_quote(name: str, token: str | None = None) -> dict:
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 @rate_limit(limit=60, seconds=3600)
-def download_quote(name: str, token: str | None = None, format: str = "pdf") -> None:  # noqa: A002
+def download_quote(name: str, token: str | None = None, format: str = "pdf") -> None:
 	doc, row, current = resolve(name, token)
 	if not current:
 		frappe.throw(_("This link is outdated. Please open the latest quote."))

@@ -40,7 +40,7 @@ def get_context(context):
 
 	try:
 		get_quote_view = frappe.get_attr("quoteshop.quoteshop_enquiry.quote_view.get_quote_view")
-	except (ImportError, AttributeError):
+	except ImportError, AttributeError:
 		context.unavailable = True  # ponytail: backend phase 6 not deployed yet
 		return context
 

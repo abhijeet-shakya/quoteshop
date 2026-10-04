@@ -1,4 +1,4 @@
-"""Phase 6: accept → Deal Won, Customer, ONE Sales Order (SPEC §4, CONTRACTS §2.6–2.7)."""
+"""Phase 6: accept → Deal Won, Customer, ONE Sales Order (SPEC §4, CONTRACTS §2.6-2.7)."""
 
 import frappe
 from frappe import _

@@ -100,13 +100,20 @@ CRM SPA `/crm`, deal `/crm/deals/<name>`. Desk `/app/crm-deal/<name>`, `/app/qs-
 HTTP call to Meta happens synchronously in `before_insert` (before validate/db_insert). Therefore every QS send runs in a job: `frappe.enqueue(..., enqueue_after_commit=True, job_id=f"qs-wa-{enquiry}-{version}-{event}")`; the job first checks the QS message log for an existing `message_id` for (enquiry, version, event). Guarantee is at most once per successful insert: if anything fails after the POST, the message may be sent without a stored id, so send jobs are NOT auto-retried (failures go to Error Log for manual resend).
 Template send:
 ```python
-frappe.get_doc({
-  "doctype": "WhatsApp Message", "type": "Outgoing", "to": mobile_e164,
-  "content_type": "document" | "text", "use_template": 1, "template": template_name,
-  "body_param": json.dumps(ordered_params),   # dict; values() used in order
-  "attach": public_pdf_url,                     # header DOCUMENT; filename forced to document.pdf
-  "reference_doctype": "CRM Deal", "reference_name": deal,
-}).insert(ignore_permissions=True)
+frappe.get_doc(
+	{
+		"doctype": "WhatsApp Message",
+		"type": "Outgoing",
+		"to": mobile_e164,
+		"content_type": "document" | "text",
+		"use_template": 1,
+		"template": template_name,
+		"body_param": json.dumps(ordered_params),  # dict; values() used in order
+		"attach": public_pdf_url,  # header DOCUMENT; filename forced to document.pdf
+		"reference_doctype": "CRM Deal",
+		"reference_name": deal,
+	}
+).insert(ignore_permissions=True)
 # → doc.message_id stored in the QS message log
 ```
 Body params only sent if the template has `sample_values`. frappe_whatsapp needs a `WhatsApp Account` with `is_default_outgoing=1` (status ignored). CRM additionally requires `WhatsApp Settings.default_outgoing_account` set and that account status Active (crm/api/whatsapp.py:103). Set both.

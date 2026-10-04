@@ -52,7 +52,7 @@ FLAG_LABELS = {
 def apply_discount(
 	name: str, percent: float, scope: str, rows: list | str | None = None, item_group: str | None = None
 ) -> dict:
-	"""offered_rate = listed_rate × (1 − percent/100) on all / selected / one category's lines."""
+	"""offered_rate = listed_rate x (1 - percent/100) on all / selected / one category's lines."""
 	doc = _get_for_edit(name)
 	percent = flt(percent)
 	if not 0 <= percent < 100:
@@ -89,11 +89,8 @@ def set_availability(
 	options = frappe.get_meta("QS Enquiry Item").get_options("availability").split("\n")
 	if availability not in options:
 		frappe.throw(_("Invalid availability."))
-	if (
-		lead_time_days is not None
-		and cint(lead_time_days) < 0
-		or offered_qty is not None
-		and flt(offered_qty) < 0
+	if (lead_time_days is not None and cint(lead_time_days) < 0) or (
+		offered_qty is not None and flt(offered_qty) < 0
 	):
 		frappe.throw(_("Lead time and quantity cannot be negative."))
 	targets = _rows(doc, rows)

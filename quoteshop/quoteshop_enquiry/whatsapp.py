@@ -1,4 +1,4 @@
-"""WhatsApp messages via frappe_whatsapp (CONTRACTS §4, §9.1–9.2).
+"""WhatsApp messages via frappe_whatsapp (CONTRACTS §4, §9.1-9.2).
 
 Every send runs in a job (frappe_whatsapp POSTs to Meta inside before_insert) and is logged in the
 enquiry's QS Enquiry Message table; replies are matched through reply_to_message_id → that log."""
