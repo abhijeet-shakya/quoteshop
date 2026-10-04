@@ -28,9 +28,34 @@ export function initCounts() {
 
 export function init() {
 	initMobileSearch();
+	initPromos();
 	initCards();
 	initGallery();
 	initProduct();
+}
+
+// Offers row: prev/next arrows (desktop) show only while there is more to scroll in that direction.
+function initPromos() {
+	const wrap = document.querySelector("[data-qs-promos]");
+	const row = wrap && wrap.querySelector("[data-qs-promos-row]");
+	if (!row) return;
+	const prev = wrap.querySelector("[data-qs-promos-prev]");
+	const next = wrap.querySelector("[data-qs-promos-next]");
+	const sync = () => {
+		const max = row.scrollWidth - row.clientWidth;
+		prev.hidden = max <= 1 || row.scrollLeft <= 1;
+		next.hidden = max <= 1 || row.scrollLeft >= max - 1;
+	};
+	const by = (dir) => {
+		const tile = [...row.querySelectorAll(".qs-promo")].find((t) => t.offsetWidth);
+		const step = (tile ? tile.offsetWidth : row.clientWidth) + parseFloat(getComputedStyle(row).columnGap || 0);
+		row.scrollBy({ left: dir * step, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+	};
+	prev.addEventListener("click", () => by(-1));
+	next.addEventListener("click", () => by(1));
+	row.addEventListener("scroll", sync, { passive: true });
+	new ResizeObserver(sync).observe(row);
+	sync();
 }
 
 // Mobile top bar search button: focuses the in-flow search while that is on screen, else opens a row pinned under the bar.

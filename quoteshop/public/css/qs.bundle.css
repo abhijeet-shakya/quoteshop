@@ -63,8 +63,8 @@ button { font: inherit; }
 .qs-main { max-width: 1320px; margin: 0 auto; padding: 24px 28px 120px; display: flex; flex-direction: column; gap: 44px; box-sizing: border-box; }
 
 /* hero + promo tiles (bento) */
-.qs-bento { display: flex; flex-wrap: wrap; gap: 16px; }
-.qs-hero { flex: 999 1 600px; min-width: 0; min-height: 440px; border-radius: 28px; background: var(--ink-bg); color: #FFFFFF; padding: 44px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; overflow: hidden; position: relative; }
+.qs-bento { display: flex; flex-direction: column; gap: 18px; } /* hero full width, the offers row directly below (user decision 2026-10-05, deviates from Main.dc.html) */
+.qs-hero { flex: none; min-width: 0; min-height: 400px; border-radius: 28px; background: var(--ink-bg); color: #FFFFFF; padding: 44px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 28px; overflow: hidden; position: relative; }
 .qs-hero-copy { display: flex; flex-direction: column; gap: 16px; max-width: 560px; position: relative; z-index: 1; }
 .qs-hero-badge { align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,0.12); display: flex; align-items: center; font-size: 13px; font-weight: 600; }
 .qs-hero-title { margin: 0; font-size: 56px; line-height: 1.02; letter-spacing: -0.045em; font-weight: 800; }
@@ -74,8 +74,13 @@ button { font: inherit; }
 .qs-btn-ghost { height: 52px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.28); color: #FFFFFF; text-decoration: none; font-weight: 600; display: flex; align-items: center; box-sizing: border-box; }
 .qs-hero-art { position: absolute; right: -40px; bottom: -30px; width: 460px; height: auto; transform: rotate(-8deg); }
 .qs-hero-img { border-radius: 18px; object-fit: cover; }
-.qs-promos { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.qs-promo { flex: 1; min-height: 212px; border-radius: 28px; background: var(--field); padding: 28px; box-sizing: border-box; text-decoration: none; color: var(--text); display: flex; flex-direction: column; justify-content: space-between; gap: 16px; }
+.qs-promos-wrap { position: relative; min-width: 0; }
+.qs-promos { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.qs-promos::-webkit-scrollbar { display: none; }
+.qs-promos:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; border-radius: 28px; }
+.qs-promo { flex: 1 0 340px; height: 150px; border-radius: 28px; background: var(--field); padding: 24px 28px; box-sizing: border-box; text-decoration: none; color: var(--text); display: flex; flex-direction: column; justify-content: space-between; gap: 12px; scroll-snap-align: start; }
+@media (min-width: 768px) { .qs-promo-title::after { content: " \2192" / ""; } }
+@media (prefers-reduced-motion: no-preference) { .qs-promos { scroll-behavior: smooth; } }
 .qs-promo-kicker { font-size: 13px; font-weight: 700; color: var(--muted); }
 .qs-promo-title { font-size: 26px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 800; }
 .qs-promo-soft { background: var(--accent-soft); }
@@ -261,7 +266,7 @@ a.qs-addon-sign { text-decoration: none; }
 .qs-toast-link { height: 40px; padding: 0 14px; border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 750; display: flex; align-items: center; }
 
 /* ---------- mobile-only parts (hidden on desktop) ---------- */
-.qs-mhdr, .qs-msearch, .qs-mpop, .qs-promos-m, .qs-tabs, .qs-ihdr, .qs-pbar, .qs-strip { display: none; }
+.qs-mhdr, .qs-msearch, .qs-mpop, .qs-tabs, .qs-ihdr, .qs-pbar, .qs-strip { display: none; }
 
 /* ---------- responsive switch: mobile design ≤ 767px ---------- */
 @media (min-width: 768px) {
@@ -296,7 +301,7 @@ a.qs-addon-sign { text-decoration: none; }
 	.qs-main { padding: 0 20px 24px; gap: 0; }
 	.qs-hero, .qs-trust, .qs-how { display: none; }
 	.qs-bento { display: contents; }
-	.qs-promos { flex: none; margin-top: 16px; } /* .qs-bento is display: contents here, so the desktop flex-basis (300px) would become a fixed height in the column .qs-main */
+	.qs-promos-wrap { margin: 16px -20px 0; } /* .qs-bento is display: contents here */
 	.qs-catalog { gap: 0; }
 	.qs-cat-head { padding: 16px 0 6px; }
 	.qs-h2 { font-size: 22px; line-height: 1.15; letter-spacing: -0.03em; }
@@ -309,13 +314,11 @@ a.qs-addon-sign { text-decoration: none; }
 	.qs-empty { margin-top: 16px; padding: 32px 20px; }
 	.qs-pager { margin-top: 24px; }
 	.qs-promo { min-height: 120px; padding: 20px; border-radius: 20px; }
-	/* offers: one swipeable row (next tile peeks in), first tile on the page padding, last one scrolls fully in */
-	.qs-promos-m { display: flex; gap: 12px; margin: 16px -20px 0; padding: 0 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 20px; overscroll-behavior-x: contain; scrollbar-width: none; flex: none; }
-	.qs-promos-m::-webkit-scrollbar { display: none; }
-	.qs-promos-m .qs-promo { flex: 0 0 82vw; height: 130px; min-height: 0; scroll-snap-align: start; }
-	.qs-promos-m.is-one .qs-promo { flex-basis: 100%; }
-	.qs-promos-m:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; border-radius: 20px; }
-	@media (prefers-reduced-motion: no-preference) { .qs-promos-m { scroll-behavior: smooth; } }
+	/* offers: the same row, tiles ~82vw so the next one peeks in; first tile on the page padding, last one scrolls fully in */
+	.qs-promos { gap: 12px; padding: 0 20px; scroll-padding: 0 20px; }
+	.qs-promos .qs-promo { flex: 0 0 82vw; height: 130px; scroll-snap-align: start; }
+	.qs-promos.is-one-m .qs-promo { flex-basis: 100%; }
+	.qs-promos:focus-visible { border-radius: 20px; }
 	.qs-promo-title { font-size: 20px; }
 
 	.qs-card { gap: 8px; }

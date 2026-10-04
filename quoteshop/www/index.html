@@ -20,8 +20,8 @@
 				{%- if hp.hero_secondary_label and (hp.hero_secondary_link or qs.whatsapp_url) %}<a href="{{ (hp.hero_secondary_link or qs.whatsapp_url)|e }}" class="qs-btn-ghost">{{ hp.hero_secondary_label|e }}</a>{% endif %}
 			</div>
 			{%- endif %}
-			{%- if hp.hero_image %}
-			<img class="qs-hero-art qs-hero-img" src="{{ hp.hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0]|e }}" height="{{ hero_size[1]|e }}" fetchpriority="high" decoding="async">
+			{%- if hero_image %}
+			<img class="qs-hero-art qs-hero-img" src="{{ hero_image|e }}" alt="" role="presentation" width="{{ hero_size[0]|e }}" height="{{ hero_size[1]|e }}" fetchpriority="high" decoding="async">
 			{%- else %}
 			<svg class="qs-hero-art" viewBox="0 0 320 180" width="460" aria-hidden="true" focusable="false">
 				<rect x="0" y="0" width="320" height="180" rx="18" fill="#5B3A22"></rect>
@@ -34,26 +34,21 @@
 		</div>
 		{%- endif %}
 		{%- if b.promos %}
-		{#- desktop: tiles beside the hero (unchanged); phones get their own swipeable row below -#}
-		<div class="qs-promos qs-hide-m{% if not tiles|selectattr('show_on_desktop')|list %} qs-hide-d{% endif %}">
-			{%- for t in tiles %}
-			<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
-				{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
-				<span class="qs-promo-title">{{ t.title|e }}</span>
-			</a>
-			{%- endfor %}
-		</div>
+		{#- ONE offers row for every breakpoint: tiles carry qs-hide-d / qs-hide-m from their show_on_* flags (CSS removes them from the row, so snapping and peeking stay right) -#}
+		{%- set dtiles = tiles|selectattr('show_on_desktop')|list %}
 		{%- set mtiles = tiles|selectattr('show_on_mobile')|list %}
-		{%- if mtiles %}
-		<div class="qs-promos-m qs-only-m{% if mtiles|length == 1 %} is-one{% endif %}" role="region" aria-label="{{ _('Offers')|e }}" tabindex="0">
-			{%- for t in mtiles %}
-			<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}">
-				{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
-				<span class="qs-promo-title">{{ t.title|e }}</span>
-			</a>
-			{%- endfor %}
+		<div class="qs-promos-wrap{% if not dtiles %} qs-hide-d{% endif %}{% if not mtiles %} qs-hide-m{% endif %}" data-qs-promos>
+			<div class="qs-promos{% if mtiles|length == 1 %} is-one-m{% endif %}" role="region" aria-label="{{ _('Offers')|e }}" tabindex="0" data-qs-promos-row>
+				{%- for t in tiles %}
+				<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
+					{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
+					<span class="qs-promo-title">{{ t.title|e }}</span>
+				</a>
+				{%- endfor %}
+			</div>
+			<button type="button" class="qs-arrow qs-arrow-prev qs-only-d" data-qs-promos-prev aria-label="{{ _('Previous offers')|e }}" hidden>{{ icon("back", 20, "2.2") }}</button>
+			<button type="button" class="qs-arrow qs-arrow-next qs-only-d" data-qs-promos-next aria-label="{{ _('Next offers')|e }}" hidden>{{ icon("chevron", 20, "2.2") }}</button>
 		</div>
-		{%- endif %}
 		{%- endif %}
 	</section>
 {%- elif b.kind == "trust" %}

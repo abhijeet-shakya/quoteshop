@@ -23,8 +23,11 @@ def get_context(context):
 	elif any(b["kind"] == "catalog" for b in blocks):
 		data.categories = categories()
 
-	hero_size = get_image_size(hp.hero_image) or (1200, 800)
+	# Private files return 403 to visitors; fall back to the built-in illustration instead of a broken image.
+	hero_image = "" if (hp.hero_image or "").startswith("/private/") else hp.hero_image
+	hero_size = get_image_size(hero_image) or (1200, 800)
 	context.hp = hp
+	context.hero_image = hero_image
 	context.tiles = tiles
 	context.blocks = blocks
 	context.data = data
