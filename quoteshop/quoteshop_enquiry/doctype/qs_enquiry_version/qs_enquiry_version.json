@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "version",
+  "created_by_type",
+  "created_by",
+  "created_on",
+  "summary",
+  "snapshot",
+  "token_hash",
+  "token_expires",
+  "accepted_on",
+  "accepted_via"
+ ],
+ "fields": [
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_by_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Version by",
+   "options": "Buyer\nSales",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "label": "Created by",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Created on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Summary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "snapshot",
+   "fieldtype": "JSON",
+   "label": "Snapshot",
+   "read_only": 1
+  },
+  {
+   "fieldname": "token_hash",
+   "fieldtype": "Data",
+   "label": "Token hash",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "token_expires",
+   "fieldtype": "Datetime",
+   "label": "Token expires",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accepted_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Accepted on",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accepted_via",
+   "fieldtype": "Select",
+   "label": "Accepted via",
+   "options": "\nWebsite\nWhatsApp\nSales on behalf",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Enquiry",
+ "name": "QS Enquiry Version",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

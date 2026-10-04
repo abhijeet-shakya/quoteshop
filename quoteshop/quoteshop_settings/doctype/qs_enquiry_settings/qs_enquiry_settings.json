@@ -1,0 +1,250 @@
+{
+ "actions": [],
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "form_tab",
+  "login_section",
+  "login_mode",
+  "login_col_2",
+  "otp_required",
+  "fields_section",
+  "show_pincode",
+  "require_pincode",
+  "fields_col_2",
+  "show_business_name",
+  "show_notes",
+  "buyer_types_tab",
+  "buyer_types_section",
+  "buyer_types",
+  "questions_tab",
+  "questions_section",
+  "questions",
+  "quote_rules_tab",
+  "validity_section",
+  "quote_validity_days",
+  "validity_col_2",
+  "bulk_tier_2",
+  "bulk_tier_3",
+  "whatsapp_templates_tab",
+  "templates_section",
+  "otp_template",
+  "enquiry_received_buyer_template",
+  "enquiry_alert_sales_template",
+  "price_sent_template",
+  "templates_col_2",
+  "accepted_template",
+  "changes_requested_template",
+  "version_outdated_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "form_tab",
+   "fieldtype": "Tab Break",
+   "label": "Form"
+  },
+  {
+   "fieldname": "login_section",
+   "fieldtype": "Section Break",
+   "label": "Login"
+  },
+  {
+   "default": "Not required",
+   "fieldname": "login_mode",
+   "fieldtype": "Select",
+   "label": "Login mode",
+   "options": "Not required\nOptional\nRequired"
+  },
+  {
+   "fieldname": "login_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "otp_required",
+   "fieldtype": "Check",
+   "label": "OTP required"
+  },
+  {
+   "fieldname": "fields_section",
+   "fieldtype": "Section Break",
+   "label": "Fields"
+  },
+  {
+   "fieldname": "show_pincode",
+   "fieldtype": "Check",
+   "label": "Show pincode"
+  },
+  {
+   "depends_on": "eval:doc.show_pincode",
+   "fieldname": "require_pincode",
+   "fieldtype": "Check",
+   "label": "Require pincode"
+  },
+  {
+   "fieldname": "fields_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_business_name",
+   "fieldtype": "Check",
+   "label": "Show business name"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_notes",
+   "fieldtype": "Check",
+   "label": "Show notes"
+  },
+  {
+   "fieldname": "buyer_types_tab",
+   "fieldtype": "Tab Break",
+   "label": "Buyer types"
+  },
+  {
+   "fieldname": "buyer_types_section",
+   "fieldtype": "Section Break",
+   "label": "Buyer types"
+  },
+  {
+   "fieldname": "buyer_types",
+   "fieldtype": "Table",
+   "label": "Buyer types",
+   "options": "QS Buyer Type"
+  },
+  {
+   "fieldname": "questions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Questions"
+  },
+  {
+   "fieldname": "questions_section",
+   "fieldtype": "Section Break",
+   "label": "Questions"
+  },
+  {
+   "fieldname": "questions",
+   "fieldtype": "Table",
+   "label": "Questions",
+   "options": "QS Enquiry Question"
+  },
+  {
+   "fieldname": "quote_rules_tab",
+   "fieldtype": "Tab Break",
+   "label": "Quote rules"
+  },
+  {
+   "fieldname": "validity_section",
+   "fieldtype": "Section Break",
+   "label": "Validity & tiers"
+  },
+  {
+   "default": "15",
+   "fieldname": "quote_validity_days",
+   "fieldtype": "Int",
+   "label": "Quote validity (days)"
+  },
+  {
+   "fieldname": "validity_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "2",
+   "fieldname": "bulk_tier_2",
+   "fieldtype": "Int",
+   "label": "Bulk tier 2"
+  },
+  {
+   "default": "5",
+   "fieldname": "bulk_tier_3",
+   "fieldtype": "Int",
+   "label": "Bulk tier 3"
+  },
+  {
+   "fieldname": "whatsapp_templates_tab",
+   "fieldtype": "Tab Break",
+   "label": "WhatsApp templates"
+  },
+  {
+   "fieldname": "templates_section",
+   "fieldtype": "Section Break",
+   "label": "Templates"
+  },
+  {
+   "fieldname": "otp_template",
+   "fieldtype": "Link",
+   "label": "OTP",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "enquiry_received_buyer_template",
+   "fieldtype": "Link",
+   "label": "Enquiry received (buyer)",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "enquiry_alert_sales_template",
+   "fieldtype": "Link",
+   "label": "Enquiry alert (sales)",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "price_sent_template",
+   "fieldtype": "Link",
+   "label": "Price sent",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "templates_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "accepted_template",
+   "fieldtype": "Link",
+   "label": "Accepted",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "changes_requested_template",
+   "fieldtype": "Link",
+   "label": "Changes requested",
+   "options": "WhatsApp Templates"
+  },
+  {
+   "fieldname": "version_outdated_template",
+   "fieldtype": "Link",
+   "label": "Version outdated",
+   "options": "WhatsApp Templates"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Settings",
+ "name": "QS Enquiry Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "image",
+  "alt_text",
+  "thumb",
+  "medium",
+  "large"
+ ],
+ "fields": [
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "in_list_view": 1,
+   "label": "Image",
+   "reqd": 1
+  },
+  {
+   "fieldname": "alt_text",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Alt text"
+  },
+  {
+   "fieldname": "thumb",
+   "fieldtype": "Data",
+   "label": "Thumb (400)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "medium",
+   "fieldtype": "Data",
+   "label": "Medium (1000)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "large",
+   "fieldtype": "Data",
+   "label": "Large (1800)",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Catalog",
+ "name": "QS Item Photo",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storefront – quote request</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+[data-theme="light"]{--bg:#FFFFFF;--surface:#FFFFFF;--panel:var(--panel);--field:var(--field);--tile:var(--tile);--tile-2:#ECEAE4;--tile-3:#E8E4DC;--tile-4:#E3E8E2;--line:var(--line);--border:var(--border);--text:#121413;--muted:#5E625F;--ink-bg:#121413;--sel-bg:#121413;--sel-fg:#FFFFFF;--glass:var(--glass);--dot:#B9BCB8;--ph:#6B6F6C}
+[data-theme="dark"]{--bg:#0E100F;--surface:#171A18;--panel:#1A1D1B;--field:#1F2321;--tile:#1C201E;--tile-2:#222624;--tile-3:#262A28;--tile-4:#1E2422;--line:#262A28;--border:#343936;--text:#EEF0EC;--muted:#A3AAA5;--ink-bg:#2C312E;--sel-bg:#EEF0EC;--sel-fg:#121413;--glass:rgba(14,16,15,0.88);--dot:#5A605C;--ph:#8A918C}
+[data-theme] a{color:var(--text)}
+[data-theme] input,[data-theme] textarea{color:var(--text);background-color:var(--surface)}
+[data-theme] input::placeholder,[data-theme] textarea::placeholder{color:var(--ph)}
+</style>
+<style>/* qa: canonical light tokens (CONTRACTS §8) */[data-theme="light"]{--panel:#F7F7F4;--field:#F4F4F1;--tile:#F1F1EE;--line:#ECECE8;--border:#E2E2DE;--glass:rgba(255,255,255,0.9)}</style>
+</helmet>
+<div data-theme="{{theme}}" style="width: 100%; min-height: 100vh; background: var(--bg); color-scheme: {{theme}}; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif; color: var(--text)">
+
+  <header style="border-bottom: 1px solid var(--line)">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none">
+        <span style="width: 38px; height: 38px; border-radius: 12px; background: var(--ink-bg); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px">JBB</span>
+        <span style="font-weight: 750; font-size: 17px; letter-spacing: -0.02em">Jai Balaji Billiards</span>
+      </a>
+      <a href="Main.dc.html" style="height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; text-decoration: none; font-weight: 650; font-size: 14px">Add more</a>
+    </div>
+  </header>
+
+  <main style="max-width: 1320px; margin: 0 auto; padding: 32px 28px 64px">
+    <sc-if value="{{notSent}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+
+        <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+          <div>
+            <h1 style="margin: 0; font-size: 44px; letter-spacing: -0.045em; font-weight: 800">Your quote list</h1>
+            <p style="margin: 6px 0 0; font-size: 15px; color: var(--muted)">{{lineCount}} products · {{units}} pcs. Type any quantity, from 1 piece upward.</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{lines}}" as="l" hint-placeholder-count="5">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 12px; border-radius: 22px; background: var(--panel)">
+                <div style="flex: none; width: 64px; height: 64px; border-radius: 16px; background: {{l.tint}}"></div>
+                <div style="flex: 1 1 200px; min-width: 0">
+                  <div style="font-weight: 700; font-size: 15px">{{l.name}}</div>
+                  <div style="font-size: 13px; color: var(--muted); margin-top: 2px">{{l.note}} · <strong style="color: var(--text)">{{l.priceText}}</strong></div>
+                </div>
+                <div style="height: 48px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center">
+                  <button type="button" aria-label="Decrease quantity" onClick="{{l.dec}}" style="width: 46px; height: 46px; border: 0; background: transparent; font: inherit; font-size: 20px; cursor: pointer; color: var(--text)">−</button>
+                  <label for="q{{l.id}}" style="position: absolute; left: -9999px">Quantity for {{l.name}}</label><input id="q{{l.id}}" type="number" min="1" inputmode="numeric" value="{{l.qty}}" onChange="{{l.setQty}}" style="width: 64px; height: 44px; border: 0; background: transparent; text-align: center; font: inherit; font-weight: 800; font-size: 15px; color: var(--text)">
+                  <button type="button" aria-label="Increase quantity" onClick="{{l.inc}}" style="width: 46px; height: 46px; border: 0; background: transparent; font: inherit; font-size: 20px; cursor: pointer; color: var(--text)">+</button>
+                </div>
+                <button type="button" aria-label="Remove product" onClick="{{l.remove}}" style="width: 46px; height: 46px; border-radius: 999px; border: 0; background: transparent; color: var(--muted); cursor: pointer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+            <div style="border-radius: 22px; background: var(--panel); padding: 40px; text-align: center; color: var(--muted)">Your quote list is empty. <a href="Main.dc.html" style="font-weight: 700">Browse products</a> and add anything, even a single piece.</div>
+          </sc-if>
+
+          <sc-if value="{{showPrices}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 0; font-size: 13px; color: var(--muted)">Starting prices are a guide. Your final price, including bulk rates, comes in your quote.</p>
+          </sc-if>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label for="note" style="font-size: 14px; font-weight: 700">Anything else we should know? (optional)</label>
+            <textarea id="note" rows="3" placeholder="For example: custom size, cloth colour, logo on the table, delivery to 2nd floor" style="font: inherit; font-size: 15px; border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; resize: vertical; color: var(--text)"></textarea>
+          </div>
+        </section>
+
+        <aside style="flex: 1 1 380px; min-width: 0; position: sticky; top: 24px; border-radius: 28px; border: 1px solid var(--line); padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 20px 50px rgba(18,20,19,0.06)">
+          <div>
+            <h2 style="margin: 0; font-size: 24px; letter-spacing: -0.035em; font-weight: 800">Get your best price</h2>
+            <p style="margin: 6px 0 0; font-size: 14px; color: var(--muted)">Tell us where to send it. No account or password needed, and we usually reply within [RESPONSE TIME].</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 13px; font-weight: 700">I'm buying for</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <sc-for list="{{buyerTypes}}" as="b" hint-placeholder-count="4">
+                <button type="button" onClick="{{b.pick}}" style="height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid {{b.border}}; background: {{b.bg}}; color: {{b.color}}; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer">{{b.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="name" style="font-size: 13px; font-weight: 700">Name</label>
+            <input id="name" type="text" autocomplete="name" style="height: 50px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 14px; padding: 0 16px; font: inherit; font-size: 15px; background: var(--surface)">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="company" style="font-size: 13px; font-weight: 700">Business name (optional)</label>
+            <input id="company" type="text" autocomplete="organization" style="height: 50px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 14px; padding: 0 16px; font: inherit; font-size: 15px; background: var(--surface)">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="wa" style="font-size: 13px; font-weight: 700">WhatsApp number</label>
+            <div style="display: flex; align-items: center; height: 50px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden">
+              <span style="height: 100%; padding: 0 14px; background: var(--field); display: flex; align-items: center; font-weight: 700; font-size: 15px">+91</span>
+              <input id="wa" type="tel" autocomplete="tel-national" placeholder="98765 43210" style="flex: 1; min-width: 0; height: 48px; border: 0; padding: 0 14px; font: inherit; font-size: 15px; outline-offset: -2px">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="pin" style="font-size: 13px; font-weight: 700">Delivery pincode</label>
+              <input id="pin" type="text" inputmode="numeric" autocomplete="postal-code" style="height: 50px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 14px; padding: 0 16px; font: inherit; font-size: 15px; min-width: 0">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 13px; font-weight: 700">Installation</span>
+              <button type="button" onClick="{{toggleInstall}}" style="height: 50px; border-radius: 14px; border: 1px solid {{installBorder}}; background: {{installBg}}; color: {{installColor}}; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer">{{installLabel}}</button>
+            </div>
+          </div>
+          <button type="button" onClick="{{send}}" style="height: 58px; border-radius: 999px; border: 0; background: var(--ink-bg); color: #FFFFFF; font: inherit; font-weight: 750; font-size: 16px; cursor: pointer">Send request</button>
+          <p style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center">We'll confirm your number with a one-time WhatsApp code.</p>
+        </aside>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{sent}}" hint-placeholder-val="{{ false }}">
+      <section style="max-width: 640px; margin: 40px auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px">
+        <span style="width: 76px; height: 76px; border-radius: 999px; background: {{accentSoft}}; color: {{accentInk}}; display: flex; align-items: center; justify-content: center">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+        </span>
+        <h1 style="margin: 0; font-size: 44px; letter-spacing: -0.045em; font-weight: 800">Request received</h1>
+        <p style="margin: 0; font-size: 17px; line-height: 1.55; color: var(--muted)">Reference [RFQ-0001] · {{lineCount}} products, {{units}} pcs. Our team will WhatsApp you the best price within [RESPONSE TIME]. You can reply there with any changes.</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px">
+          <a href="#" style="height: 54px; padding: 0 26px; border-radius: 999px; background: {{accent}}; color: #FFFFFF; text-decoration: none; font-weight: 750; display: flex; align-items: center">Open WhatsApp</a>
+          <button type="button" onClick="{{reset}}" style="height: 54px; padding: 0 26px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-weight: 650; cursor: pointer">Edit list</button>
+        </div>
+      </section>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"showPrices":{"editor":"boolean","default":true},"accent":{"editor":"color","default":"#146B47","options":["#146B47","#2F5FC4","#B4372A","#121413"]},"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sent: false,
+      install: true,
+      buyer: 'Club',
+      lines: [
+        { id: 'p3', name: 'JBB Wooden Snooker Table', note: '6 × 12 ft', moq: 1, step: 1, qty: 4, tint: '#146B47' },
+        { id: 'p1', name: 'Gold JBB Championship Pool Table', note: '4 × 8 ft · green', moq: 1, step: 1, qty: 2, tint: '#2A7D57' },
+        { id: 'p9', name: '57" Omin Victory Snooker Cue', note: 'With extension', moq: 1, step: 1, qty: 20, tint: '#D8BF8C' },
+        { id: 'p11', name: 'Pool Table Accessories Set', note: 'Complete set', moq: 1, step: 1, qty: 10, tint: '#D64532' },
+        { id: 'p12', name: 'Snooker & Pool Cloth', note: '[GRADE]', moq: 1, step: 1, qty: 6, tint: '#0F5A3B' }
+      ]
+    };
+  }
+  soft(hex, dark) {
+    const light = { '#146B47': ['#E4F1EA', '#0E5236'], '#2F5FC4': ['#E6EDFB', '#1E438F'], '#B4372A': ['#F8E7E4', '#8A2A20'], '#121413': ['#F0F0EC', '#121413'] };
+    const darkMap = { '#146B47': ['#173A2C', '#8FDDB8'], '#2F5FC4': ['#1C2B4A', '#A9C2F5'], '#B4372A': ['#3D211D', '#F2A79C'], '#121413': ['#2C312E', '#EEF0EC'] };
+    const m = dark ? darkMap : light;
+    return m[hex] || (dark ? ['#2C312E', '#EEF0EC'] : ['#F0F0EC', '#121413']);
+  }
+  update(id, fn) {
+    const lines = this.state.lines.map((l) => (l.id === id ? Object.assign({}, l, { qty: fn(l) }) : l)).filter((l) => l.qty > 0);
+    this.setState({ lines: lines });
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#146B47';
+    const dark = this.props.dark ?? false;
+    const soft = this.soft(accent, dark);
+    const showPrices = this.props.showPrices ?? true;
+    const sent = this.state.sent;
+    let units = 0;
+    const prices = { p3: '₹1,55,000', p11: '₹4,499' };
+    const lines = this.state.lines.map((l) => {
+      units += l.qty;
+      return Object.assign({}, l, {
+        priceText: showPrices ? 'from ' + (prices[l.id] || '₹[PRICE]') + ' each' : 'price on request',
+        inc: () => this.update(l.id, (x) => x.qty + x.step),
+        dec: () => this.update(l.id, (x) => Math.max(x.moq, x.qty - x.step)),
+        remove: () => this.update(l.id, () => 0),
+        setQty: (e) => {
+          const v = parseInt(e.target.value, 10);
+          this.update(l.id, () => (isNaN(v) || v < 1 ? 1 : v));
+        }
+      });
+    });
+    const buyerTypes = [['Club', 'Club'], ['Dealer', 'Dealer'], ['Home', 'Home'], ['Business', 'Business']].map((pair) => {
+      const b = pair[0];
+      const on = b === this.state.buyer;
+      return { label: pair[1], border: on ? 'var(--sel-bg)' : 'var(--border)', bg: on ? 'var(--sel-bg)' : 'var(--surface)', color: on ? 'var(--sel-fg)' : 'var(--text)', pick: () => this.setState({ buyer: b }) };
+    });
+    const inst = this.state.install;
+    return {
+      theme: dark ? 'dark' : 'light',
+      isDark: dark,
+      isLight: !dark,
+      themeLabel: dark ? 'Switch to light mode' : 'Switch to dark mode',
+      toggleTheme: () => this.setState({ dark: !dark }),
+      showPrices: showPrices,
+      accent: accent,
+      accentSoft: soft[0],
+      accentInk: soft[1],
+      lines: lines,
+      lineCount: lines.length,
+      units: units,
+      empty: lines.length === 0,
+      buyerTypes: buyerTypes,
+      installLabel: inst ? 'Install' : 'Delivery only',
+      installBorder: inst ? accent : 'var(--border)',
+      installBg: inst ? soft[0] : 'var(--surface)',
+      installColor: inst ? soft[1] : 'var(--text)',
+      toggleInstall: () => this.setState({ install: !inst }),
+      sent: sent,
+      notSent: !sent,
+      send: () => this.setState({ sent: true }),
+      reset: () => this.setState({ sent: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

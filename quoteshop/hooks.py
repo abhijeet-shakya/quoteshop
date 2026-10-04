@@ -7,6 +7,16 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext", "crm", "frappe_whatsapp", "erp_custom"]
 
+after_install = "quoteshop.install.after_install"
+
+permission_query_conditions = {
+	"QS Enquiry": "quoteshop.quoteshop_enquiry.permissions.enquiry_query_conditions",
+}
+
+has_permission = {
+	"QS Enquiry": "quoteshop.quoteshop_enquiry.permissions.has_enquiry_permission",
+}
+
 # Document Events
 # ---------------
 # doc_events = {

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quote message on WhatsApp</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #ECE7DF; font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', sans-serif; color: #121413; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="flex: none; height: 64px; padding: 0 14px; background: #1F3B33; color: #FFFFFF; display: flex; align-items: center; gap: 12px">
+    <span style="width: 40px; height: 40px; border-radius: 999px; background: #FFFFFF; color: #121413; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px">JBB</span>
+    <div style="flex: 1; min-width: 0">
+      <div style="font-weight: 750; font-size: 16px">Jai Balaji Billiards</div>
+      <div style="font-size: 12px; color: #C9D6D1">Business account</div>
+    </div>
+  </header>
+
+  <div style="flex: 1; overflow-y: auto; padding: 14px 12px 20px; display: flex; flex-direction: column; gap: 10px">
+    <div style="align-self: center; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.75); font-size: 12px; color: #4A4F4C">Today</div>
+
+    <div style="align-self: flex-start; max-width: 310px; display: flex; flex-direction: column; gap: 4px">
+      <div style="background: #FFFFFF; border-radius: 4px 14px 14px 14px; overflow: hidden; box-shadow: 0 1px 1px rgba(0,0,0,0.08)">
+        <div style="margin: 6px; padding: 10px; border-radius: 10px; background: #F2F2EE; display: flex; align-items: center; gap: 10px">
+          <span style="flex: none; width: 36px; height: 44px; border-radius: 6px; background: #B4372A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800">PDF</span>
+          <div style="min-width: 0">
+            <div style="font-size: 13px; font-weight: 700">RFQ-0019-v2.pdf</div>
+            <div style="font-size: 12px; color: #5E625F">[PAGES] pages · full item list</div>
+          </div>
+        </div>
+        <div style="padding: 4px 12px 10px; font-size: 14px; line-height: 1.5; white-space: pre-line">Hi [BUYER NAME], your price for RFQ-0019 is ready.
+
+<strong>100 items · 1,240 pcs</strong>
+Your price: <strong>₹65,67,951</strong>
+Listed: ₹71,39,127 · you save ₹5,71,176
+92 available · 5 partial · 3 not available
+
+Valid till [DATE].</div>
+        <div style="padding: 0 12px 6px; text-align: right; font-size: 11px; color: #6B6F6C">10:42</div>
+        <a href="MobileQuoteDetail.dc.html" style="height: 46px; border-top: 1px solid #ECECE8; display: flex; align-items: center; justify-content: center; gap: 8px; color: #1E6A55; text-decoration: none; font-weight: 700; font-size: 14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
+          View full quote
+        </a>
+        <sc-if value="{{waiting}}" hint-placeholder-val="{{ true }}">
+          <button type="button" onClick="{{accept}}" style="width: 100%; height: 46px; border: 0; border-top: 1px solid #ECECE8; background: #FFFFFF; color: #1E6A55; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer">Accept quote</button>
+          <button type="button" onClick="{{change}}" style="width: 100%; height: 46px; border: 0; border-top: 1px solid #ECECE8; background: #FFFFFF; color: #1E6A55; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer">Request changes</button>
+        </sc-if>
+      </div>
+    </div>
+
+    <sc-if value="{{accepted}}" hint-placeholder-val="{{ false }}">
+      <div style="align-self: flex-end; max-width: 260px; background: #D8F5C9; border-radius: 14px 4px 14px 14px; padding: 8px 12px; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.08)">Accept quote<div style="text-align: right; font-size: 11px; color: #5E6E58">10:47</div></div>
+      <div style="align-self: flex-start; max-width: 300px; background: #FFFFFF; border-radius: 4px 14px 14px 14px; padding: 10px 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 1px rgba(0,0,0,0.08)">Thank you! RFQ-0019 v2 is accepted. Your order <strong>SO-0013</strong> is being prepared with the 97 available items. [SALES CONTACT] will confirm the delivery date.<div style="text-align: right; font-size: 11px; color: #6B6F6C">10:47</div></div>
+    </sc-if>
+
+    <sc-if value="{{changing}}" hint-placeholder-val="{{ false }}">
+      <div style="align-self: flex-end; max-width: 260px; background: #D8F5C9; border-radius: 14px 4px 14px 14px; padding: 8px 12px; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.08)">Request changes<div style="text-align: right; font-size: 11px; color: #5E6E58">10:47</div></div>
+      <div style="align-self: flex-start; max-width: 300px; background: #FFFFFF; border-radius: 4px 14px 14px 14px; padding: 10px 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 1px rgba(0,0,0,0.08)">Sure. Tell us here what to change, or edit quantities directly in your quote:<br><a href="MobileQuoteDetail.dc.html" style="color: #1E6A55; font-weight: 700">[YOUR-SITE]/q/RFQ-0019</a><div style="text-align: right; font-size: 11px; color: #6B6F6C">10:47</div></div>
+    </sc-if>
+  </div>
+
+  <div style="flex: none; padding: 8px 10px 14px; display: flex; gap: 8px; align-items: center">
+    <div style="flex: 1; height: 46px; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; padding: 0 16px; font-size: 15px; color: #6B6F6C">Message</div>
+    <span style="width: 46px; height: 46px; border-radius: 999px; background: #1F3B33; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 'waiting' };
+  }
+  renderVals() {
+    const s = this.state.step;
+    return {
+      waiting: s === 'waiting',
+      accepted: s === 'accepted',
+      changing: s === 'changing',
+      accept: () => this.setState({ step: 'accepted' }),
+      change: () => this.setState({ step: 'changing' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+{
+ "actions": [],
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "brand_tab",
+  "identity_section",
+  "business_name",
+  "short_name",
+  "identity_col_2",
+  "logo",
+  "favicon",
+  "website_text_section",
+  "search_placeholder",
+  "quote_button_label",
+  "website_text_col_2",
+  "response_time_text",
+  "contact_tab",
+  "contact_section",
+  "whatsapp_number",
+  "email",
+  "contact_col_2",
+  "address",
+  "social_links_section",
+  "social_links",
+  "pricing_tab",
+  "prices_section",
+  "show_starting_prices",
+  "show_savings_to_buyer",
+  "prices_col_2",
+  "starting_price_list",
+  "price_suffix",
+  "prices_col_3",
+  "products_per_page",
+  "theme_tab",
+  "theme_section",
+  "brand_color",
+  "theme_col_2",
+  "default_theme",
+  "allow_theme_switch",
+  "defaults_tab",
+  "orders_section",
+  "default_company",
+  "default_customer_group",
+  "default_territory",
+  "orders_col_2",
+  "default_warehouse",
+  "auto_submit_sales_order"
+ ],
+ "fields": [
+  {
+   "fieldname": "brand_tab",
+   "fieldtype": "Tab Break",
+   "label": "Brand"
+  },
+  {
+   "fieldname": "identity_section",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "fieldname": "business_name",
+   "fieldtype": "Data",
+   "label": "Business name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "short_name",
+   "fieldtype": "Data",
+   "label": "Short name"
+  },
+  {
+   "fieldname": "identity_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "favicon",
+   "fieldtype": "Attach Image",
+   "label": "Favicon"
+  },
+  {
+   "fieldname": "website_text_section",
+   "fieldtype": "Section Break",
+   "label": "Website text"
+  },
+  {
+   "fieldname": "search_placeholder",
+   "fieldtype": "Data",
+   "label": "Search placeholder"
+  },
+  {
+   "default": "Quote",
+   "fieldname": "quote_button_label",
+   "fieldtype": "Data",
+   "label": "Quote button label"
+  },
+  {
+   "fieldname": "website_text_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "response_time_text",
+   "fieldtype": "Data",
+   "label": "Response time text"
+  },
+  {
+   "fieldname": "contact_tab",
+   "fieldtype": "Tab Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "contact_section",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "whatsapp_number",
+   "fieldtype": "Data",
+   "label": "WhatsApp number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "contact_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "social_links_section",
+   "fieldtype": "Section Break",
+   "label": "Social links"
+  },
+  {
+   "fieldname": "social_links",
+   "fieldtype": "Table",
+   "label": "Social links",
+   "options": "QS Social Link"
+  },
+  {
+   "fieldname": "pricing_tab",
+   "fieldtype": "Tab Break",
+   "label": "Pricing"
+  },
+  {
+   "fieldname": "prices_section",
+   "fieldtype": "Section Break",
+   "label": "Prices"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_starting_prices",
+   "fieldtype": "Check",
+   "label": "Show starting prices"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_savings_to_buyer",
+   "fieldtype": "Check",
+   "label": "Show savings to buyer"
+  },
+  {
+   "fieldname": "prices_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Website Starting Price",
+   "fieldname": "starting_price_list",
+   "fieldtype": "Link",
+   "label": "Starting price list",
+   "options": "Price List",
+   "reqd": 1
+  },
+  {
+   "default": "per piece",
+   "fieldname": "price_suffix",
+   "fieldtype": "Data",
+   "label": "Price suffix"
+  },
+  {
+   "fieldname": "prices_col_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "24",
+   "fieldname": "products_per_page",
+   "fieldtype": "Int",
+   "label": "Products per page"
+  },
+  {
+   "fieldname": "theme_tab",
+   "fieldtype": "Tab Break",
+   "label": "Theme"
+  },
+  {
+   "fieldname": "theme_section",
+   "fieldtype": "Section Break",
+   "label": "Theme"
+  },
+  {
+   "default": "#146B47",
+   "fieldname": "brand_color",
+   "fieldtype": "Color",
+   "label": "Brand colour",
+   "reqd": 1
+  },
+  {
+   "fieldname": "theme_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Auto",
+   "fieldname": "default_theme",
+   "fieldtype": "Select",
+   "label": "Default theme",
+   "options": "Auto\nLight\nDark"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_theme_switch",
+   "fieldtype": "Check",
+   "label": "Allow theme switch"
+  },
+  {
+   "fieldname": "defaults_tab",
+   "fieldtype": "Tab Break",
+   "label": "Defaults"
+  },
+  {
+   "fieldname": "orders_section",
+   "fieldtype": "Section Break",
+   "label": "Orders"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_customer_group",
+   "fieldtype": "Link",
+   "label": "Default customer group",
+   "options": "Customer Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_territory",
+   "fieldtype": "Link",
+   "label": "Default territory",
+   "options": "Territory",
+   "reqd": 1
+  },
+  {
+   "fieldname": "orders_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_submit_sales_order",
+   "fieldtype": "Check",
+   "label": "Auto-submit sales order"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Settings",
+ "name": "QS Store Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager"
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  },
+  {
+   "read": 1,
+   "role": "Catalog Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

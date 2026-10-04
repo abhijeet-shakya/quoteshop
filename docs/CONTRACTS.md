@@ -4,7 +4,7 @@ Owner: orchestrator only. Sub-agents read, never edit. Source of truth for every
 Verified against: frappe 16.36.1 · erpnext 16.37.0 · hrms 16.20.1 · crm 1.86.0 (main) · frappe_whatsapp 1.0.12 (master) · payments version-16 (test site only).
 Paths: `frappe/…` = apps/frappe/frappe, `erpnext/…` = apps/erpnext/erpnext, `crm/…` = apps/crm/crm, `fw/…` = apps/frappe_whatsapp/frappe_whatsapp.
 
-Status tags: **FIXED** = verified fact or agreed rule · **PROPOSED** = default pending approval (see §9) · **TBD** = filled in by a later phase.
+Status tags: **FIXED** = verified fact or agreed rule · **PROPOSED** = §9 decision (all approved 2026-10-04, now binding) · **TBD** = filled in by a later phase.
 
 ---
 
@@ -164,16 +164,141 @@ Token: `secrets.token_urlsafe(32)`; store `hashlib.sha256(token.encode()).hexdig
 ### 5.7 Desk artefacts
 Number Card, Dashboard Chart, Workspace (+ v16 Desktop Icon / Workspace Sidebar) exported as standard JSON in the quoteshop module and synced on migrate (PROPOSED §9 item 10). Kanban Board "Enquiry Pipeline" via `quick_kanban_board("QS Enquiry", "Enquiry Pipeline", "status")` in an idempotent patch. Saved filters = `List Filter` records.
 
-## 6. QuoteShop fieldnames (from SPEC §4; extended by phase)
-TBD phase 1: QS Store Settings, QS Homepage Settings, QS Enquiry Settings, QS Enquiry (+ QS Enquiry Item, QS Enquiry Version, QS Enquiry Answer), Item/Item Group/Sales Order/Sales Order Item/CRM Deal custom fields — after LAYOUT MAP approval.
+## 6. QuoteShop fieldnames and phase-1 functions
+Fieldnames, types, DocTypes, child tables, roles and placement: **docs/LAYOUT_MAP.md** (single source; layout tests read it).
 
-## 7. Whitelisted APIs (signatures fixed when the phase starts)
-TBD phase 2–7: `list_products`, `get_product`, `send_otp`, `verify_otp`, `submit_enquiry`, `create_version`, `accept`, portal APIs.
+### 6.1 Totals – `QSEnquiry.set_totals()` (called in `validate`), `quoteshop/quoteshop_enquiry/doctype/qs_enquiry/qs_enquiry.py`
+Per line, in one pass:
+- default `offered_qty = requested_qty` and `offered_rate = listed_rate` when None.
+- `amount = flt(offered_rate * offered_qty, precision("amount"))`.
+- a line "counts" unless `availability == "Not Available"` or `change_flag == "Removed"`; non-counting lines have `amount = 0`.
+- `offered_rate` must be > 0 for a counting line with `offered_qty > 0` ONLY when `status` is "Price Sent" or "Accepted" (a priced quote). Earlier statuses (Draft/Requested/Changes Requested) may hold unpriced lines (rate 0, e.g. "Price on request" items with no starting price); they count 0 towards totals until priced. `offered_rate` still defaults to `listed_rate`.
+- `listed_rate` is a snapshot set once at request (phase 3); `validate` never refreshes or changes it.
+- One line per `item_code`: `validate` raises `frappe.ValidationError` on a duplicate item_code (the website merges quantities; versions are diffed by item_code).
+Header:
+- `total_listed = Σ listed_rate × offered_qty`, `total_offered = Σ amount` (counting lines only), currency precision.
+- `total_saved = total_listed − total_offered` (may be negative when offered > listed; NOT clamped — website/print/WhatsApp hide savings when ≤ 0); `saved_pct = flt(total_saved / total_listed × 100, 2)` (0 when total_listed = 0).
+- Rounding everywhere: Frappe `flt(value, precision)` (System Settings rounding method), never Python `round()`. Money precision = the field's precision (`self.precision(fieldname)` / `row.precision(fieldname)`).
+- `line_count` = lines with `change_flag != "Removed"`; `unit_count = Σ offered_qty` of counting lines.
+- `available_count` / `partial_count` / `not_available_count` = lines (not Removed) whose availability is exactly Available / Partial / Not Available.
 
-## 8. CSS tokens / JS events
-TBD phase 2 (ported 1:1 from `docs/design/*.dc.html` `<helmet><style>` tokens).
+### 6.2 Diff – `quoteshop/quoteshop_enquiry/diff.py`
+`diff_lines(previous: list[dict], current: list[dict], *, rate_precision: int = 2, qty_precision: int = 3) -> dict[str, str]` keyed by `item_code`, value = change_flag. Rows are dicts with item_code, offered_qty, offered_rate, availability, alternative_item. Callers pass field precisions (phase 5).
+- in current only → "Added"; in previous only → "Removed"
+- "Alternative" when current availability is Alternative AND (previous availability was not Alternative OR `alternative_item` changed); else offered_rate differs → "Price changed"; else offered_qty differs → "Qty changed"; else "".
+- Comparisons: `flt(rate, rate_precision)` / `flt(qty, qty_precision)`; `alternative_item` compared as `(value or "")` so None == ""; order-independent. Pure function, no DB. Rows may be dicts or child-table rows (read with `.get`).
 
-## 9. Decisions needed (orchestrator recommendation in bold)
+### 6.3 Tokens – `quoteshop/quoteshop_enquiry/tokens.py`
+- `new_token() -> tuple[str, str]` → (raw `secrets.token_urlsafe(32)`, sha256 hex of raw).
+- `hash_token(raw: str) -> str`.
+- `is_valid_token(raw: str | None, token_hash: str | None, expires: datetime | None) -> bool` → `hmac.compare_digest(hash_token(raw), token_hash)` and (expires is None or `now_datetime() < expires`; exactly at `expires` = invalid). Raw tokens are never stored. Trust boundary: returns False (never raises) when `raw` or `token_hash` is empty/None.
+
+### 6.4 Settings cache
+Read settings only via `frappe.get_cached_doc("QS Store Settings")` (and Homepage/Enquiry); Frappe invalidates on save. `on_update` of all three settings calls `quoteshop.quoteshop_catalog.cache.clear_catalog_cache()` → `frappe.cache.delete_keys("qs:catalog:")`.
+
+### 6.5 Permissions – `quoteshop/quoteshop_enquiry/permissions.py` (hooks `permission_query_conditions` / `has_permission` for "QS Enquiry")
+- `enquiry_query_conditions(user: str | None = None) -> str` → "" for System Manager / Sales Manager; for Sales User: `` (`tabQS Enquiry`.assigned_to = {u} or `tabQS Enquiry`.owner = {u} or `tabQS Enquiry`._assign like {%"u"%}) `` (escaped with frappe.db.escape).
+- `has_enquiry_permission(doc, ptype: str, user: str | None = None) -> bool` → same rule on one doc.
+
+### 6.6 Install – `quoteshop/install.py` → hook `after_install = "quoteshop.install.after_install"`; also run by patch for existing sites. Idempotent (run twice = no change, no error):
+- Price List "Website Starting Price" (selling=1, enabled=1, currency = default company currency, else "INR").
+- Brand colour check (QS Store Settings.validate): warn (never block) when WHITE text on `brand_color` has contrast < 4.5:1 (buttons use white on accent); the dark-background check is dropped. Non-hex values (not `#RRGGBB`) are rejected (colour is written inline into CSS).
+- Accepted lock: once the stored status is Accepted every save raises; jobs write `sales_order` etc. with `db_set`/`frappe.db.set_value`.
+- `qs_price_summary_html` (Sales Order, HTML) is never stored: phase 6 renders it on form load from the linked QS Enquiry (JS) — the criterion "qs fields set" means `qs_enquiry` and `qs_version`.
+- `qs_open_quote` is NOT read-only (CRM hides read-only valueless fields); fixed in phase 4 (CRM side panel) with a CRM Form Script / button instead of an HTML link; update the layout test then.
+- Role "Catalog Manager" (desk_access=1). DocPerms on standard DocTypes only via `frappe.permissions.add_permission(doctype, role, permlevel=0, ptype)` + `update_permission_property(doctype, role, 0, ptype, 1)` — both call `setup_custom_perms` first, which copies the standard perms so existing roles (Sales User read Item/Item Group, Sales Master Manager write Item Price, …) keep their access. Catalog Manager: Item / Item Group read+write+create; Item Price read+write+create+delete. Perms on QS DocTypes live in their DocType JSON.
+- Settings seeding runs ONLY when that Single has no stored values yet (first install); later runs leave settings untouched (so an admin's unchecked box is never re-checked). Seed with `flags.ignore_mandatory = True` and `save(ignore_permissions=True)`.
+- QS Store Settings seed: LAYOUT_MAP B1 defaults (brand_color "#146B47" — design default accent, also the DocType default; starting_price_list "Website Starting Price", quote_button_label "Quote", price_suffix "per piece", products_per_page 24, default_theme Auto, allow_theme_switch 1, show_starting_prices 1, show_savings_to_buyer 1) plus site sources, each only if present:
+  - `default_company` = `frappe.db.get_single_value("Global Defaults", "default_company")`
+  - `default_customer_group` = Selling Settings `customer_group`; `default_territory` = Selling Settings `territory`
+  - `default_warehouse` = Stock Settings `default_warehouse`
+- Price list currency = `Company.default_currency` of that default company, else "INR".
+- QS Enquiry Settings seed: LAYOUT_MAP B3 defaults (login_mode "Not required", otp_required 1, show_business_name 1, show_notes 1, quote_validity_days 15, bulk_tier_2 2, bulk_tier_3 5); the 7 template links stay empty (§9.13).
+- QS Homepage Settings seed: show_how_it_works 1 only (content is entered by the admin).
+- Never inserts WhatsApp Templates; never touches CRM data (CRM statuses/side panel = phase 4).
+
+## 7. Website + whitelisted APIs
+
+### 7.1 Phase 2 – catalog (module QuoteShop Catalog / QuoteShop Website)
+Catalog service `quoteshop/quoteshop_catalog/catalog.py` (pages call these directly in `get_context`; also exposed `@frappe.whitelist(allow_guest=True, methods=["GET"])`):
+- `list_products(category: str | None = None, q: str | None = None, page: int = 1) -> dict` → `{"items": [card…], "total": int, "page": int, "page_size": int, "has_more": bool}`.
+  - One SQL query (frappe.qb or parametrised SQL) joining Item + starting Item Price (CONTRACTS §2.4 rule, newest valid_from) + first QS Item Photo (lowest idx); plus at most one COUNT query.
+  - Filters: `qs_published=1`, `disabled=0`, `has_variants=0`; category = published Item Group by `qs_route`, including descendants (lft/rgt); `q` = case-insensitive LIKE on item_name, item_code, qs_short_description (escape `%`/`_`), max 100 chars.
+  - Order: `qs_display_order` asc, `item_name` asc, `name` asc (stable). `page_size = QS Store Settings.products_per_page` (default 24); page < 1 → 1.
+  - card = `{item_code, item_name, route, item_group, group_route, short_description, min_qty, image: {thumb, medium, large, alt} | None, starting_price: float | None, currency}`; `starting_price` is None when `show_starting_prices` is off, the item has `qs_hide_price`, or no valid price exists.
+- `get_product(route: str) -> dict` → card fields + `description`, `photos: [{thumb, medium, large, alt}]`, `specs: [{label, value}]`, `related: [card]` (published only), `lead_time`, `uom`. Unpublished/disabled/unknown → `frappe.DoesNotExistError` (page renders 404).
+- `get_categories() -> list[dict]` → published Item Groups `{name, route, image, display_order}` ordered by qs_display_order, name.
+- Cache: `frappe.cache.set_value(key, value, expires_in_sec=86400)` / `get_value(key, expires=True)` with keys `qs:catalog:list:<sha1(json params)>`, `qs:catalog:product:<route>`, `qs:catalog:categories`. Invalidation = `clear_catalog_cache()` from doc_events on Item, Item Group, Item Price (on_update, on_trash, after_rename) and the 3 settings' on_update.
+- Query budgets (approved §9.9): list_products ≤5 queries cold / ≤1 warm; get_product ≤8 cold / ≤1 warm.
+- Routes (hooks `website_route_rules`): `/c/<route>` → `c`, `/p/<route>` → `p` (later `/q/<name>` → `q`). www pages in `quoteshop/www/`: `index` (home, via hook `home_page = "index"`), `c`, `p`, `search` (`/search?q=`). Unknown/unpublished category or product → `frappe.PageDoesNotExistError` → 404.
+- Image pipeline `quoteshop/quoteshop_catalog/images.py`:
+  - doc_event Item.on_update → `queue_photo_sizes(doc)`: if any QS Item Photo row lacks sizes or its source changed → `frappe.enqueue("quoteshop.quoteshop_catalog.images.generate_photo_sizes", item_code=…, enqueue_after_commit=True, job_id=f"qs-img-{item_code}", deduplicate=True)`.
+  - `generate_photo_sizes(item_code: str) -> None`: per row, WebP widths 400/1000/1800 via Pillow (never upscale: width = min(target, source width)); file name `<stem>-<sha1(source bytes)[:10]>-<w>.webp` as public File attached to the Item; set `thumb`/`medium`/`large` with `frappe.db.set_value` on the child row (no Item save → no loop). Idempotent: if the row's URLs already contain the current source hash → skip (unchanged photos are never reprocessed).
+
+### 7.1b Phase 2 rules (resolved gaps)
+- Visibility: an item is listed iff `qs_published=1`, `disabled=0`, `has_variants=0` (its group's publish state does not matter). Category chips/`get_categories` = all published Item Groups, flat, ordered by qs_display_order, name. Category filter = the published group by `qs_route` plus ALL descendants (lft/rgt), published or not. Unknown or unpublished category → `frappe.DoesNotExistError` (page 404).
+- Input: `q` is stripped; empty/whitespace → no search; `page` = `cint(page)`, < 1 → 1. Page links use the query param `?page=N` with `rel="next"/"prev"`.
+- Prices: Item Price with `valid_from` NULL counts as valid (`IFNULL(valid_from, '1900-01-01') <= today`).
+- Money on the website: Indian grouping from the system number format; whole amounts without decimals ("₹1,55,000"), otherwise 2 decimals (`frappe.utils.fmt_money`).
+- `qs_route`: generated in Item/Item Group `validate` (doc_event) when published and empty: slug of item_name / item_group_name (lowercase, a–z 0–9, hyphens), unique per doctype by appending `-2`, `-3`… Never changed once set; unpublished docs keep theirs.
+- Images: a photo without generated sizes falls back to its original `image` URL for thumb/medium/large. `alt` = `alt_text` or the item name. File name `<stem>-<sha1(source)[:10]>-<target>.webp` where `<target>` is the TARGET width (400/1000/1800); actual width = min(target, source width).
+- Loading: one `fetchpriority="high"` image per page (hero on `/`, first photo on `/p`); every other `<img>` `loading="lazy"` except the header logo (`data-qs-logo`, eager). Every `<img>` has width + height; hero dimensions are read once from the file with Pillow and cached with the catalog cache.
+- Homepage: empty `section_order` → default order Hero, Promo tiles, Trust line, How it works, Categories, Products (all enabled).
+- Cache: `clear_catalog_cache()` also calls `frappe.website.utils.clear_website_cache()` so the page-cached `/` refreshes after Item/Item Group/Item Price/settings changes. `/c` and `/p` are never page-cached (Frappe router sets no_cache for dynamic routes) — accepted.
+- Page query budgets (NFR-18): `/`, `/c/<route>`, `/p/<route>`, `/search` ≤ 12 queries cold, ≤ 6 warm.
+- DOM hooks (stable selectors for tests/JS): `[data-qs-theme-toggle]`, `[data-qs-card]`, `[data-qs-add]` (card + product page), `[data-qs-chip]`, `input[name="q"]`, `[data-qs-quote-count]`, `[data-qs-logo]`, `[data-qs-qty]` (qty stepper value).
+
+### 7.2 Phases 3–7 (all whitelisted, module paths fixed; guest = allow_guest + rate limits per §5.2)
+Mobile numbers: E.164 (`+` and 8–15 digits); a bare 10-digit number is prefixed "+91". OTP and order logic per SPEC §3/§4.
+
+**Phase 3 – quote + enquiry** (`quoteshop/quoteshop_enquiry/api.py`, guest):
+- `get_quote_items(item_codes: list[str] | str) -> list[card]` — published items only (card per §7.1); max 500 codes.
+- `parse_quote_paste(text: str) -> {"matched": [{item_code, item_name, qty}], "unmatched": [{line: str, reason: str}]}` — one line per item, "<code or exact name><tab|,|;|space><qty>"; CSV uploads are read in the browser and sent as text. Max 500 lines.
+- `send_otp(mobile: str) -> {"sent": true, "expires_in": 600}` — rate limits: 5/hour per number, 20/hour per IP. Sends the `otp_template` WhatsApp message (enqueued). If no template/account is configured: raise a clear error, except in developer_mode where the code is written to the `quoteshop` logger (never returned to the client).
+- `verify_otp(mobile: str, otp: str) -> {"verified": true, "otp_token": str}` — max 5 wrong attempts per code; `otp_token` proves the number for 30 min (Redis `qs:otp-ok:<sha256(token)>` → mobile).
+- `submit_enquiry(data: dict | str) -> {"name": str}` — 10/hour per IP. data = `{items: [{item_code, qty}], buyer_name, mobile, otp_token?, email?, business_name?, pincode?, buyer_type?, answers?: [{question, value}], notes?}`. Re-validates items (published, qty ≥ max(1, qs_min_qty), duplicates merged, ≤ 500 lines), required settings fields/questions, otp_token when `otp_required`. Snapshots `listed_rate` (starting price or 0), finds/creates Contact by mobile, links an existing Customer of that Contact, status "Requested", assignment (§3.3), CRM Deal (phase 4) — one transaction; WhatsApp messages enqueued after commit.
+
+**Phase 4 – CRM + WhatsApp** (`quoteshop/quoteshop_enquiry/crm.py`, `whatsapp.py`):
+- `crm.create_deal(enquiry_doc) -> str`, `crm.sync_deal_status(enquiry_doc)` (QS status → CRM status of the same name; Accepted → the Won-type status; Lost sets lost_reason "Other" + lost_notes).
+- CRM Deal Status records seeded idempotently: Requested blue, Price Sent orange, Changes Requested yellow, Expired gray (Won/Lost exist).
+- `whatsapp.queue_message(enquiry: str, event: str, version: int | None = None)` → enqueued `whatsapp.send_message(...)` per §4.1 (no-op with an Error Log note when the event's template link is empty); `whatsapp.on_whatsapp_message(doc, method=None)` hook per §4.3.
+
+**Phase 5 – pricing + versions** (`quoteshop/quoteshop_enquiry/versions.py`, desk calls, Sales User/Manager with doc permission):
+- `apply_discount(name, percent: float, scope: "all"|"selected"|"category", rows: list[str] | None = None, item_group: str | None = None)` — offered_rate = listed_rate × (1 − percent/100).
+- `set_availability(name, rows: list[str], availability: str, note: str | None = None, lead_time_days: int | None = None, offered_qty: float | None = None)`.
+- `copy_from_last_order(name)` — offered rates from the buyer's last submitted Sales Order lines.
+- `send_price(name) -> {"version": int, "url": str}` — create_version("Sales"), status "Price Sent", valid_till = today + quote_validity_days, enqueue PDF + price_sent WhatsApp.
+- `mark_lost(name, reason: str)`.
+- `create_version(doc, by: "Buyer"|"Sales") -> str` (raw token) — snapshot, diff flags (§6.2), new token (old invalid), validity reset, summary. Buyer link: `/q/<name>?t=<raw token>`.
+
+**Phase 6 – buyer view, accept, order** (`quoteshop/quoteshop_enquiry/quote_view.py`, `orders.py`, guest with token):
+- `get_quote_view(name, token) -> dict` — latest version data for `/q` (lines, totals, availability counts, history); old/expired token → `{"outdated": true, "url": <current link if still valid>}`.
+- `request_changes(name, token, items: [{item_code, qty}]) -> {"url": str}` — buyer may change qty, remove, add published items; NEVER prices (any rate in input → rejected). Creates a Buyer version, status "Changes Requested", rotates token.
+- `accept_quote(name, token) -> {"accepted": true}` — latest unexpired version only; enqueues `orders.create_order(enquiry, version)` (job_id `qs-order-<name>`).
+- `download_quote(name, token, format: "pdf"|"xlsx")`.
+- `orders.create_order(enquiry: str, version: int)` — idempotent; Deal Won, Customer found/created (§2.6), ONE Sales Order (§2.7), confirmation WhatsApp. `orders.expire_quotes()` daily scheduler job.
+
+**Phase 7 – portal** (`quoteshop/quoteshop_enquiry/portal.py`):
+- `portal_login(mobile, otp_token) -> {"redirect": "/account"}` — after verify_otp; find/create Website User `<digits>@buyers.invalid` (no password), link `Contact.user`, `login_as`.
+- `get_account_data() -> {orders: [...], requests: [...], totals: {...}}` — logged-in buyer's own records only (via Contact → Customer).
+- `reorder(sales_order: str) -> {"items": [{item_code, qty}]}` — own orders only; published items only.
+
+**Front-end pages** (www): `/quote` (quote list + form + OTP + success), `/q/<name>?t=` (buyer view), `/account` (portal; login form when Guest). Same base template/bundle as §8. JS calls the APIs above with `fetch` (`/api/method/<path>`, CSRF token from the page for logged-in users).
+
+**Desk (phase 5)**: QS Enquiry form buttons call the versions.py functions; workspace "QuoteShop", Kanban "Enquiry Pipeline", saved filters, number cards, charts, print format "QS Quote" per SPEC §5.
+**Reports (phase 8)**: in quoteshop module QuoteShop Enquiry (decision §9.7): Listed vs Sold by Item, Discount by Salesperson, Discount by Buyer Type, Won vs Lost, Most-requested Not Available.
+
+## 8. Website front end (phase 2)
+- Base template `quoteshop/templates/qs_base.html` (never extends frappe `web.html`/`base.html`): own `<head>` (title, meta description, canonical, favicon from settings), inline critical theme script, `{{ include_style("qs.bundle.css") }}`, `{{ include_script("qs.bundle.js") }}` (defer). Pages set `base_template_path`.
+- Theme: CSS tokens copied 1:1 from the design `<helmet><style>` blocks with the SAME custom-property names (`--bg --surface --panel --field --tile --tile-2 --tile-3 --tile-4 --line --border --text --muted --ink-bg --sel-bg --sel-fg --glass --dot --ph`). Light values for the tokens that are self-referencing (broken) in some design files come from Account/MobileOrders/QuoteDetail: `--panel #F7F7F4`, `--field #F4F4F1`, `--tile #F1F1EE`, `--line #ECECE8`, `--border #E2E2DE`, `--glass rgba(255,255,255,0.9)` (quote-detail pages use 0.94). Dark values from any design file (identical).
+- `<html data-theme="light|dark">` is always set: inline head script picks `localStorage["qs-theme"]` if switching is allowed, else settings `default_theme` (Light/Dark), else (Auto) `prefers-color-scheme`; no flash. Toggle hidden when `allow_theme_switch` is off. Server fallback attribute = default_theme lowercased (Auto → "light").
+- Brand: `:root{--accent:<brand_color>}` inline from settings; soft tints with `color-mix(in srgb, var(--accent) 12%, var(--surface))` and a solid fallback.
+- Bundles: `quoteshop/public/js/qs.bundle.js` (vanilla, no jQuery/frappe-web), `quoteshop/public/css/qs.bundle.css`; first load < 120 KB gzipped excl. images.
+- Quote list (browser only until submit): `localStorage["qs-quote"] = {"v": 1, "items": [{"item_code": str, "qty": number}]}`; every change dispatches `window` event `qs:quote-changed` with `detail = {count, units}`; header pill + floating bar listen to it.
+- Price text: "From ₹X per piece · lower for bulk" (suffix from settings `price_suffix`) or "Price on request"; money formatted server-side with the item currency.
+- Responsive: one template per page matching the desktop design at 1280 and the mobile design at 390 (breakpoints taken from the designs).
+
+## 9. Decisions (ALL APPROVED by user 2026-10-04 — bold option is the rule)
 1. WhatsApp quick-reply payload `QS:<action>:<enquiry>:<version>` cannot round-trip through frappe_whatsapp. **Correlate via `reply_to_message_id` → QS message log + button label + sender number; update SPEC wording.** Alternatives: QS-built Meta payload; upstream PR.
 2. "View full quote" dynamic URL button is broken in frappe_whatsapp. **Static URL button to the site + tokenised link in the body text** (works with stock code). Alternative: QS builds the Meta payload itself (bypasses part of frappe_whatsapp).
 3. Storefront tab position. **Before the Connections tab** (Connections stays last, ERPNext convention).

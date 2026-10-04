@@ -1,0 +1,222 @@
+{
+ "actions": [],
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "hero_tab",
+  "hero_section",
+  "hero_badge",
+  "hero_title",
+  "hero_subtitle",
+  "hero_col_2",
+  "hero_image",
+  "buttons_section",
+  "hero_primary_label",
+  "hero_primary_link",
+  "buttons_col_2",
+  "hero_secondary_label",
+  "hero_secondary_link",
+  "sections_tab",
+  "section_order_section",
+  "section_order",
+  "promo_tiles_section",
+  "promo_tiles",
+  "trust_line_section",
+  "trust_points",
+  "how_it_works_section",
+  "show_how_it_works",
+  "how_it_works",
+  "mobile_tab",
+  "trade_strip_section",
+  "show_mobile_strip",
+  "trade_strip_col_2",
+  "mobile_strip_text",
+  "mobile_strip_link"
+ ],
+ "fields": [
+  {
+   "fieldname": "hero_tab",
+   "fieldtype": "Tab Break",
+   "label": "Hero"
+  },
+  {
+   "fieldname": "hero_section",
+   "fieldtype": "Section Break",
+   "label": "Hero"
+  },
+  {
+   "fieldname": "hero_badge",
+   "fieldtype": "Data",
+   "label": "Badge"
+  },
+  {
+   "fieldname": "hero_title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "hero_subtitle",
+   "fieldtype": "Small Text",
+   "label": "Subtitle"
+  },
+  {
+   "fieldname": "hero_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hero_image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "buttons_section",
+   "fieldtype": "Section Break",
+   "label": "Buttons"
+  },
+  {
+   "fieldname": "hero_primary_label",
+   "fieldtype": "Data",
+   "label": "Primary button label"
+  },
+  {
+   "fieldname": "hero_primary_link",
+   "fieldtype": "Data",
+   "label": "Primary button link"
+  },
+  {
+   "fieldname": "buttons_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "hero_secondary_label",
+   "fieldtype": "Data",
+   "label": "Secondary button label"
+  },
+  {
+   "fieldname": "hero_secondary_link",
+   "fieldtype": "Data",
+   "label": "Secondary button link"
+  },
+  {
+   "fieldname": "sections_tab",
+   "fieldtype": "Tab Break",
+   "label": "Sections"
+  },
+  {
+   "fieldname": "section_order_section",
+   "fieldtype": "Section Break",
+   "label": "Section order"
+  },
+  {
+   "fieldname": "section_order",
+   "fieldtype": "Table",
+   "label": "Section order",
+   "options": "QS Homepage Section"
+  },
+  {
+   "fieldname": "promo_tiles_section",
+   "fieldtype": "Section Break",
+   "label": "Promo tiles"
+  },
+  {
+   "fieldname": "promo_tiles",
+   "fieldtype": "Table",
+   "label": "Promo tiles",
+   "options": "QS Promo Tile"
+  },
+  {
+   "fieldname": "trust_line_section",
+   "fieldtype": "Section Break",
+   "label": "Trust line"
+  },
+  {
+   "fieldname": "trust_points",
+   "fieldtype": "Table",
+   "label": "Trust points",
+   "options": "QS Trust Point"
+  },
+  {
+   "fieldname": "how_it_works_section",
+   "fieldtype": "Section Break",
+   "label": "How it works"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_how_it_works",
+   "fieldtype": "Check",
+   "label": "Show how it works"
+  },
+  {
+   "depends_on": "eval:doc.show_how_it_works",
+   "fieldname": "how_it_works",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "QS How It Works Step"
+  },
+  {
+   "fieldname": "mobile_tab",
+   "fieldtype": "Tab Break",
+   "label": "Mobile"
+  },
+  {
+   "fieldname": "trade_strip_section",
+   "fieldtype": "Section Break",
+   "label": "Trade strip"
+  },
+  {
+   "fieldname": "show_mobile_strip",
+   "fieldtype": "Check",
+   "label": "Show mobile strip"
+  },
+  {
+   "fieldname": "trade_strip_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.show_mobile_strip",
+   "fieldname": "mobile_strip_text",
+   "fieldtype": "Data",
+   "label": "Strip text"
+  },
+  {
+   "depends_on": "eval:doc.show_mobile_strip",
+   "fieldname": "mobile_strip_link",
+   "fieldtype": "Data",
+   "label": "Strip link"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Settings",
+ "name": "QS Homepage Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Sales Manager"
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  },
+  {
+   "read": 1,
+   "role": "Catalog Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

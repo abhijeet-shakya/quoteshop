@@ -1,0 +1,358 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "autoname": "RFQ-.#####",
+ "creation": "2026-10-04 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "quote_tab",
+  "summary_section",
+  "status",
+  "current_version",
+  "valid_till",
+  "summary_col_2",
+  "total_listed",
+  "total_offered",
+  "total_saved",
+  "saved_pct",
+  "summary_col_3",
+  "line_count",
+  "unit_count",
+  "available_count",
+  "partial_count",
+  "not_available_count",
+  "items_section",
+  "items",
+  "notes_section",
+  "notes",
+  "answers",
+  "lost_reason",
+  "buyer_tab",
+  "contact_section",
+  "buyer_name",
+  "mobile",
+  "email",
+  "contact_col_2",
+  "business_name",
+  "buyer_type",
+  "pincode",
+  "linked_records_section",
+  "customer",
+  "contact",
+  "linked_records_col_2",
+  "crm_deal",
+  "sales_order",
+  "assigned_to",
+  "versions_tab",
+  "versions_section",
+  "versions",
+  "system_tab",
+  "whatsapp_log_section",
+  "messages"
+ ],
+ "fields": [
+  {
+   "fieldname": "quote_tab",
+   "fieldtype": "Tab Break",
+   "label": "Quote"
+  },
+  {
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nRequested\nPrice Sent\nChanges Requested\nAccepted\nLost\nExpired",
+   "search_index": 1
+  },
+  {
+   "fieldname": "current_version",
+   "fieldtype": "Int",
+   "label": "Current version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valid_till",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Valid till"
+  },
+  {
+   "fieldname": "summary_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_listed",
+   "fieldtype": "Currency",
+   "label": "Total listed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_offered",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total offered",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_saved",
+   "fieldtype": "Currency",
+   "label": "Total saved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "saved_pct",
+   "fieldtype": "Percent",
+   "label": "Saved %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "summary_col_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "line_count",
+   "fieldtype": "Int",
+   "label": "Lines",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unit_count",
+   "fieldtype": "Float",
+   "label": "Units",
+   "read_only": 1
+  },
+  {
+   "fieldname": "available_count",
+   "fieldtype": "Int",
+   "label": "Available",
+   "read_only": 1
+  },
+  {
+   "fieldname": "partial_count",
+   "fieldtype": "Int",
+   "label": "Partial",
+   "read_only": 1
+  },
+  {
+   "fieldname": "not_available_count",
+   "fieldtype": "Int",
+   "label": "Not available",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "QS Enquiry Item"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "answers",
+   "fieldtype": "Table",
+   "label": "Answers",
+   "options": "QS Enquiry Answer"
+  },
+  {
+   "depends_on": "eval:doc.status=='Lost'",
+   "fieldname": "lost_reason",
+   "fieldtype": "Small Text",
+   "label": "Lost reason"
+  },
+  {
+   "fieldname": "buyer_tab",
+   "fieldtype": "Tab Break",
+   "label": "Buyer"
+  },
+  {
+   "fieldname": "contact_section",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "buyer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Buyer name",
+   "reqd": 1
+  },
+  {
+   "description": "E.164, e.g. +919812345678",
+   "fieldname": "mobile",
+   "fieldtype": "Data",
+   "label": "Mobile",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "contact_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "business_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Business name"
+  },
+  {
+   "fieldname": "buyer_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Buyer type"
+  },
+  {
+   "fieldname": "pincode",
+   "fieldtype": "Data",
+   "label": "Pincode"
+  },
+  {
+   "fieldname": "linked_records_section",
+   "fieldtype": "Section Break",
+   "label": "Linked records"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "contact",
+   "fieldtype": "Link",
+   "label": "Contact",
+   "options": "Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "linked_records_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "crm_deal",
+   "fieldtype": "Link",
+   "label": "CRM deal",
+   "options": "CRM Deal",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales order",
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Assigned to",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "versions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Versions"
+  },
+  {
+   "fieldname": "versions_section",
+   "fieldtype": "Section Break",
+   "label": "Versions"
+  },
+  {
+   "fieldname": "versions",
+   "fieldtype": "Table",
+   "label": "Versions",
+   "options": "QS Enquiry Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "system_tab",
+   "fieldtype": "Tab Break",
+   "label": "System"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "whatsapp_log_section",
+   "fieldtype": "Section Break",
+   "label": "WhatsApp log"
+  },
+  {
+   "fieldname": "messages",
+   "fieldtype": "Table",
+   "label": "Messages",
+   "options": "QS Enquiry Message",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-04 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "QuoteShop Enquiry",
+ "name": "QS Enquiry",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Sales User",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
