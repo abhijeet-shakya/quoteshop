@@ -42,6 +42,14 @@
 				<div class="qs-q-lines" data-qs-lines aria-live="polite"></div>
 				<p class="qs-q-nomatch" data-qs-nomatch hidden>{{ _("No items match.")|e }}</p>
 
+				<div class="qs-q-est" data-qs-est hidden>
+					<div>
+						<div class="qs-q-est-t">{{ _("Estimated total")|e }}</div>
+						<p class="qs-q-est-note" data-qs-est-note></p>
+					</div>
+					<strong data-qs-est-total></strong>
+				</div>
+
 				<div class="qs-q-empty" data-qs-empty hidden>
 					<span class="qs-p-d">{{ _("Your quote list is empty.")|e }} <a href="/">{{ _("Browse products")|e }}</a> {{ _("and add anything, even a single piece.")|e }}</span>
 					<span class="qs-p-m">{{ _("Your quote is empty.")|e }} <a href="/">{{ _("Browse products")|e }}</a></span>
@@ -50,22 +58,6 @@
 				{%- if qs.show_prices %}
 				<p class="qs-q-hint"><span class="qs-p-d">{{ _("Starting prices are a guide. Your final price, including bulk rates, comes in your quote.")|e }}</span><span class="qs-p-m">{{ _("Starting prices are a guide. Your final price comes in your quote.")|e }}</span></p>
 				{%- endif %}
-
-				<details class="qs-q-paste" data-qs-paste>
-					<summary>{{ (_("Paste or upload a list"))|e }}</summary>
-					<div class="qs-q-paste-body">
-						<label for="qs-q-paste-text">{{ (_("One product per line: code or exact name, then quantity"))|e }}</label>
-						<textarea id="qs-q-paste-text" rows="4" placeholder="CUE-01, 10&#10;Pool Table Accessories Set; 2" data-qs-paste-text></textarea>
-						<div class="qs-q-paste-actions">
-							<label class="qs-q-file">
-								<input type="file" accept=".csv,.txt,text/csv,text/plain" data-qs-paste-file>
-								<span>{{ _("Upload CSV")|e }}</span>
-							</label>
-							<button type="button" class="qs-q-paste-add" data-qs-paste-add>{{ _("Add to list")|e }}</button>
-						</div>
-						<div class="qs-q-paste-result" data-qs-paste-result role="status"></div>
-					</div>
-				</details>
 
 				{%- if form.show_notes %}
 				<div class="qs-q-notes-slot" data-qs-notes-desk>
@@ -154,11 +146,6 @@
 					<label for="qs-q-otp">{{ _("Code sent on WhatsApp to")|e }} <span data-qs-otp-to></span></label>
 					<input id="qs-q-otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
 					<button type="button" class="qs-q-link" data-qs-otp-resend>{{ _("Resend code")|e }}</button>
-				</div>
-
-				<div class="qs-q-est" data-qs-est hidden>
-					<div class="qs-q-est-row"><span>{{ _("Estimated total")|e }}</span><strong data-qs-est-total></strong></div>
-					<p class="qs-q-est-note" data-qs-est-note></p>
 				</div>
 
 				<p class="qs-q-err" data-qs-error role="alert" hidden></p>

@@ -5,7 +5,6 @@ import { __ } from "./i18n.js";
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const root = document.documentElement;
-const SUB_FIRST = 5; // sub-categories shown per group in the All categories panel before "+ N more"
 
 function el(tag, cls, text) {
 	const node = document.createElement(tag);
@@ -124,7 +123,6 @@ function initMega() {
 	const grid = $("[data-qs-mega-grid]", panel);
 	const find = $("[data-qs-mega-find]", panel);
 	const none = $("[data-qs-mega-none]", panel);
-	const expanded = new Set();
 	let tree = [];
 	const render = () => {
 		const q = find.value.trim().toLowerCase();
@@ -139,14 +137,7 @@ function initMega() {
 			const head = link("qs-mg-h", g.route, g.name);
 			head.append(el("span", "", g.count));
 			col.append(head);
-			const open = q || expanded.has(g.name) ? kids : kids.slice(0, SUB_FIRST);
-			open.forEach((k) => col.append(link("qs-mg-k", k.route, k.name)));
-			if (kids.length > open.length) {
-				const more = el("button", "qs-mg-more", __("+ {0} more", [kids.length - open.length]));
-				more.type = "button";
-				more.addEventListener("click", () => (expanded.add(g.name), render()));
-				col.append(more);
-			}
+			kids.forEach((k) => col.append(link("qs-mg-k", k.route, k.name)));
 			grid.append(col);
 		});
 		none.hidden = shown > 0;

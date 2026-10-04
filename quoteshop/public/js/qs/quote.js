@@ -1,4 +1,4 @@
-// /quote – quote list (localStorage via quote_store), paste/upload, details form, OTP, submit.
+// /quote – quote list (localStorage via quote_store), details form, OTP, submit.
 // Also exports the small helpers (call, money, esc, fillQuote, startChange) used by quote_view.js and account.js.
 import { __ } from "./i18n.js";
 import { getQuote, setQty, remove, clear, recolour } from "./quote_store.js";
@@ -258,7 +258,8 @@ export function init() {
 			if (priced.length) {
 				$("[data-qs-est-total]").textContent = money(priced.reduce((sum, r) => sum + r.card.starting_price * Number(r.qty || 0), 0), priced[0].card.currency);
 				const open = lines.filter((r) => r.card).length - priced.length;
-				$("[data-qs-est-note]").textContent = open ? __("Not included: {0} on request", [plural(open, __("{0} item"), __("{0} items"))]) : "";
+				const base = `${__("{0} · {1} pcs.", [plural(n, __("{0} product"), __("{0} products")), u.toLocaleString("en-IN")]).replace(/\.$/, "")} · ${__("starting prices")}`;
+				$("[data-qs-est-note]").textContent = open ? `${base} · ${__("Not included: {0} on request", [plural(open, __("{0} item"), __("{0} items"))])}` : base;
 			}
 		}
 		$("[data-qs-empty]").hidden = n > 0;
@@ -324,7 +325,7 @@ export function init() {
 		const note = c.short_description || "";
 		const priced = showPrices && c.starting_price != null;
 		const price = priced ? __("{0} each", [money(c.starting_price, c.currency)]) : __("price on request");
-		const total = priced ? `<span class="qs-q-total">${esc(__("Total {0}", [money(c.starting_price * r.qty, c.currency)]))}</span>` : "";
+		const total = priced ? `<div class="qs-q-lt"><span>${esc(__("Line total"))}</span><strong>${esc(money(c.starting_price * r.qty, c.currency))}</strong></div>` : "";
 		const img = c.image?.thumb
 			? `<img class="qs-q-thumb" src="${esc(c.image.thumb)}" alt="" width="64" height="64" loading="lazy">`
 			: `<div class="qs-q-thumb" aria-hidden="true"></div>`;
@@ -341,14 +342,17 @@ export function init() {
 			${img}
 			<div class="qs-q-info">
 				<div class="qs-q-name">${title}${colourText}</div>
-				<div class="qs-q-note">${esc(note)}<span class="qs-q-price${note ? " qs-q-sep" : ""}">${esc(price)}</span>${total}</div>
+				<div class="qs-q-note">${esc(note)}<span class="qs-q-price${note ? " qs-q-sep" : ""}">${esc(price)}</span></div>
 				${select}
 			</div>
+			<div class="qs-q-ctl">
 			<div class="qs-q-step">
 				<button type="button" aria-label="${esc(__("Decrease quantity"))}" data-act="dec">−</button>
 				<label class="qs-p-sr" for="qs-q-qty-${idx}">${esc(__("Quantity for {0}", [name]))}</label>
 				<input id="qs-q-qty-${idx}" type="number" min="${minQty(c)}" step="1" inputmode="numeric" value="${esc(r.qty)}" data-act="qty">
 				<button type="button" aria-label="${esc(__("Increase quantity"))}" data-act="inc">+</button>
+			</div>
+			${total}
 			</div>
 			<button type="button" class="qs-q-x" aria-label="${esc(__("Remove {0}", [name]))}" data-act="rm">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
@@ -402,33 +406,6 @@ export function init() {
 	findEl.addEventListener("input", applyFind);
 
 	window.addEventListener("qs:quote-changed", load);
-
-	// ---- paste / upload ----
-	const pasteText = $("[data-qs-paste-text]");
-	const pasteResult = $("[data-qs-paste-result]");
-	$("[data-qs-paste-file]").addEventListener("change", async (e) => {
-		const file = e.target.files[0];
-		if (file) pasteText.value = (await file.text()).replace(/"/g, "");
-		e.target.value = "";
-	});
-	$("[data-qs-paste-add]").addEventListener("click", async (e) => {
-		const text = pasteText.value.trim();
-		if (!text) return pasteText.focus();
-		e.target.disabled = true;
-		try {
-			const r = await call("api.parse_quote_paste", { text });
-			const have = Object.fromEntries(listItems().filter((i) => !i.colour).map((i) => [i.item_code, Number(i.qty) || 0])); // pasted lines have no colour
-			(r.matched || []).forEach((m) => setQty(m.item_code, (have[m.item_code] || 0) + Number(m.qty)));
-			const bad = r.unmatched || [];
-			pasteResult.innerHTML = `${esc(__("Added {0}.", [plural((r.matched || []).length, __("{0} product"), __("{0} products"))]))}${
-				bad.length ? ` ${esc(__("{0} not matched:", [plural(bad.length, __("{0} line"), __("{0} lines"))]))}<ul>${bad.map((u) => `<li>${esc(u.line)} — ${esc(u.reason)}</li>`).join("")}</ul>` : ""
-			}`;
-			if (!bad.length) pasteText.value = "";
-		} catch (err) {
-			pasteResult.textContent = err.message;
-		}
-		e.target.disabled = false;
-	});
 
 	// ---- notes field: left column on desktop, last field on mobile ----
 	const notes = $("[data-qs-notes]");

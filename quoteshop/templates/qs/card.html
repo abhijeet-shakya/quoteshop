@@ -77,12 +77,12 @@
 {#- Category tree filter: server-rendered (links work without JS). Sidebar on desktop, bottom sheet on phones. -#}
 {%- macro category_filter(data, qs) -%}
 {%- set top_name = data.top.name if data.top else "" -%}
-<div class="qs-fback qs-only-m" data-qs-filter-close hidden></div>
+<div class="qs-fback" data-qs-filter-close hidden></div>
 <aside class="qs-filter" id="qs-filter" data-qs-filter aria-label="{{ _('Categories')|e }}">
 	<div class="qs-filter-top">
 		<h2 class="qs-filter-h">{{ _("Categories")|e }}</h2>
 		{%- if data.active_route %}<a href="/search" class="qs-filter-clear">{{ _("Clear")|e }}</a>{% endif %}
-		<button type="button" class="qs-x qs-only-m" data-qs-filter-close aria-label="{{ _('Close')|e }}">{{ icon("close", 22, "2.2") }}</button>
+		<button type="button" class="qs-x" data-qs-filter-close aria-label="{{ _('Close')|e }}">{{ icon("close", 22, "2.2") }}</button>
 	</div>
 	<div class="qs-filter-body">
 		<div class="qs-search qs-search-find">
@@ -112,7 +112,7 @@
 		<button type="button" class="qs-fshow" data-qs-fshow>{{ _("Show all {0} categories").format(data.tree|length)|e }}</button>
 		{%- endif %}
 	</div>
-	<div class="qs-filter-foot qs-only-m"><button type="button" class="qs-btn-ink" data-qs-filter-close>{{ _("Show {0} products").format(data.total)|e }}</button></div>
+	<div class="qs-filter-foot"><button type="button" class="qs-btn-ink" data-qs-filter-close>{{ _("Show {0} products").format(data.total)|e }}</button></div>
 </aside>
 {%- endmacro -%}
 
@@ -135,7 +135,7 @@
 			</form>
 		</div>
 		<div class="qs-lp-bar">
-			<button type="button" class="qs-fbtn qs-only-m" data-qs-filter-open aria-haspopup="dialog" aria-controls="qs-filter">{{ icon("filter", 18) }}{{ _("Filter")|e }}{% if data.active_route %} · 1{% endif %}</button>
+			<button type="button" class="qs-fbtn" data-qs-filter-open aria-haspopup="dialog" aria-controls="qs-filter">{{ icon("filter", 18) }}{{ _("Filter")|e }}{% if data.active_route %} · 1{% endif %}</button>
 			{%- if data.top and data.top.kids %}
 			<nav class="qs-chips" aria-label="{{ _('Sub-categories')|e }}">
 				<a href="/c/{{ data.top.route|e }}" class="qs-chip"{% if data.active_route == data.top.route %} aria-current="page"{% endif %}>{{ _("All {0}").format(data.top.name|lower)|e }}</a>

@@ -79,7 +79,7 @@ a.qs-ann-msg:hover { text-decoration: underline; }
 html.qs-lock { overflow: hidden; }
 
 /* All categories panel (desktop) */
-.qs-mega { position: absolute; top: 100%; left: 20px; right: 20px; max-width: 1280px; margin: 8px auto 0; box-sizing: border-box; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 24px 60px rgba(18,20,19,0.18); padding: 22px 26px 26px; max-height: min(560px, calc(100vh - 150px)); overflow-y: auto; }
+.qs-mega { position: absolute; top: 100%; left: 20px; right: 20px; max-width: 1280px; margin: 8px auto 0; box-sizing: border-box; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 24px 60px rgba(18,20,19,0.18); padding: 22px 26px 26px; max-height: calc(100vh - 150px); overflow-y: auto; }
 .qs-mega-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 20px; }
 .qs-search-find { flex: 1 1 320px; max-width: 420px; height: 46px; }
 .qs-mega-count { font-size: 13px; color: var(--muted); }
@@ -366,6 +366,16 @@ a.qs-addon-sign { text-decoration: none; }
 .qs-fshow { align-self: flex-start; min-height: 44px; padding: 0 10px; border: 0; background: transparent; color: var(--accent-ink); font-size: 14px; font-weight: 750; cursor: pointer; }
 .qs-filter-foot { padding: 12px 16px 18px; border-top: 1px solid var(--line); }
 .qs-fback { position: fixed; inset: 0; z-index: 44; background: rgba(10,12,11,0.45); }
+/* desktop: the category tree is a slide-in drawer from the Filter button (phones: bottom sheet below) */
+@media (min-width: 768px) {
+	.qs-filter { position: fixed; left: 0; top: 0; bottom: 0; width: 360px; max-width: 90vw; max-height: none; z-index: 45; background: var(--surface); box-shadow: 0 0 60px rgba(18,20,19,0.25); gap: 0; overflow: hidden; transform: translateX(-100%); visibility: hidden; transition: transform 0.25s ease, visibility 0.25s; }
+	.qs-filter.is-open { transform: none; visibility: visible; }
+	.qs-filter-top { flex: none; height: 64px; padding: 0 12px 0 24px; border-bottom: 1px solid var(--line); }
+	.qs-filter-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 24px; }
+	.qs-filter-foot { flex: none; }
+	.qs-filter-foot .qs-btn-ink { width: 100%; }
+	@media (prefers-reduced-motion: reduce) { .qs-filter { transition: none; } }
+}
 
 /* ---------- mobile-only parts (hidden on desktop) ---------- */
 .qs-hdr-m, .qs-tabs, .qs-pbar, .qs-strip { display: none; }

@@ -59,12 +59,15 @@
 .qs-q-note { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .qs-q-price { color: var(--text); font-weight: 700; }
 .qs-q-sep::before { content: " · "; }
-.qs-q-total { color: var(--text); font-weight: 800; }
-.qs-q-total::before { content: " · "; }
-.qs-q-est { border-radius: 18px; background: var(--panel); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-.qs-q-est-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; font-weight: 650; }
-.qs-q-est-row strong { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
-.qs-q-est-note { margin: 0; font-size: 12px; color: var(--muted); }
+.qs-q-ctl { display: contents; }
+.qs-q-lt { min-width: 104px; text-align: right; display: flex; flex-direction: column; gap: 2px; }
+.qs-q-lt span { font-size: 12px; color: var(--muted); }
+.qs-q-lt strong { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.qs-q-est { border-radius: 22px; background: var(--panel); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.qs-q-est-t { font-size: 17px; font-weight: 750; }
+.qs-q-est > strong { font-size: 36px; font-weight: 800; letter-spacing: -0.04em; white-space: nowrap; }
+.qs-q-est-note { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+@media (max-width: 767px) { .qs-q-est { padding: 14px 16px; } .qs-q-est > strong { font-size: 26px; } }
 .qs-q-col { font-weight: 500; color: var(--muted); }
 .qs-q-col-none { color: var(--warn-fg, var(--muted)); }
 .qs-q-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; box-shadow: 0 0 0 1px var(--border); vertical-align: baseline; }
@@ -86,18 +89,6 @@
 .qs-q-nomatch { margin: 0; border-radius: 18px; background: var(--panel); padding: 28px; text-align: center; color: var(--muted); }
 .qs-q-hint { margin: 0; font-size: 13px; color: var(--muted); }
 
-.qs-q-paste summary { list-style: none; display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); font-weight: 650; font-size: 14px; cursor: pointer; box-sizing: border-box; }
-.qs-q-paste summary::-webkit-details-marker { display: none; }
-.qs-q-paste-body { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-.qs-q-paste-body > label { font-size: 13px; font-weight: 700; }
-.qs-q-paste-body textarea { font: inherit; font-size: 15px; border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; resize: vertical; }
-.qs-q-paste-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.qs-q-file { position: relative; height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); display: inline-flex; align-items: center; font-weight: 650; font-size: 14px; cursor: pointer; box-sizing: border-box; }
-.qs-q-file:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
-.qs-q-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-.qs-q-paste-add { height: 46px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--ink-bg); color: #FFFFFF; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
-.qs-q-paste-result { font-size: 13px; color: var(--muted); }
-.qs-q-paste-result ul { margin: 6px 0 0; padding-left: 18px; color: var(--text); }
 
 .qs-q-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .qs-q-field > label, .qs-q-lbl { font-size: 13px; font-weight: 700; }
@@ -153,12 +144,13 @@
 	.qs-q-name { font-size: 14px; line-height: 1.3; }
 	.qs-q-note { font-size: 12px; }
 	.qs-q-sep::before { content: none; }
-	.qs-q-total { display: block; font-size: 13px; margin-top: 2px; }
-	.qs-q-total::before { content: none; }
+	.qs-q-ctl { grid-area: s; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+	.qs-q-lt { min-width: 0; }
+	.qs-q-lt strong { font-size: 16px; }
 	.qs-q-price { display: block; font-size: 13px; font-weight: 800; margin-top: 4px; }
 	.qs-q-price::first-letter { text-transform: uppercase; }
 	.qs-q-x { grid-area: x; width: 44px; height: 44px; margin: -6px -6px 0 0; }
-	.qs-q-step { grid-area: s; justify-self: end; height: 44px; }
+	.qs-q-step { height: 44px; }
 	.qs-q-step button { width: 44px; height: 42px; }
 	.qs-q-step input { width: 56px; height: 42px; }
 	.qs-q-empty { border-radius: 20px; padding: 28px; font-size: 14px; }
