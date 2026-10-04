@@ -4,6 +4,7 @@
 
 .qs-v-head { position: sticky; top: 0; z-index: 5; background: var(--glass); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
 .qs-v-headin { padding: 12px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.qs-v-headin .qs-theme-btn { margin-left: auto; }
 .qs-v-acct { height: 46px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; text-decoration: none; font-weight: 650; font-size: 14px; box-sizing: border-box; }
 .qs-v-back { width: 44px; height: 44px; border-radius: 999px; display: flex; flex: none; align-items: center; justify-content: center; }
 
