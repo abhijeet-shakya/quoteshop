@@ -34,7 +34,8 @@
 		</div>
 		{%- endif %}
 		{%- if b.promos %}
-		<div class="qs-promos{% if not tiles|selectattr('show_on_desktop')|list %} qs-hide-d{% endif %}{% if not tiles|selectattr('show_on_mobile')|list %} qs-hide-m{% endif %}">
+		{#- desktop: tiles beside the hero (unchanged); phones get their own swipeable row below -#}
+		<div class="qs-promos qs-hide-m{% if not tiles|selectattr('show_on_desktop')|list %} qs-hide-d{% endif %}">
 			{%- for t in tiles %}
 			<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}{% if not t.show_on_desktop %} qs-hide-d{% endif %}{% if not t.show_on_mobile %} qs-hide-m{% endif %}">
 				{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
@@ -42,6 +43,17 @@
 			</a>
 			{%- endfor %}
 		</div>
+		{%- set mtiles = tiles|selectattr('show_on_mobile')|list %}
+		{%- if mtiles %}
+		<div class="qs-promos-m qs-only-m{% if mtiles|length == 1 %} is-one{% endif %}" role="region" aria-label="{{ _('Offers')|e }}" tabindex="0">
+			{%- for t in mtiles %}
+			<a href="{{ (t.link or '#catalog')|e }}" class="qs-promo qs-promo-{{ (t.style or 'Plain')|lower|e }}">
+				{%- if t.kicker %}<span class="qs-promo-kicker">{{ t.kicker|e }}</span>{% endif %}
+				<span class="qs-promo-title">{{ t.title|e }}</span>
+			</a>
+			{%- endfor %}
+		</div>
+		{%- endif %}
 		{%- endif %}
 	</section>
 {%- elif b.kind == "trust" %}

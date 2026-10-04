@@ -261,7 +261,7 @@ a.qs-addon-sign { text-decoration: none; }
 .qs-toast-link { height: 40px; padding: 0 14px; border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 750; display: flex; align-items: center; }
 
 /* ---------- mobile-only parts (hidden on desktop) ---------- */
-.qs-mhdr, .qs-msearch, .qs-mpop, .qs-tabs, .qs-ihdr, .qs-pbar, .qs-strip { display: none; }
+.qs-mhdr, .qs-msearch, .qs-mpop, .qs-promos-m, .qs-tabs, .qs-ihdr, .qs-pbar, .qs-strip { display: none; }
 
 /* ---------- responsive switch: mobile design ≤ 767px ---------- */
 @media (min-width: 768px) {
@@ -309,6 +309,13 @@ a.qs-addon-sign { text-decoration: none; }
 	.qs-empty { margin-top: 16px; padding: 32px 20px; }
 	.qs-pager { margin-top: 24px; }
 	.qs-promo { min-height: 120px; padding: 20px; border-radius: 20px; }
+	/* offers: one swipeable row (next tile peeks in), first tile on the page padding, last one scrolls fully in */
+	.qs-promos-m { display: flex; gap: 12px; margin: 16px -20px 0; padding: 0 20px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 20px; overscroll-behavior-x: contain; scrollbar-width: none; flex: none; }
+	.qs-promos-m::-webkit-scrollbar { display: none; }
+	.qs-promos-m .qs-promo { flex: 0 0 82vw; height: 130px; min-height: 0; scroll-snap-align: start; }
+	.qs-promos-m.is-one .qs-promo { flex-basis: 100%; }
+	.qs-promos-m:focus-visible { outline: 2px solid var(--text); outline-offset: -2px; border-radius: 20px; }
+	@media (prefers-reduced-motion: no-preference) { .qs-promos-m { scroll-behavior: smooth; } }
 	.qs-promo-title { font-size: 20px; }
 
 	.qs-card { gap: 8px; }
